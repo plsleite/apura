@@ -1,0 +1,16 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Ferramentas de sessão
+.superpowers/
+
+# Dependências e artefatos de build
+node_modules/
+dist/
+coverage/
+
+# Ambiente local
+.env
+.env.*
+*.local
