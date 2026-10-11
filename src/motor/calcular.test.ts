@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { competenciasEntre } from "../compartilhado/datas.ts";
 import type { Calculo, Lancamento } from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
 import { calcular } from "./calcular.ts";
@@ -250,6 +251,34 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
       "4390": "2026-10",
       "29543": "2026-10",
     });
+    // A taxa legal consumida nos juros consta de indicesUsados, com fonte e data de obtenção.
+    const taxaLegal = r.indicesUsados.filter((i) => i.serie === "29543");
+    expect(taxaLegal).toHaveLength(26);
+    expect(taxaLegal.map((i) => i.competencia)).toEqual(competenciasEntre("2024-09", "2026-10"));
+    expect(taxaLegal[0]).toEqual({
+      serie: "29543",
+      competencia: "2024-09",
+      valor: "0.676227",
+      fonte: "embutida",
+      obtidoEm: "2026-10-11T12:00:00.000Z",
+    });
+    expect([...new Set(r.indicesUsados.map((i) => i.serie))]).toEqual(["433", "29543"]);
+  });
+
+  it("taxa legal ausente na tabela: aviso no lançamento e resumo próprio no resultado", () => {
+    const r = calcular(
+      calculoCom([lancamento("p", "prestacao", "2026-09-30", "1000.00")], hoje),
+      tabelaRegimeNovo({ "29543": "2026-09" }),
+    );
+    expect(r.avisos).toContain(
+      "Meses sem taxa legal na tabela (os dias desses meses ficaram sem juros): out/2026.",
+    );
+    expect(r.lancamentos[0]?.avisos).toContain(
+      "Taxa legal de out/2026 não disponível na tabela de índices: os dias de 01/10/2026 a 10/10/2026 ficaram sem juros.",
+    );
+    expect(r.indicesUsados.some((i) => i.serie === "29543" && i.competencia === "2026-10")).toBe(
+      false,
+    );
   });
 
   it("multa e honorários do art. 523, §1º, do CPC: cada um sobre o total devido, sem cumulação", () => {

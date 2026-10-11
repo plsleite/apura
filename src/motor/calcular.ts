@@ -8,7 +8,7 @@ import {
   type Decimal,
 } from "../compartilhado/decimal.ts";
 import { formatarCompetencia, formatarData, formatarMoeda } from "../compartilhado/formatacao.ts";
-import { NOME_DA_SERIE } from "../compartilhado/tipos.ts";
+import { CODIGO_DA_SERIE, NOME_DA_SERIE } from "../compartilhado/tipos.ts";
 import type {
   Calculo,
   CodigoSerie,
@@ -58,6 +58,18 @@ export function atualizarLancamento(
   calculo: Calculo,
   indices: TabelaIndices,
 ): LancamentoCalculado {
+  return atualizarComRastro(lancamento, calculo, indices).lancamento;
+}
+
+/**
+ * Faz o trabalho de `atualizarLancamento` e devolve também as competências cuja taxa legal faltou
+ * na tabela, para o resumo do `Resultado` em `calcular`.
+ */
+function atualizarComRastro(
+  lancamento: Lancamento,
+  calculo: Calculo,
+  indices: TabelaIndices,
+): { lancamento: LancamentoCalculado; mesesSemTaxaLegal: Competencia[] } {
   const metodologia = lancamento.encargos?.metodologia ?? calculo.metodologia;
   const { fatorCasas, percentualCasas, valorCasas } = metodologia.arredondamento;
   const avisos: string[] = [];
@@ -133,29 +145,33 @@ export function atualizarLancamento(
   const atualizado = corrigido.plus(jurosValor);
 
   return {
-    id: lancamento.id,
-    tipo: lancamento.tipo,
-    data: lancamento.data,
-    competencia: lancamento.competencia,
-    descricao: lancamento.descricao,
-    valorBase: paraTexto(valorBase, valorCasas),
-    memoriaBase,
-    correcao: {
-      fator: paraTexto(correcao.fator, fatorCasas),
-      indices: correcao.indices,
-      pisoAplicado: correcao.pisoAplicado,
+    lancamento: {
+      id: lancamento.id,
+      tipo: lancamento.tipo,
+      data: lancamento.data,
+      competencia: lancamento.competencia,
+      descricao: lancamento.descricao,
+      valorBase: paraTexto(valorBase, valorCasas),
+      memoriaBase,
+      correcao: {
+        fator: paraTexto(correcao.fator, fatorCasas),
+        indices: correcao.indices,
+        pisoAplicado: correcao.pisoAplicado,
+      },
+      corrigido: paraTexto(corrigido, valorCasas),
+      juros: { percentual: paraTexto(juros.percentual, percentualCasas), detalhe: juros.detalhe },
+      jurosValor: paraTexto(jurosValor, valorCasas),
+      atualizado: paraTexto(atualizado, valorCasas),
+      avisos,
     },
-    corrigido: paraTexto(corrigido, valorCasas),
-    juros: { percentual: paraTexto(juros.percentual, percentualCasas), detalhe: juros.detalhe },
-    jurosValor: paraTexto(jurosValor, valorCasas),
-    atualizado: paraTexto(atualizado, valorCasas),
-    avisos,
+    mesesSemTaxaLegal: juros.mesesSemTaxaLegal,
   };
 }
 
 /** Calcula o Resultado completo de um Cálculo com uma tabela de índices congelada (§4.3). */
 export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
-  const lancamentos = calculo.lancamentos.map((l) => atualizarLancamento(l, calculo, indices));
+  const rastros = calculo.lancamentos.map((l) => atualizarComRastro(l, calculo, indices));
+  const lancamentos = rastros.map((r) => r.lancamento);
   const valorCasas = calculo.metodologia.arredondamento.valorCasas;
 
   const somar = (tipo: Lancamento["tipo"]): Decimal =>
@@ -199,7 +215,8 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
   }
 
   // Índices efetivamente usados (sem repetição) e resumo dos meses sem índice. Um mês de
-  // fração zero não pesou no fator: não conta como índice usado nem como mês sem índice.
+  // fração zero não pesou no fator: não conta como índice usado nem como mês sem índice. A taxa
+  // legal dos juros (série 29543) também é índice usado; o mês dela que falta tem resumo próprio.
   const usados = new Map<string, IndiceUsado>();
   const semIndice = new Map<CodigoSerie, Set<Competencia>>();
   for (const l of lancamentos) {
@@ -223,6 +240,22 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
         });
       }
     }
+    for (const d of l.juros.detalhe) {
+      if (d.regime !== "taxaLegal") continue;
+      const serie = CODIGO_DA_SERIE.taxaLegal;
+      const competencia = competenciaDe(d.de);
+      const chave = `${serie}|${competencia}`;
+      const registro = indices.series[serie]?.[competencia];
+      if (!usados.has(chave) && registro) {
+        usados.set(chave, {
+          serie,
+          competencia,
+          valor: registro.valor,
+          fonte: registro.fonte,
+          obtidoEm: registro.obtidoEm,
+        });
+      }
+    }
   }
   const indicesUsados = [...usados.values()].sort(
     (a, b) =>
@@ -238,6 +271,13 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
       )
       .join("; ");
     avisos.push(`Meses sem índice na tabela (entraram sem correção): ${lista}.`);
+  }
+  const semTaxaLegal = new Set<Competencia>(rastros.flatMap((r) => r.mesesSemTaxaLegal));
+  if (semTaxaLegal.size > 0) {
+    const lista = [...semTaxaLegal].sort().map(formatarCompetencia).join(", ");
+    avisos.push(
+      `Meses sem taxa legal na tabela (os dias desses meses ficaram sem juros): ${lista}.`,
+    );
   }
 
   const series = (Object.keys(indices.series) as CodigoSerie[]).sort(compararSeries);

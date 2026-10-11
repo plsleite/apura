@@ -2,7 +2,13 @@ import { diaAnterior, ratearPorMesCalendario } from "../compartilhado/datas.ts";
 import { decimal, paraTexto, ZERO, type Decimal } from "../compartilhado/decimal.ts";
 import { formatarCompetencia, formatarData } from "../compartilhado/formatacao.ts";
 import { CODIGO_DA_SERIE } from "../compartilhado/tipos.ts";
-import type { DataISO, DetalheJuros, Metodologia, TabelaIndices } from "../compartilhado/tipos.ts";
+import type {
+  Competencia,
+  DataISO,
+  DetalheJuros,
+  Metodologia,
+  TabelaIndices,
+} from "../compartilhado/tipos.ts";
 import { dividirPorPeriodos } from "./periodos.ts";
 
 export interface ParametrosJuros {
@@ -20,6 +26,11 @@ export interface ResultadoJuros {
   percentual: Decimal;
   detalhe: DetalheJuros[];
   avisos: string[];
+  /**
+   * competências cuja taxa legal (série 29543) faltou na tabela num trecho com pelo menos um dia
+   * (esses dias ficaram sem juros), em ordem cronológica e sem repetição; vazia quando não faltou
+   */
+  mesesSemTaxaLegal: Competencia[];
 }
 
 /**
@@ -36,8 +47,9 @@ export interface ResultadoJuros {
 export function jurosSimples(p: ParametrosJuros): ResultadoJuros {
   const detalhe: DetalheJuros[] = [];
   const avisos: string[] = [];
+  const mesesSemTaxaLegal: Competencia[] = [];
   let percentual = ZERO;
-  if (p.termoFinal < p.termoInicial) return { percentual, detalhe, avisos };
+  if (p.termoFinal < p.termoInicial) return { percentual, detalhe, avisos, mesesSemTaxaLegal };
 
   for (const trecho of dividirPorPeriodos(p.metodologia, p.termoInicial, p.termoFinal)) {
     const regra = trecho.periodo.juros;
@@ -61,6 +73,7 @@ export function jurosSimples(p: ParametrosJuros): ResultadoJuros {
       for (const mes of ratearPorMesCalendario(trecho.de, ultimoDia)) {
         const taxa = p.indices.series[CODIGO_DA_SERIE.taxaLegal]?.[mes.competencia]?.valor;
         if (taxa === undefined) {
+          if (!mesesSemTaxaLegal.includes(mes.competencia)) mesesSemTaxaLegal.push(mes.competencia);
           avisos.push(
             `Taxa legal de ${formatarCompetencia(mes.competencia)} não disponível na tabela de índices: os dias de ${formatarData(mes.de)} a ${formatarData(mes.ate)} ficaram sem juros.`,
           );
@@ -80,5 +93,5 @@ export function jurosSimples(p: ParametrosJuros): ResultadoJuros {
       }
     }
   }
-  return { percentual, detalhe, avisos };
+  return { percentual, detalhe, avisos, mesesSemTaxaLegal: mesesSemTaxaLegal.sort() };
 }

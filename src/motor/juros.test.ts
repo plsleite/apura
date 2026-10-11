@@ -128,6 +128,7 @@ describe("jurosSimples (regime novo: taxa legal da Lei 14.905/2024 e transição
       },
     ]);
     expect(r.avisos).toEqual([]);
+    expect(r.mesesSemTaxaLegal).toEqual([]);
   });
 
   it("conta o dia do lançamento e não conta o dia do cálculo, como a Calculadora: 30/09/2024 → 11/10/2026 = 17,247591%", () => {
@@ -259,6 +260,7 @@ describe("jurosSimples (regime novo: taxa legal da Lei 14.905/2024 e transição
     expect(r.avisos).toEqual([
       "Taxa legal de out/2026 não disponível na tabela de índices: os dias de 01/10/2026 a 10/10/2026 ficaram sem juros.",
     ]);
+    expect(r.mesesSemTaxaLegal).toEqual(["2026-10"]);
   });
 
   it("SELIC única: sem juros separados e sem aviso (a SELIC entra capitalizada na correção)", () => {

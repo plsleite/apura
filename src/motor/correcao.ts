@@ -79,7 +79,9 @@ export interface ResultadoCorrecao {
  * Fator de correção (§6.4): pro rata geométrico no mês do termo inicial, meses inteiros,
  * pro rata no mês do termo final quando o índice dele existe, meses sem índice com fator 1
  * (listados em `mesesSemIndice` só quando a fração deles é maior que zero), mês corrente parcial
- * da SELIC inteiro, deflação conforme a opção. Fator 1 quando o termo final é anterior ao inicial.
+ * da SELIC inteiro (exceção: quando o lançamento começa e termina no mês da consulta, o valor
+ * parcial é rateado pelos dias decorridos, (dia final − dia inicial) ÷ dia final), deflação
+ * conforme a opção. Fator 1 quando o termo final é anterior ao inicial.
  */
 export function fatorCorrecao(p: ParametrosCorrecao): ResultadoCorrecao {
   const indices: IndiceAplicado[] = [];
