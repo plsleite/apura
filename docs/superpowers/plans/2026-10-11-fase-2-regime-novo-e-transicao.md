@@ -42,7 +42,7 @@ Entradas que o design implica mas que nenhum teste cobriria por si; cada uma gan
 
 ## Para o responsável: o que esta fase entrega, o que foi descoberto e as escolhas feitas
 
-Ao fim da fase o motor calcula qualquer prestação ou pagamento nos dois regimes, na transição e na SELIC única, com multa e honorários, e prova isso com 225 testes (eram 101), inclusive 7 casos de referência novos. Continua sem tela: a interface é a fase 5.
+Ao fim da fase o motor calcula qualquer prestação ou pagamento nos dois regimes, na transição e na SELIC única, com multa e honorários, e prova isso com 226 testes (eram 101), inclusive 7 casos de referência novos. Continua sem tela: a interface é a fase 5.
 
 Descobertas de 11/10/2026 que moldaram o plano (todas discutidas e decididas com o responsável nesta sessão):
 
@@ -2934,9 +2934,8 @@ Achados das revisões que ficaram para fases seguintes ou como melhorias menores
 
 **Fase 5**
 
-- Período invertido (início depois do fim) é descartado sem aviso e confunde o texto dos avisos de `validarMetodologia`; a tela deve recusá-lo, ou o motor passa a avisar.
+- Período com início posterior ao fim é descartado na divisão por períodos e gera dois avisos contraditórios em `validarMetodologia`; a tela deve recusá-lo, ou o motor passa a dar um aviso único, "período com início posterior ao fim: ignorado".
 - Percentuais de multa e honorários vazios ou inválidos fazem `calcular` lançar `DecimalError` (contra a regra 4 do `CLAUDE.md`), e percentual negativo é aceito sem aviso; tratar no motor ou garantir na tela.
-- Período com início posterior ao fim gera dois avisos contraditórios em `validarMetodologia`; a fase 5 deve preferir um aviso único, "período com início posterior ao fim: ignorado".
 - Termo inicial próprio posterior à data de elaboração dá correção ou juros zero sem aviso; o design diz "sem erro", mas um aviso ajudaria quem digitou errado.
 
 **Fase 6**
@@ -2956,7 +2955,6 @@ Achados das revisões que ficaram para fases seguintes ou como melhorias menores
 - `periodosOrdenados` não tem teste direto, e falta linha em branco entre testes em `src/motor/periodos.test.ts`.
 - A cadeia com mais de dois períodos e início aberto no meio só é coberta pelo caso (c) do teste de períodos aninhados.
 - Não há teste de mês parcial da SELIC no meio do período (consulta anterior ao termo final).
-- O JSDoc de `fatorCorrecao` (`src/motor/correcao.ts`) ainda diz que o mês corrente parcial da SELIC entra inteiro, sem citar a exceção do mês inicial.
 - Em `src/motor/juros.ts`, um tipo de juros desconhecido cai em silêncio (a fase 1 avisava); acrescentar ramo explícito de `selicUnica` e um `else` com aviso, ou checagem exaustiva.
 - Faltam testes de trecho de taxa legal que termina antes do termo final (dois períodos de taxa legal) e de lançamento anterior a 30/08/2024 com termo final em 30/08/2024.
 - A tolerância fixa de R$ 0,01 em `src/motor/casos.test.ts` fica apertada para valor-base acima de R$ 10.000 (o fator impresso erra até 5e-7 × valor); usar `valorBase × 0,0000005 + 0,01` no corrigido.
@@ -2976,10 +2974,10 @@ Achados das revisões que ficaram para fases seguintes ou como melhorias menores
 - As Tasks 7 e 8 foram despachadas e revisadas juntas, com dois commits, por serem a mesma natureza (transcrição de casos em JSON).
 - O trailer de coautoria de cada commit nomeia o modelo que de fato o executou.
 - Na Task 3, `validarMetodologia` passou a comparar cada período com o fim de cobertura mais distante já alcançado (nulo = aberto), com mensagens novas para sobreposição com início ou fim abertos; `dividirPorPeriodos` já estava certa.
-- Na Task 4, quando o mês parcial da SELIC é ao mesmo tempo o mês inicial e o final do lançamento, a fração é (dia final − dia inicial) ÷ dia final; o mês parcial que é só final continua inteiro, e o que é só inicial segue o pro rata normal (regra adotada na execução, a confirmar com o responsável). A SELIC única normalmente vale só até 29/08/2024, então o caso é raro.
+- Na Task 4, quando o mês parcial da SELIC é ao mesmo tempo o mês inicial e o final do lançamento, a fração é (dia final − dia inicial) ÷ dia final; o mês parcial que é só final continua inteiro, e o que é só inicial segue o pro rata normal (regra adotada na execução e confirmada pelo responsável em 11/10/2026). A SELIC única normalmente vale só até 29/08/2024, então o caso é raro.
 - Na Task 6, o termo inicial próprio dos juros posterior à data de elaboração dá juros zero sem aviso, como manda a §6.4 do design ("juros zero, sem erro"), e foi mantido.
 - O alinhamento do `CLAUDE.md` e do design à precisão integral ficou para esta Task 10, e o texto da SELIC única no design registra a exceção do mês inicial.
-- A contagem final é de 225 testes, e não 223, porque as correções das Tasks 3 e 4 acrescentaram um teste cada.
+- A contagem final é de 226 testes, e não 223, porque as correções das Tasks 3 e 4 e a da revisão final acrescentaram um teste cada.
 - A taxa legal usada nos juros passa a constar de indicesUsados (série 29543, com fonte e data de obtenção), e os meses de taxa legal ausentes ganham um resumo próprio no resultado ("ficaram sem juros"), por decisão tomada na revisão final.
 
 ## Auto-revisão do plano
