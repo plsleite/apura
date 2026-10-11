@@ -1,0 +1,23 @@
+{
+  "id": "tjms-saj",
+  "versao": 1,
+  "nome": "TJMS/SAJ",
+  "ajustada": false,
+  "periodos": [
+    {
+      "de": null,
+      "ate": "2024-08-29",
+      "correcao": { "indice": "IGP-M" },
+      "juros": { "tipo": "percentualMensal", "taxaMensal": "1" }
+    },
+    {
+      "de": "2024-08-30",
+      "ate": null,
+      "correcao": { "indice": "IPCA" },
+      "juros": { "tipo": "taxaLegal" }
+    }
+  ],
+  "incidenciaMesInicial": "proRata",
+  "deflacao": "aplicarComPiso",
+  "arredondamento": { "fatorCasas": 6, "percentualCasas": 6, "valorCasas": 2, "modo": "comercial" }
+}

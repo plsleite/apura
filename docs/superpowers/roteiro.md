@@ -21,8 +21,8 @@ Este arquivo diz em que ponto o projeto está e como retomar o trabalho em qualq
 
 | Fase | Escopo | Situação |
 |---|---|---|
-| 1 · Fundação e motor do regime antigo | projeto Vite/React/TS, Vitest, ESLint/Prettier, CLAUDE.md, primitivas (decimal, datas, rateio), caso SAJ 2018 reproduzido, cópia embutida do IGP-M e script de índices | plano a escrever |
-| 2 · Regime novo e transição | taxa legal, IPCA, transição 30/08/2024, SELIC única, deflação com piso, encargos próprios (termos e metodologia por períodos), multa e honorários; casos conferidos na Calculadora do Cidadão | pendente |
+| 1 · Fundação e motor do regime antigo | projeto Vite/React/TS, Vitest, ESLint/Prettier, CLAUDE.md, primitivas (decimal, datas, rateio), caso SAJ 2018 reproduzido, cópia embutida do IGP-M e script de índices | concluída em 2026-10-11 · plano: `docs/superpowers/plans/2026-10-10-fase-1-fundacao-e-motor-regime-antigo.md` |
+| 2 · Regime novo e transição | taxa legal, IPCA, transição 30/08/2024, SELIC única, deflação com piso, encargos próprios (termos e metodologia por períodos), multa e honorários; casos conferidos na Calculadora do Cidadão | plano a escrever |
 | 3 · Bases e lotes | valor fixo com reajuste, % do salário mínimo, % dos rendimentos; lotes cumulativos de prestações e amortizações; casos-limite | pendente |
 | 4 · Índices ao vivo | cliente BCB, cache, congelamento por cálculo, calendário de divulgação, rotina mensal | pendente |
 | 5 · Interface | layout em duas colunas, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas | pendente |

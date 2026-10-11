@@ -4,6 +4,7 @@ Thumbs.db
 
 # Ferramentas de sessão
 .superpowers/
+.claude/settings.local.json
 
 # Dependências e artefatos de build
 node_modules/
@@ -14,3 +15,7 @@ coverage/
 .env
 .env.*
 *.local
+
+# Registros e caches de ferramentas
+*.log
+.claude/worktrees/
