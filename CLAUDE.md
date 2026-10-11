@@ -58,7 +58,9 @@ docs/superpowers/plans/   planos de implementação (um por fase)
 scripts/                  atualizar-indices.ts
 src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts
 src/motor/                periodos.ts · correcao.ts · juros.ts · calcular.ts · casos/ (casos de referência)
+src/motor/testes/         dados de teste: tabela IGP-M usada pelos testes unitários
 src/indices/              series.ts · cliente-bcb.ts · embutidos.ts (cache, congelamento e calendário: fase 4)
+src/indices/testes/       dados de teste: resposta gravada do SGS
 src/metodologias/         tjms-saj.v1.json · padrao.ts
 src/ui/                   interface (fase 5)
 src/relatorio/            relatório e impressão (fase 6)
@@ -110,4 +112,6 @@ Um caso é um arquivo JSON em `src/motor/casos/AAAA-MM-DD-<origem>-<tema>.json` 
   `fator` e `jurosPercentual`); e os `totais`.
 
 O teste `src/motor/casos.test.ts` executa todos os arquivos da pasta automaticamente. O PDF ou a
-planilha de origem ficam fora do repositório; o número do processo é omitido.
+planilha de origem ficam fora do repositório; o número do processo é omitido. O Prettier ignora de
+propósito `src/motor/casos/*.json` e `src/indices/testes/` (`.prettierignore`), para manter um
+lançamento por linha.
