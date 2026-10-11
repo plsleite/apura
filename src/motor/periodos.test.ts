@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Metodologia } from "../compartilhado/tipos.ts";
+import type { Metodologia, PeriodoMetodologia } from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
 import { dividirPorPeriodos, periodoVigenteEm, validarMetodologia } from "./periodos.ts";
 
@@ -43,6 +43,7 @@ describe("períodos da metodologia", () => {
     expect(unico[0]).toMatchObject({ de: "2017-01-10", ate: "2018-05-25" });
     expect(dividirPorPeriodos(padrao, "2018-05-25", "2017-01-10")).toEqual([]);
   });
+
   it("a metodologia padrão é contínua: nenhum aviso", () => {
     expect(validarMetodologia(padrao)).toEqual([]);
   });
@@ -118,6 +119,49 @@ describe("períodos da metodologia", () => {
     ]);
     expect(validarMetodologia({ ...padrao, periodos: [] })).toEqual([
       "A metodologia não tem períodos: nenhum lançamento recebe correção nem juros.",
+    ]);
+  });
+  it("períodos aninhados e inícios abertos: compara com o fim mais distante já coberto", () => {
+    const comPeriodos = (periodos: Metodologia["periodos"]): Metodologia => ({
+      ...padrao,
+      periodos,
+    });
+    const correcao: PeriodoMetodologia["correcao"] = { indice: "IGP-M" };
+    const juros: PeriodoMetodologia["juros"] = { tipo: "percentualMensal", taxaMensal: "1" };
+    expect(
+      validarMetodologia(
+        comPeriodos([
+          { de: null, ate: null, correcao, juros },
+          { de: "2020-01-01", ate: "2020-06-30", correcao, juros },
+        ]),
+      ),
+    ).toEqual([
+      "Os períodos se sobrepõem de 01/01/2020 a 30/06/2020: nesses dias prevaleceu o período iniciado antes.",
+    ]);
+    expect(
+      validarMetodologia(
+        comPeriodos([
+          { de: "2020-01-01", ate: "2020-12-31", correcao, juros },
+          { de: "2020-03-01", ate: "2020-04-30", correcao, juros },
+          { de: "2020-08-01", ate: "2021-06-30", correcao, juros },
+        ]),
+      ),
+    ).toEqual([
+      "A metodologia não cobre datas anteriores a 01/01/2020: esses dias ficam sem correção e sem juros.",
+      "Os períodos se sobrepõem de 01/03/2020 a 30/04/2020: nesses dias prevaleceu o período iniciado antes.",
+      "Os períodos se sobrepõem de 01/08/2020 a 31/12/2020: nesses dias prevaleceu o período iniciado antes.",
+      "A metodologia não cobre datas posteriores a 30/06/2021: esses dias ficam sem correção e sem juros.",
+    ]);
+    expect(
+      validarMetodologia(
+        comPeriodos([
+          { de: null, ate: "2020-12-31", correcao, juros },
+          { de: null, ate: "2021-12-31", correcao, juros },
+        ]),
+      ),
+    ).toEqual([
+      "Os períodos se sobrepõem até 31/12/2020: nesses dias prevaleceu o período iniciado antes.",
+      "A metodologia não cobre datas posteriores a 31/12/2021: esses dias ficam sem correção e sem juros.",
     ]);
   });
 });

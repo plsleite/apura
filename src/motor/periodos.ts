@@ -23,9 +23,35 @@ export function periodoVigenteEm(
   );
 }
 
+/** Aviso de sobreposição; `null` em `de` ou em `ate` significa início ou fim aberto. */
+function avisoDeSobreposicao(de: DataISO | null, ate: DataISO | null): string {
+  const consequencia = "nesses dias prevaleceu o período iniciado antes.";
+  if (de !== null && ate !== null) {
+    return `Os períodos se sobrepõem de ${formatarData(de)} a ${formatarData(ate)}: ${consequencia}`;
+  }
+  if (ate !== null) return `Os períodos se sobrepõem até ${formatarData(ate)}: ${consequencia}`;
+  if (de !== null)
+    return `Os períodos se sobrepõem a partir de ${formatarData(de)}: ${consequencia}`;
+  return `Os períodos se sobrepõem em todas as datas: ${consequencia}`;
+}
+
+/** O menor de dois fins (`null` = sem fim): o outro, se um deles for nulo. */
+function menorFim(a: DataISO | null, b: DataISO | null): DataISO | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return a < b ? a : b;
+}
+
+/** O maior de dois fins (`null` = sem fim): `null` se algum deles for nulo. */
+function maiorFim(a: DataISO | null, b: DataISO | null): DataISO | null {
+  if (a === null || b === null) return null;
+  return a > b ? a : b;
+}
+
 /**
- * Avisos sobre a cobertura dos períodos (§6.5): dias que nenhum período cobre ficam sem correção
- * e sem juros; dias cobertos por dois períodos seguem o que começa antes. Lista vazia = metodologia
+ * Avisos sobre a cobertura dos períodos (§6.5). Percorre os períodos em ordem cronológica e compara
+ * cada um com o fim mais distante já coberto: dias que nenhum período cobre ficam sem correção e sem
+ * juros; dias cobertos por dois períodos seguem o que começa antes. Lista vazia = metodologia
  * contínua, do início aberto ao fim aberto.
  */
 export function validarMetodologia(metodologia: Metodologia): string[] {
@@ -40,28 +66,20 @@ export function validarMetodologia(metodologia: Metodologia): string[] {
       `A metodologia não cobre datas anteriores a ${formatarData(primeiro.de)}: esses dias ficam sem correção e sem juros.`,
     );
   }
-  for (let i = 1; i < periodos.length; i++) {
-    const anterior = periodos[i - 1];
-    const atual = periodos[i];
-    if (anterior === undefined || atual === undefined || atual.de === null) continue;
-    if (anterior.ate === null || atual.de <= anterior.ate) {
-      const fim =
-        anterior.ate !== null && (atual.ate === null || anterior.ate < atual.ate)
-          ? anterior.ate
-          : atual.ate;
+  let fimCoberto: DataISO | null = primeiro.ate;
+  for (const atual of periodos.slice(1)) {
+    if (fimCoberto === null || atual.de === null || atual.de <= fimCoberto) {
+      avisos.push(avisoDeSobreposicao(atual.de, menorFim(fimCoberto, atual.ate)));
+    } else if (atual.de > diaSeguinte(fimCoberto)) {
       avisos.push(
-        `Os períodos se sobrepõem de ${formatarData(atual.de)} a ${fim === null ? "o fim" : formatarData(fim)}: nesses dias prevaleceu o período iniciado antes.`,
-      );
-    } else if (atual.de > diaSeguinte(anterior.ate)) {
-      avisos.push(
-        `A metodologia não cobre o período de ${formatarData(diaSeguinte(anterior.ate))} a ${formatarData(diaAnterior(atual.de))}: esses dias ficam sem correção e sem juros.`,
+        `A metodologia não cobre o período de ${formatarData(diaSeguinte(fimCoberto))} a ${formatarData(diaAnterior(atual.de))}: esses dias ficam sem correção e sem juros.`,
       );
     }
+    fimCoberto = maiorFim(fimCoberto, atual.ate);
   }
-  const ultimo = periodos[periodos.length - 1];
-  if (ultimo !== undefined && ultimo.ate !== null) {
+  if (fimCoberto !== null) {
     avisos.push(
-      `A metodologia não cobre datas posteriores a ${formatarData(ultimo.ate)}: esses dias ficam sem correção e sem juros.`,
+      `A metodologia não cobre datas posteriores a ${formatarData(fimCoberto)}: esses dias ficam sem correção e sem juros.`,
     );
   }
   return avisos;
