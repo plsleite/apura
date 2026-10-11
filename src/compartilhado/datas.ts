@@ -148,3 +148,25 @@ export function diaSeguinte(data: DataISO): DataISO {
   if (dia < diasDoMes(ano, mes)) return compor(ano, mes, dia + 1);
   return mes === 12 ? compor(ano + 1, 1, 1) : compor(ano, mes + 1, 1);
 }
+
+/** Competência anterior: "2018-01" → "2017-12". */
+export function mesAnterior(competencia: Competencia): Competencia {
+  const { ano, mes } = decomporCompetencia(competencia);
+  return mes === 1 ? comporCompetencia(ano - 1, 12) : comporCompetencia(ano, mes - 1);
+}
+
+/** Soma `n` meses à competência (negativo anda para trás): somarMeses("2024-03", 12) = "2025-03". */
+export function somarMeses(competencia: Competencia, n: number): Competencia {
+  const { ano, mes } = decomporCompetencia(competencia);
+  const total = ano * 12 + (mes - 1) + n;
+  return comporCompetencia(Math.floor(total / 12), (((total % 12) + 12) % 12) + 1);
+}
+
+/**
+ * Data no mês da competência com o dia pedido; dia que o mês não tem (31 em abril, 29 a 31 em
+ * fevereiro) vira o último dia do mês (§6.1): dataNoMes("2026-02", 31) = "2026-02-28".
+ */
+export function dataNoMes(competencia: Competencia, dia: number): DataISO {
+  const { ano, mes } = decomporCompetencia(competencia);
+  return compor(ano, mes, Math.min(dia, diasDoMes(ano, mes)));
+}

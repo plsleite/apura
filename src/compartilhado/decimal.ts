@@ -27,3 +27,18 @@ export function paraTexto(valor: Decimal, casas: number): TextoDecimal {
 export const ZERO = new Decimal(0);
 export const UM = new Decimal(1);
 export const CEM = new Decimal(100);
+
+const FORMATO_TEXTO_DECIMAL = /^-?\d+(\.\d+)?$/;
+
+/**
+ * Texto decimal que o motor aceita: dígitos com ponto decimal e sinal opcionais ("451.91", "-1.10",
+ * "30"). Recusa vírgula, vazio, espaços, "NaN", "Infinity" e notação com expoente.
+ */
+export function textoDecimalValido(texto: string): boolean {
+  return FORMATO_TEXTO_DECIMAL.test(texto);
+}
+
+/** `Decimal` do texto quando ele é válido; `null` caso contrário (o motor avisa em vez de lançar erro). */
+export function decimalOuNulo(texto: string | undefined): Decimal | null {
+  return texto !== undefined && textoDecimalValido(texto) ? new Decimal(texto) : null;
+}
