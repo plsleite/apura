@@ -86,6 +86,7 @@ export function atualizarLancamento(
     termoInicial: termoInicialJuros,
     termoFinal: termoFinalJuros,
     metodologia,
+    indices,
     casas: percentualCasas,
   });
   avisos.push(...juros.avisos);
