@@ -16,6 +16,9 @@ describe("formatação pt-BR", () => {
     expect(formatarMoeda(decimal("1000000"))).toBe("R$ 1.000.000,00");
     expect(formatarMoeda(decimal("-6957.45"))).toBe("-R$ 6.957,45");
     expect(formatarMoeda(decimal("7145.725"))).toBe("R$ 7.145,73");
+    expect(formatarMoeda(decimal("-0.004"))).toBe("R$ 0,00");
+    expect(formatarMoeda(decimal("-100").times(0))).toBe("R$ 0,00");
+    expect(formatarMoeda(decimal("-7145.725"))).toBe("-R$ 7.145,73");
   });
 
   it("formata data e competência", () => {

@@ -16,12 +16,17 @@ const MESES_ABREVIADOS = [
   "dez",
 ];
 
-/** "R$ 1.234,56"; valores negativos como "-R$ 6.957,45". */
+/**
+ * "R$ 1.234,56"; valores negativos como "-R$ 6.957,45".
+ * O sinal vem do texto já arredondado: um negativo que arredonda para zero sai "R$ 0,00".
+ */
 export function formatarMoeda(valor: Decimal): string {
-  const partes = paraTexto(valor.abs(), 2).split(".");
+  const texto = paraTexto(valor, 2);
+  const negativo = texto.startsWith("-");
+  const partes = (negativo ? texto.slice(1) : texto).split(".");
   const inteiro = (partes[0] ?? "0").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   const centavos = partes[1] ?? "00";
-  return `${valor.isNegative() ? "-" : ""}R$ ${inteiro},${centavos}`;
+  return `${negativo ? "-" : ""}R$ ${inteiro},${centavos}`;
 }
 
 /** "2018-05-25" → "25/05/2018". */
