@@ -67,7 +67,6 @@ export function atualizarLancamento(
     ),
     incidenciaMesInicial: metodologia.incidenciaMesInicial,
     deflacao: metodologia.deflacao,
-    casas: fatorCasas,
   });
   for (const competencia of correcao.mesesSemIndice) {
     const serie = correcao.indices.find((i) => i.competencia === competencia)?.serie ?? null;
