@@ -2,7 +2,8 @@
 
 **Produto:** Apura — Sistema de Cálculos Judiciais da Defensoria Pública de Mato Grosso do Sul
 **Documento:** especificação de design do MVP (brainstorming concluído em 10/10/2026)
-**Situação:** aprovado em conversa, pendente de revisão final do texto pelo responsável
+**Situação:** aprovado pelo responsável em 10/10/2026
+**Documentos relacionados:** `docs/superpowers/specs/2026-10-10-apura-visao-do-produto.md` (visão além do MVP) · `docs/referencia/briefing-inicial.md` (briefing original)
 
 ---
 
