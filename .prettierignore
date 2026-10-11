@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.claude
+.superpowers
+package-lock.json
+*.md
+docs/
+dados/
+src/motor/casos/*.json
+src/indices/testes/
