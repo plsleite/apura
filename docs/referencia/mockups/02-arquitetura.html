@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apura · arquitetura do MVP</title>
+<style>
+  body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; color: #222; background: #fafafa; margin: 0; padding: 24px; line-height: 1.45; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h2 { font-size: 22px; margin: 0 0 6px; }
+  .subtitle { color: #555; margin: 0 0 18px; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #666; margin: 0 0 4px; }
+  .section { margin-bottom: 18px; }
+  .cards { display: grid; gap: 18px; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; }
+  .card-image { padding: 12px; background: #f1f1f1; }
+  .card-body { padding: 12px 14px; }
+  .card-body h3 { margin: 0 0 6px; font-size: 15px; }
+  .card-body p { margin: 0; color: #444; font-size: 13.5px; }
+  .nota { background: #fff8e1; border: 1px solid #d8bb73; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 18px; }
+</style>
+</head>
+<body><main>
+<p class="nota">Mockup esquemático produzido no brainstorming de 10/10/2026. Fixa estrutura e conteúdo; cores, tipografia e espaçamentos finais seguem o manual de identidade e serão trabalhados na implementação. Onde divergir do design (<code>docs/superpowers/specs/2026-10-10-apura-mvp-alimentos-design.md</code>), vale o design.</p>
+<h2>Arquitetura do Apura (MVP)</h2>
+<p class="subtitle">Tudo roda no navegador. As caixas são pastas do projeto; as setas mostram por onde os dados passam. Tracejado = evolução futura, fora do MVP.</p>
+
+<style>
+  .arq { font-size: 13px; line-height: 1.35; color: #333; }
+  .arq .box { background: #fff; border: 1.5px solid #1b6b34; border-radius: 8px; padding: 10px 12px; }
+  .arq .box h4 { margin: 0 0 4px; font-size: 13px; color: #1b6b34; text-transform: uppercase; letter-spacing: .05em; }
+  .arq .box p { margin: 0; font-size: 12px; color: #444; }
+  .arq .core { background: #e8f1ea; border-width: 2px; }
+  .arq .future { border-style: dashed; border-color: #999; color: #777; }
+  .arq .future h4 { color: #777; }
+  .arq .arrow { text-align: center; color: #1b6b34; font-size: 22px; line-height: 1; padding: 4px 0; }
+  .arq .row { display: grid; gap: 12px; align-items: stretch; margin-bottom: 4px; }
+  .arq .r3 { grid-template-columns: 1fr 1fr 1fr; }
+  .arq .r2 { grid-template-columns: 1fr 1fr; }
+  .arq .cap { font-size: 11px; color: #666; text-align: center; margin: 2px 0 10px; }
+</style>
+
+<div class="arq">
+  <div class="row r3">
+    <div class="box"><h4>índices/</h4><p>Cópia embutida no app · busca silenciosa no BCB pelo navegador · cache local · índices congelados por cálculo. Cada valor guarda fonte e data de obtenção. Sem inserção manual.</p></div>
+    <div class="box"><h4>ui/ (tela única, layout A)</h4><p>Formulários das 5 seções, tabela editável, lançamento em lote, textos de ajuda. Cada alteração recalcula na hora.</p></div>
+    <div class="box"><h4>metodologias/</h4><p>Metodologias de encargos em arquivos JSON versionados (padrão: TJMS/SAJ v1), com períodos, índices e taxas. Ajustes do usuário ficam marcados na tela e no arquivo; o relatório descreve só o que foi aplicado.</p></div>
+  </div>
+  <div class="row r3">
+    <div class="arrow">↘</div><div class="arrow">↓</div><div class="arrow">↙</div>
+  </div>
+  <div class="box core">
+    <h4>Cálculo (um único objeto, serializável em JSON)</h4>
+    <p>Cabeçalho (defensor, órgão, processo, partes) · base dos alimentos · lançamentos (prestações e amortizações) · metodologia aplicada · multa/honorários · data de elaboração · observações. É o "estado completo" do cálculo: guardar, reabrir e editar no futuro é só armazenar este objeto.</p>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="row r2">
+    <div class="box core"><h4>motor/ (funções puras)</h4><p>Recebe o Cálculo + tabela de índices e devolve o Resultado. Sem rede, sem relógio, sem tela. Aritmética decimal exata, arredondamento definido, testado contra casos de referência.</p></div>
+    <div class="box core"><h4>Resultado</h4><p>Cada lançamento atualizado (base, fator, corrigido, juros, atualizado), índices e dias de juros usados, totais (prestações − amortizações, multa, honorários), meses sem índice, avisos.</p></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="box">
+    <h4>relatório/</h4>
+    <p>Mesmo HTML para a tela e para o PDF (Imprimir → Salvar como PDF). Faixa verde com a marca, indicadores-resumo, memória mensal, metodologia gerada a partir dos parâmetros + observações, matriz de índices, rodapé com fontes e "Apura" discreto.</p>
+  </div>
+  <p class="cap">Publicação: GitHub privado → Cloudflare Pages (ou Netlify) publica automaticamente → link para os testadores. No seu Mac: um comando abre a mesma coisa.</p>
+
+  <div class="row r3">
+    <div class="box future"><h4>Futuro · servidor + banco + login</h4><p>Guarda o JSON do Cálculo por equipe; Entra ID; administrador de perfis. O motor não muda.</p></div>
+    <div class="box future"><h4>Futuro · SAJ / Solar / MNI</h4><p>Preenchem o cabeçalho do Cálculo (processo, partes, assistido).</p></div>
+    <div class="box future"><h4>Futuro · outros tipos</h4><p>Honorários, danos morais, cálculo livre: novos perfis e novas formas de gerar prestações, mesmo motor.</p></div>
+  </div>
+</div>
+
+</main></body>
+</html>
