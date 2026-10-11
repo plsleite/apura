@@ -2924,20 +2924,27 @@ Achados das revisões que ficaram para fases seguintes ou como melhorias menores
 
 - Os casos SELIC e transição trazem `base.valor` de "1000.00", mas os lançamentos valem R$ 10.000,00; o campo é ignorado hoje e passará a conflitar se a fase 3 derivar os lançamentos da base, então deve ser corrigido nos dois casos.
 - O teste de embutidos (`src/indices/embutidos.test.ts`) espera as séries 188 e 1619 ausentes; ao embuti-las, a fase 3 precisa ajustá-lo (já anotado nas notas acima).
+- Lançamento posterior à data de elaboração com termo inicial próprio da correção no passado recebe correção, mas o aviso diz "sem correção e sem juros"; a fase 3 deve tornar o aviso condicional, junto dos casos-limite da §6.7.
 
 **Fase 4**
 
 - O mês corrente parcial da SELIC é identificado por `competenciaDe(tabela.consultadoEm)` (em `src/motor/correcao.ts`), que usa a data em UTC: uma consulta feita depois das 20h (horário de Mato Grosso do Sul) no último dia do mês marcaria o mês seguinte como parcial. A fase 4 deve gravar e ler a data da consulta no fuso de Brasília.
+- A SELIC parcial entra inteira mesmo quando o termo final próprio cai antes do dia da consulta, no mesmo mês; é um caso raro, que se resolve com a consulta feita na data de elaboração.
+- O mês parcial que é só inicial, com data de elaboração em mês posterior ao da consulta, é rateado como se o valor cobrisse o mês inteiro; também é raro e se resolve com a consulta feita na data de elaboração.
 
 **Fase 5**
 
 - Período invertido (início depois do fim) é descartado sem aviso e confunde o texto dos avisos de `validarMetodologia`; a tela deve recusá-lo, ou o motor passa a avisar.
 - Percentuais de multa e honorários vazios ou inválidos fazem `calcular` lançar `DecimalError` (contra a regra 4 do `CLAUDE.md`), e percentual negativo é aceito sem aviso; tratar no motor ou garantir na tela.
+- Período com início posterior ao fim gera dois avisos contraditórios em `validarMetodologia`; a fase 5 deve preferir um aviso único, "período com início posterior ao fim: ignorado".
+- Termo inicial próprio posterior à data de elaboração dá correção ou juros zero sem aviso; o design diz "sem erro", mas um aviso ajudaria quem digitou errado.
 
 **Fase 6**
 
 - `IndiceAplicado` e `IndiceUsado` não registram que o mês da SELIC é parcial; sem essa marca, o relatório não poderá dizer "valor parcial até dd/mm".
 - O motor devolve `totalGeral` negativo quando as amortizações superam as prestações; o relatório não pode exibi-lo como valor devido (§6.6 do design).
+- O parágrafo "Fontes e arredondamento" da §10.4 do design não menciona a precisão integral: o fator e o percentual são impressos com 6 casas, e a conferência manual pode diferir em R$ 0,01.
+- A matriz de índices (§10.1, item 7) deve ler `indicesUsados`, que agora inclui a taxa legal (série 29543); a marca de mês parcial da SELIC (já registrada acima) ainda não chega a `IndiceUsado`.
 
 **Sem fase (melhorias menores)**
 
@@ -2959,6 +2966,9 @@ Achados das revisões que ficaram para fases seguintes ou como melhorias menores
 - No caso do SAJ de 2026, o IGP-M de dez/2025 (−0,02) está rotulado "embutida" embora difira do BCB (−0,01); o motivo está explicado em `observacoes`.
 - As `observacoes` do caso de deflação citam um "teste unitário" com R$ 996,80 e R$ 1.015,51 que nenhum teste afirma; as do caso de encargos próprios leem "a 31/03/2026" como inclusivo; e o caso não registra o piso, porque o formato não tem campo para isso.
 - A regra `no-restricted-globals` do ESLint pega só o nome nu (`globalThis.Date` e `self.fetch` passam); `performance`, `Math.random`, `setTimeout`, `Intl`, `crypto`, `navigator`, `XMLHttpRequest` e `indexedDB` não estão na lista; importações impuras (`../indices`, `../ui`) não são barradas; e o padrão de arquivos cobre só `.ts`.
+- O `CLAUDE.md` não lista `observacoes` entre os campos do caso de referência.
+- O bullet da fase 4 sobre o fuso deve dizer por que usar o fuso de Brasília: o BCB publica as séries pela data de Brasília.
+- Na §7 do design, o item 4 está sem o sufixo "decidido" e o item 9 ainda diz "a confrontar com gabaritos".
 
 **Decisões tomadas na execução**
 
@@ -2970,6 +2980,7 @@ Achados das revisões que ficaram para fases seguintes ou como melhorias menores
 - Na Task 6, o termo inicial próprio dos juros posterior à data de elaboração dá juros zero sem aviso, como manda a §6.4 do design ("juros zero, sem erro"), e foi mantido.
 - O alinhamento do `CLAUDE.md` e do design à precisão integral ficou para esta Task 10, e o texto da SELIC única no design registra a exceção do mês inicial.
 - A contagem final é de 225 testes, e não 223, porque as correções das Tasks 3 e 4 acrescentaram um teste cada.
+- A taxa legal usada nos juros passa a constar de indicesUsados (série 29543, com fonte e data de obtenção), e os meses de taxa legal ausentes ganham um resumo próprio no resultado ("ficaram sem juros"), por decisão tomada na revisão final.
 
 ## Auto-revisão do plano
 
