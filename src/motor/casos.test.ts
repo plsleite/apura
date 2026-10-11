@@ -54,6 +54,15 @@ describe("casos de referência", () => {
       },
     );
 
+    it("os ids do esperado não se repetem e coincidem com os ids calculados", () => {
+      const idsEsperados = caso.esperado.lancamentos.map((e) => e.id);
+      const repetidos = idsEsperados.filter((id, i) => idsEsperados.indexOf(id) !== i);
+      expect(repetidos, "ids repetidos no esperado").toEqual([]);
+      const idsCalculados = resultado.lancamentos.map((l) => l.id);
+      // Nenhuma linha calculada sem gabarito e nenhuma linha de gabarito sem cálculo.
+      expect([...new Set(idsCalculados)].sort()).toEqual([...new Set(idsEsperados)].sort());
+    });
+
     it("totais batem", () => {
       expect(resultado.totais).toEqual(caso.esperado.totais);
     });
