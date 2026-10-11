@@ -1,0 +1,206 @@
+import { competenciaDe } from "../compartilhado/datas.ts";
+import {
+  arredondar,
+  CEM,
+  decimal,
+  paraTexto,
+  ZERO,
+  type Decimal,
+} from "../compartilhado/decimal.ts";
+import { formatarCompetencia, formatarData, formatarMoeda } from "../compartilhado/formatacao.ts";
+import { NOME_DA_SERIE } from "../compartilhado/tipos.ts";
+import type {
+  Calculo,
+  CodigoSerie,
+  Competencia,
+  IndiceUsado,
+  Lancamento,
+  LancamentoCalculado,
+  Resultado,
+  TabelaIndices,
+  Totais,
+} from "../compartilhado/tipos.ts";
+import { fatorCorrecao, resolverIndicesMensais } from "./correcao.ts";
+import { jurosSimples } from "./juros.ts";
+
+/**
+ * Atualiza um lançamento (prestação ou amortização) da sua data até a data de elaboração,
+ * ou pelos termos próprios e metodologia própria quando informados (§6.4 e §6.5).
+ */
+export function atualizarLancamento(
+  lancamento: Lancamento,
+  calculo: Calculo,
+  indices: TabelaIndices,
+): LancamentoCalculado {
+  const metodologia = lancamento.encargos?.metodologia ?? calculo.metodologia;
+  const { fatorCasas, percentualCasas, valorCasas } = metodologia.arredondamento;
+  const termoInicialCorrecao = lancamento.encargos?.termoInicialCorrecao ?? lancamento.data;
+  const termoFinalCorrecao = lancamento.encargos?.termoFinalCorrecao ?? calculo.dataElaboracao;
+  const termoInicialJuros = lancamento.encargos?.termoInicialJuros ?? lancamento.data;
+  const termoFinalJuros = lancamento.encargos?.termoFinalJuros ?? calculo.dataElaboracao;
+  const avisos: string[] = [];
+
+  // Valor-base: nesta fase, só o valor informado (a apuração pela base dos alimentos é a fase 3).
+  let valorBase = ZERO;
+  let memoriaBase = "Valor não informado";
+  if (lancamento.valorInformado !== undefined) {
+    valorBase = arredondar(decimal(lancamento.valorInformado), valorCasas);
+    memoriaBase = `Valor informado: ${formatarMoeda(valorBase)}`;
+  } else {
+    avisos.push("Valor não informado: o lançamento entrou com R$ 0,00.");
+  }
+
+  if (lancamento.data > calculo.dataElaboracao) {
+    avisos.push(
+      `Data do lançamento (${formatarData(lancamento.data)}) posterior à data de elaboração (${formatarData(calculo.dataElaboracao)}): sem correção e sem juros.`,
+    );
+  }
+
+  const correcao = fatorCorrecao({
+    termoInicial: termoInicialCorrecao,
+    termoFinal: termoFinalCorrecao,
+    indices: resolverIndicesMensais(
+      metodologia,
+      indices,
+      competenciaDe(termoInicialCorrecao),
+      competenciaDe(termoFinalCorrecao),
+    ),
+    incidenciaMesInicial: metodologia.incidenciaMesInicial,
+    deflacao: metodologia.deflacao,
+    casas: fatorCasas,
+  });
+  for (const competencia of correcao.mesesSemIndice) {
+    const serie = correcao.indices.find((i) => i.competencia === competencia)?.serie ?? null;
+    const nome = serie === null ? "Índice" : NOME_DA_SERIE[serie];
+    avisos.push(
+      `${nome} de ${formatarCompetencia(competencia)} não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).`,
+    );
+  }
+  if (correcao.pisoAplicado) {
+    avisos.push(
+      "Índices negativos no período: o valor corrigido foi mantido igual ao valor original (fator 1,000000).",
+    );
+  }
+  const corrigido = arredondar(valorBase.times(correcao.fator), valorCasas);
+
+  const juros = jurosSimples({
+    termoInicial: termoInicialJuros,
+    termoFinal: termoFinalJuros,
+    metodologia,
+    casas: percentualCasas,
+  });
+  avisos.push(...juros.avisos);
+  const jurosValor = arredondar(corrigido.times(juros.percentual).div(CEM), valorCasas);
+  const atualizado = corrigido.plus(jurosValor);
+
+  return {
+    id: lancamento.id,
+    tipo: lancamento.tipo,
+    data: lancamento.data,
+    competencia: lancamento.competencia,
+    descricao: lancamento.descricao,
+    valorBase: paraTexto(valorBase, valorCasas),
+    memoriaBase,
+    correcao: {
+      fator: paraTexto(correcao.fator, fatorCasas),
+      indices: correcao.indices,
+      pisoAplicado: correcao.pisoAplicado,
+    },
+    corrigido: paraTexto(corrigido, valorCasas),
+    juros: { percentual: paraTexto(juros.percentual, percentualCasas), detalhe: juros.detalhe },
+    jurosValor: paraTexto(jurosValor, valorCasas),
+    atualizado: paraTexto(atualizado, valorCasas),
+    avisos,
+  };
+}
+
+/** Calcula o Resultado completo de um Cálculo com uma tabela de índices congelada (§4.3). */
+export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
+  const lancamentos = calculo.lancamentos.map((l) => atualizarLancamento(l, calculo, indices));
+  const valorCasas = calculo.metodologia.arredondamento.valorCasas;
+
+  const somar = (tipo: Lancamento["tipo"]): Decimal =>
+    lancamentos
+      .filter((l) => l.tipo === tipo)
+      .reduce((soma, l) => soma.plus(decimal(l.atualizado)), ZERO);
+  const prestacoes = somar("prestacao");
+  const amortizacoes = somar("amortizacao");
+  const totalDevido = prestacoes.minus(amortizacoes);
+  // Multa e honorários do art. 523, §1º, do CPC entram na fase 2; aqui são zero.
+  const multa = ZERO;
+  const honorarios = ZERO;
+  const totalGeral = totalDevido.plus(multa).plus(honorarios);
+  const totais: Totais = {
+    prestacoes: paraTexto(prestacoes, valorCasas),
+    amortizacoes: paraTexto(amortizacoes, valorCasas),
+    totalDevido: paraTexto(totalDevido, valorCasas),
+    multa: paraTexto(multa, valorCasas),
+    honorarios: paraTexto(honorarios, valorCasas),
+    totalGeral: paraTexto(totalGeral, valorCasas),
+  };
+
+  const avisos: string[] = [];
+  if (lancamentos.length === 0) {
+    avisos.push("Nenhum lançamento.");
+  } else if (totalDevido.lte(ZERO)) {
+    avisos.push(
+      `As amortizações atualizadas (${formatarMoeda(amortizacoes)}) igualam ou superam as prestações atualizadas (${formatarMoeda(prestacoes)}): não há valor devido na data do cálculo.`,
+    );
+  }
+
+  // Índices efetivamente usados (sem repetição) e resumo dos meses sem índice. Um mês de
+  // fração zero não pesou no fator: não conta como índice usado nem como mês sem índice.
+  const usados = new Map<string, IndiceUsado>();
+  const semIndice = new Map<CodigoSerie, Set<Competencia>>();
+  for (const l of lancamentos) {
+    for (const i of l.correcao.indices) {
+      if (i.serie === null || i.fracao.startsWith("0/")) continue;
+      if (i.valor === null) {
+        const meses = semIndice.get(i.serie) ?? new Set<Competencia>();
+        meses.add(i.competencia);
+        semIndice.set(i.serie, meses);
+        continue;
+      }
+      const chave = `${i.serie}|${i.competencia}`;
+      const registro = indices.series[i.serie]?.[i.competencia];
+      if (!usados.has(chave) && registro) {
+        usados.set(chave, {
+          serie: i.serie,
+          competencia: i.competencia,
+          valor: registro.valor,
+          fonte: registro.fonte,
+          obtidoEm: registro.obtidoEm,
+        });
+      }
+    }
+  }
+  const indicesUsados = [...usados.values()].sort((a, b) =>
+    a.serie === b.serie ? (a.competencia < b.competencia ? -1 : 1) : a.serie < b.serie ? -1 : 1,
+  );
+  if (semIndice.size > 0) {
+    const lista = [...semIndice.entries()]
+      .map(
+        ([serie, meses]) =>
+          `${NOME_DA_SERIE[serie]} de ${[...meses].sort().map(formatarCompetencia).join(", ")}`,
+      )
+      .join("; ");
+    avisos.push(`Meses sem índice na tabela (entraram sem correção): ${lista}.`);
+  }
+
+  const series = (Object.keys(indices.series) as CodigoSerie[]).sort();
+  const ultimoMesPorSerie: Partial<Record<CodigoSerie, Competencia>> = {};
+  for (const serie of series) {
+    const ultimo = Object.keys(indices.series[serie] ?? {})
+      .sort()
+      .at(-1);
+    if (ultimo !== undefined) ultimoMesPorSerie[serie] = ultimo;
+  }
+
+  return {
+    lancamentos,
+    totais,
+    indicesUsados,
+    consultaIndices: { em: indices.consultadoEm, series, ultimoMesPorSerie },
+    avisos,
+  };
+}
