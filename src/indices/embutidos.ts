@@ -5,7 +5,7 @@ import type {
   TabelaIndices,
   ValorIndice,
 } from "../compartilhado/tipos.ts";
-import igpm from "../../dados/indices/189.json";
+import igpm from "../../dados/indices/189.json" with { type: "json" };
 
 /** Séries com cópia embutida; as demais entram quando o script as baixar (fases 2 e 3). */
 const ARQUIVOS: Partial<Record<CodigoSerie, ArquivoSerie>> = {
