@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apura · relatório (tela e PDF)</title>
+<style>
+  body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; color: #222; background: #fafafa; margin: 0; padding: 24px; line-height: 1.45; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h2 { font-size: 22px; margin: 0 0 6px; }
+  .subtitle { color: #555; margin: 0 0 18px; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #666; margin: 0 0 4px; }
+  .section { margin-bottom: 18px; }
+  .cards { display: grid; gap: 18px; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; }
+  .card-image { padding: 12px; background: #f1f1f1; }
+  .card-body { padding: 12px 14px; }
+  .card-body h3 { margin: 0 0 6px; font-size: 15px; }
+  .card-body p { margin: 0; color: #444; font-size: 13.5px; }
+  .nota { background: #fff8e1; border: 1px solid #d8bb73; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 18px; }
+</style>
+</head>
+<body><main>
+<p class="nota">Mockup esquemático produzido no brainstorming de 10/10/2026. Fixa estrutura e conteúdo; cores, tipografia e espaçamentos finais seguem o manual de identidade e serão trabalhados na implementação. Onde divergir do design (<code>docs/superpowers/specs/2026-10-10-apura-mvp-alimentos-design.md</code>), vale o design.</p>
+<h2>Mockup do relatório (tela e PDF) · v6</h2>
+<p class="subtitle">Estrutura com o método do SAJ: prestações e amortizações atualizadas cada uma da sua data até a data do cálculo, com as mesmas colunas, e o total como diferença. Metodologia sem menção a parâmetros do sistema.</p>
+
+<style>
+  .rp { --verde:#1D6B34; --ouro:#D8BB73; --fg:#373636; --muted:#6E716C; --line:#DCDFD9; --alt:#F7F8F5; font-family: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif; color: var(--fg); background:#fff; border:1px solid #ddd; border-radius:8px; overflow:hidden; font-size:12px; line-height:1.4; }
+  .rp .band { background: var(--verde); color:#fff; padding:16px 18px; display:flex; justify-content:space-between; gap:16px; align-items:flex-end; position:relative; overflow:hidden; }
+  .rp .band::after { content:""; position:absolute; right:-18%; top:-40%; width:60%; height:180%; border-radius:50%; background:#1FA463; opacity:.35; }
+  .rp .band > * { position:relative; z-index:1; }
+  .rp .eyebrow { font-size:9.5px; text-transform:uppercase; letter-spacing:.12em; opacity:.9; margin:0 0 4px; font-family: Ubuntu, system-ui, sans-serif; }
+  .rp h1 { font-family: Ubuntu, system-ui, sans-serif; font-size:19px; margin:0 0 6px; line-height:1.15; }
+  .rp .sub { font-size:11.5px; margin:0 0 2px; opacity:.95; max-width:440px; }
+  .rp .logo { font-family: Ubuntu, system-ui, sans-serif; font-weight:700; font-size:11px; line-height:1.1; text-align:left; border-left:2px solid var(--ouro); padding-left:8px; white-space:nowrap; }
+  .rp .logo small { display:block; font-weight:400; font-size:10px; }
+  .rp .gold { height:3px; background: var(--ouro); }
+  .rp .wrap { padding: 12px 18px 14px; }
+  .rp .strip { display:grid; grid-template-columns: repeat(5, 1fr); gap:6px; margin-bottom:12px; }
+  .rp .tile { border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+  .rp .tile .k { font-family: Ubuntu, system-ui, sans-serif; font-size:8.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin:0 0 3px; min-height:2.2em; }
+  .rp .tile .v { font-family: Ubuntu, system-ui, sans-serif; font-weight:700; font-size:14px; margin:0; font-variant-numeric: tabular-nums; }
+  .rp .tile .v small { font-weight:400; font-size:9px; margin-right:2px; }
+  .rp .tile .n { font-size:9.5px; color:var(--muted); margin:2px 0 0; }
+  .rp .tile.hero { border-color: var(--verde); border-width:2px; }
+  .rp .tile.hero .v { color: var(--verde); }
+  .rp h2 { font-family: Ubuntu, system-ui, sans-serif; font-size:13.5px; color:var(--verde); margin:14px 0 2px; }
+  .rp .lede { margin:0 0 6px; color:var(--muted); font-size:11px; }
+  .rp table { width:100%; border-collapse:collapse; font-variant-numeric: tabular-nums; }
+  .rp th { font-family: Ubuntu, system-ui, sans-serif; font-weight:500; font-size:8.5px; text-transform:uppercase; letter-spacing:.08em; color:#fff; background:var(--verde); padding:5px 6px; text-align:right; white-space:nowrap; }
+  .rp td { padding:4px 6px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; font-size:11px; }
+  .rp th:first-child, .rp td:first-child { text-align:left; }
+  .rp tr:nth-child(even) td { background: var(--alt); }
+  .rp tfoot td { font-family: Ubuntu, system-ui, sans-serif; font-weight:700; border-top:2px solid var(--verde); }
+  .rp td.bar span { display:inline-block; height:7px; background:var(--verde); border-radius:2px; vertical-align:middle; }
+  .rp .calc { border-left:3px solid var(--verde); background:var(--alt); padding:8px 10px; margin-top:10px; }
+  .rp .calc h3 { font-family: Ubuntu, system-ui, sans-serif; font-size:11.5px; margin:0 0 4px; color:var(--verde); }
+  .rp dl { margin:0; } .rp dl div { display:flex; justify-content:space-between; padding:2px 0; border-bottom:1px dashed var(--line); font-size:11px; }
+  .rp dl div.total { border-top:2px solid var(--verde); border-bottom:0; font-weight:700; font-family: Ubuntu, system-ui, sans-serif; color:var(--verde); }
+  .rp .note { border-left:3px solid var(--ouro); background:#FBF9F3; padding:8px 10px; margin-top:12px; font-size:11px; }
+  .rp .note p { margin:0 0 5px; }
+  .rp .idx th { background:#E8F1EA; color:var(--verde); }
+  .rp .idx td.na { color:#bbb; text-align:center; }
+  .rp footer { margin-top:12px; padding-top:8px; border-top:1px solid var(--line); font-size:10px; color:var(--muted); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+</style>
+
+<div class="rp">
+  <div class="band">
+    <div>
+      <p class="eyebrow">3ª Defensoria Pública de Família de Campo Grande</p>
+      <h1>Demonstrativo discriminado e atualizado do crédito · 10/10/2026</h1>
+      <p class="sub">Processo 0800000-00.2026.8.12.0001</p><p class="sub">Exequente: A. B. C. · Executado: D. E. F.</p><p class="sub">Defensor(a): Pedro Leite</p>
+    </div>
+    <div class="logo">DEFENSORIA PÚBLICA<small>DE MATO GROSSO DO SUL</small><small style="opacity:.6;font-size:8px">(logo horizontal branca)</small></div>
+  </div>
+  <div class="gold"></div>
+  <div class="wrap">
+    <div class="strip">
+      <div class="tile"><p class="k">Prestações atualizadas</p><p class="v"><small>R$</small>3.053,77</p><p class="n">3 prestações, ago a out/2026</p></div>
+      <div class="tile"><p class="k">Amortizações atualizadas</p><p class="v"><small>R$</small>972,64</p><p class="n">3 pagamentos</p></div>
+      <div class="tile hero"><p class="k">Total devido em 10/10/2026</p><p class="v"><small>R$</small>2.081,13</p><p class="n">prestações menos amortizações</p></div>
+      <div class="tile"><p class="k">Multa e honorários</p><p class="v"><small>R$</small>416,22</p><p class="n">10% + 10% sobre o total devido</p></div>
+      <div class="tile hero"><p class="k">Total geral</p><p class="v"><small>R$</small>2.497,35</p><p class="n">com multa e honorários</p></div>
+    </div>
+
+    <h2>Prestações</h2>
+    <p class="lede">Cada prestação é atualizada do vencimento até 10/10/2026: correção pelo índice do próprio mês do vencimento, proporcional aos dias restantes, e pelos meses seguintes inteiros até set/2026 (último IPCA divulgado); juros simples sobre o valor corrigido, rateados por mês-calendário até a data do cálculo. O fator tem 6 casas e é aplicado já arredondado; valores em reais.</p>
+    <table>
+      <thead><tr><th>Competência</th><th>Vencimento</th><th>Valor</th><th>Fator correção</th><th>Corrigido</th><th>Juros</th><th>Juros R$</th><th>Atualizado</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>ago/2026</td><td>05/08/2026</td><td>1.000,00</td><td>1,005492</td><td>1.005,49</td><td>2,6269 %</td><td>26,41</td><td>1.031,90</td><td class="bar"><span style="width:60px"></span></td></tr>
+        <tr><td>set/2026</td><td>05/09/2026</td><td>1.000,00</td><td>1,006828</td><td>1.006,83</td><td>1,4215 %</td><td>14,31</td><td>1.021,14</td><td class="bar"><span style="width:59px"></span></td></tr>
+        <tr><td>out/2026</td><td>05/10/2026</td><td>1.000,00</td><td>1,000000</td><td>1.000,00</td><td>0,0734 %</td><td>0,73</td><td>1.000,73</td><td class="bar"><span style="width:58px"></span></td></tr>
+      </tbody>
+      <tfoot><tr><td>Totais</td><td></td><td>3.000,00</td><td></td><td>3.012,32</td><td></td><td>41,45</td><td>3.053,77</td><td></td></tr></tfoot>
+    </table>
+
+    <h2>Amortizações</h2>
+    <p class="lede">Cada pagamento é atualizado pelos mesmos critérios, da data do pagamento até 10/10/2026, e abatido do total.</p>
+    <table>
+      <thead><tr><th>Pagamento</th><th>Data</th><th>Valor</th><th>Fator correção</th><th>Corrigido</th><th>Juros</th><th>Juros R$</th><th>Atualizado</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>Pagamento parcial</td><td>05/08/2026</td><td>400,00</td><td>1,005492</td><td>402,20</td><td>2,6269 %</td><td>10,57</td><td>412,77</td><td class="bar"><span style="width:24px"></span></td></tr>
+        <tr><td>Pagamento parcial</td><td>05/09/2026</td><td>400,00</td><td>1,006828</td><td>402,73</td><td>1,4215 %</td><td>5,72</td><td>408,45</td><td class="bar"><span style="width:24px"></span></td></tr>
+        <tr><td>Pagamento parcial</td><td>20/09/2026</td><td>150,00</td><td>1,002726</td><td>150,41</td><td>0,6719 %</td><td>1,01</td><td>151,42</td><td class="bar"><span style="width:9px"></span></td></tr>
+      </tbody>
+      <tfoot><tr><td>Totais</td><td></td><td>950,00</td><td></td><td>955,34</td><td></td><td>17,30</td><td>972,64</td><td></td></tr></tfoot>
+    </table>
+
+    <div class="calc">
+      <h3>Totais em 10/10/2026</h3>
+      <dl>
+        <div><dt>Prestações atualizadas</dt><dd>3.053,77</dd></div>
+        <div><dt>Amortizações atualizadas</dt><dd>− 972,64</dd></div>
+        <div><dt>Total devido</dt><dd>2.081,13</dd></div>
+        <div><dt>Multa de 10% (art. 523, §1º, do CPC)</dt><dd>208,11</dd></div>
+        <div><dt>Honorários de 10% (art. 523, §1º, do CPC)</dt><dd>208,11</dd></div>
+        <div class="total"><dt>Total geral</dt><dd>2.497,35</dd></div>
+      </dl>
+    </div>
+
+    <div class="note">
+      <h2 style="margin-top:0">Metodologia e fundamentos</h2>
+      <p><strong>Base.</strong> Pensão de R$ 1.000,00 fixada em 15/03/2023, reajustada em março de cada ano pelo IPCA acumulado dos 12 meses anteriores (mar/2024: +3,93%; mar/2025: +5,48%). Valor vigente nas competências: R$ 1.000,00 (exemplo).</p>
+      <p><strong>Termo inicial.</strong> Encargos desde o vencimento de cada prestação (mora automática, art. 397 do CC). Correção pelo índice do mês do vencimento, proporcional aos dias restantes (pro rata), e pelos meses seguintes até set/2026, último índice divulgado; juros até a data do cálculo.</p>
+      <p><strong>Encargos.</strong> Até 29/08/2024, IGP-M e juros de 1% ao mês, simples, pro rata die; desde 30/08/2024, IPCA (art. 389, parágrafo único, do CC) e juros pela taxa legal (art. 406, §1º, do CC; Lei 14.905/2024; Resolução CMN 5.171/2024), série 29543 do BCB, acumulada por juros simples e pro rata por dias corridos, sobre o valor corrigido.</p>
+      <p><strong>Amortizações.</strong> Cada pagamento é atualizado pelos mesmos critérios, da data do pagamento até a data do cálculo, e abatido do total atualizado.</p>
+      <p><strong>Multa e honorários.</strong> 10% cada, sobre o total devido atualizado, sem incidência de honorários sobre a multa.</p>
+      <p><strong>Observações.</strong> Conforme sentença de fls. 45.</p>
+      <p>Índices consultados em 10/10/2026 no Sistema Gerenciador de Séries Temporais do Banco Central (séries 433, 189, 29543 e 1619). Arredondamento comercial: fator com 6 casas, valores com 2 casas por prestação.</p>
+    </div>
+
+    <h2>Índices aplicados</h2>
+    <p class="lede">IPCA mensal (%) e taxa legal mensal (%). O ponto indica mês ainda não divulgado.</p>
+    <table class="idx">
+      <thead><tr><th>Série · ano</th><th>jan</th><th>fev</th><th>mar</th><th>abr</th><th>mai</th><th>jun</th><th>jul</th><th>ago</th><th>set</th><th>out</th><th>nov</th><th>dez</th></tr></thead>
+      <tbody>
+        <tr><td>IPCA · 2026</td><td>0,33</td><td>0,70</td><td>0,88</td><td>0,67</td><td>0,58</td><td>0,16</td><td>0,07</td><td>−0,32</td><td>0,82</td><td class="na">·</td><td class="na">·</td><td class="na">·</td></tr>
+        <tr><td>Taxa legal · 2026</td><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td><td>1,154527</td><td>1,499119</td><td>0,379020</td><td class="na">·</td><td class="na">·</td></tr>
+      </tbody>
+    </table>
+
+    <footer>
+      <span>Defensoria Pública de Mato Grosso do Sul · 3ª Defensoria Pública de Família de Campo Grande</span>
+      <span>Fonte dos índices: BCB/SGS · Gerado com Apura v0.1 em 10/10/2026</span>
+    </footer>
+  </div>
+</div>
+
+</main></body>
+</html>

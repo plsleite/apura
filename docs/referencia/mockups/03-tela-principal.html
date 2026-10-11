@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apura · tela principal (layout A)</title>
+<style>
+  body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; color: #222; background: #fafafa; margin: 0; padding: 24px; line-height: 1.45; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h2 { font-size: 22px; margin: 0 0 6px; }
+  .subtitle { color: #555; margin: 0 0 18px; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #666; margin: 0 0 4px; }
+  .section { margin-bottom: 18px; }
+  .cards { display: grid; gap: 18px; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; }
+  .card-image { padding: 12px; background: #f1f1f1; }
+  .card-body { padding: 12px 14px; }
+  .card-body h3 { margin: 0 0 6px; font-size: 15px; }
+  .card-body p { margin: 0; color: #444; font-size: 13.5px; }
+  .nota { background: #fff8e1; border: 1px solid #d8bb73; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 18px; }
+</style>
+</head>
+<body><main>
+<p class="nota">Mockup esquemático produzido no brainstorming de 10/10/2026. Fixa estrutura e conteúdo; cores, tipografia e espaçamentos finais seguem o manual de identidade e serão trabalhados na implementação. Onde divergir do design (<code>docs/superpowers/specs/2026-10-10-apura-mvp-alimentos-design.md</code>), vale o design.</p>
+<h2>Mockup da tela principal (layout A) · v3</h2>
+<p class="subtitle">Esquema de telas com os textos de ajuda e os controles previstos. Cores e tipografia finais seguirão o manual de identidade; aqui só a organização. Esquerda: dados do caso e lançamentos em lote. Direita: resultado e lançamentos individuais.</p>
+
+<style>
+  .app { font-size: 11.5px; color: #333; background: #f3f4f1; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+  .app .top { background: #1d6b34; color: #fff; display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+  .app .top .brand { font-weight: 700; letter-spacing: .02em; }
+  .app .top .brand small { font-weight: 400; opacity: .85; margin-left: 6px; }
+  .app .top .sp { flex: 1; }
+  .app .top .b { border: 1px solid rgba(255,255,255,.6); border-radius: 4px; padding: 3px 8px; font-size: 11px; }
+  .app .top .b.primary { background: #fff; color: #1d6b34; font-weight: 600; border-color: #fff; }
+  .app .cols { display: grid; grid-template-columns: 1fr 1.25fr; gap: 10px; padding: 10px; }
+  .app .sec { background: #fff; border: 1px solid #dcdfd9; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; }
+  .app .sec h4 { margin: 0 0 6px; font-size: 11px; color: #1d6b34; text-transform: uppercase; letter-spacing: .06em; }
+  .app .row { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; margin-bottom: 4px; }
+  .app .f { display: inline-flex; flex-direction: column; }
+  .app .f label { font-size: 9.5px; color: #6e716c; text-transform: uppercase; letter-spacing: .04em; }
+  .app .f span { background: #fafaf8; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; min-width: 70px; }
+  .app .help { font-size: 10px; color: #6e716c; margin: 2px 0 4px; }
+  .app .btn { display: inline-block; background: #1d6b34; color: #fff; border-radius: 3px; padding: 3px 8px; font-size: 11px; }
+  .app .btn.ghost { background: #fff; color: #1d6b34; border: 1px solid #1d6b34; }
+  .app .radio { display: inline-block; margin-right: 8px; }
+  .app .kpis { display: flex; gap: 6px; margin-bottom: 8px; }
+  .app .kpi { flex: 1; background: #fff; border: 1px solid #dcdfd9; border-radius: 6px; padding: 6px 8px; }
+  .app .kpi small { display: block; font-size: 9px; color: #6e716c; text-transform: uppercase; letter-spacing: .05em; }
+  .app .kpi strong { font-size: 14px; }
+  .app table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #dcdfd9; }
+  .app th, .app td { padding: 4px 5px; border-bottom: 1px solid #e6e8e3; text-align: right; font-size: 10.5px; white-space: nowrap; }
+  .app th { background: #1d6b34; color: #fff; font-weight: 500; text-transform: uppercase; font-size: 9.5px; letter-spacing: .05em; }
+  .app th:first-child, .app td:first-child { text-align: left; }
+  .app tr.mem td { background: #f7f8f5; text-align: left; white-space: normal; font-size: 10px; color: #444; padding: 6px 10px; }
+  .app .tag { display: inline-block; background: #fff3cd; color: #7a5a00; border-radius: 3px; padding: 0 4px; font-size: 9px; }
+  .app .warn { background: #fff8e1; border: 1px solid #d8bb73; border-radius: 6px; padding: 6px 8px; font-size: 10.5px; margin-top: 8px; }
+  .app .foot { padding: 6px 12px; font-size: 10px; color: #6e716c; border-top: 1px solid #dcdfd9; display: flex; justify-content: space-between; }
+</style>
+
+<div class="app">
+  <div class="top">
+    <span class="brand">Apura <small>· Sistema de Cálculos Judiciais · DPE-MS</small></span>
+    <span class="sp"></span>
+    <span class="b">Novo cálculo</span><span class="b">Abrir…</span><span class="b">Salvar</span><span class="b primary">Relatório / PDF</span>
+  </div>
+  <div class="cols">
+    <div>
+      <div class="sec"><h4>1 · Processo</h4>
+        <div class="row"><div class="f"><label>Defensor(a) responsável</label><span>Pedro Leite</span></div><div class="f"><label>Órgão de atuação</label><span>3ª Defensoria de Família…</span></div></div>
+        <div class="help">☑ Lembrar neste navegador · <u>Esquecer</u></div>
+        <div class="row"><div class="f"><label>Nº do processo</label><span>0800000-00.2026.8.12.0001</span></div></div>
+        <div class="row"><div class="f"><label>Exequente (alimentando)</label><span>A. B. C.</span></div><div class="f"><label>Executado (alimentante)</label><span>D. E. F.</span></div></div>
+        <div class="help">Partes e processo não são gravados em lugar nenhum; vão só para o relatório.</div>
+      </div>
+
+      <div class="sec"><h4>2 · Base dos alimentos</h4>
+        <div class="row"><span class="radio">● Valor fixo em reais</span><span class="radio">○ % do salário mínimo</span><span class="radio">○ % dos rendimentos</span></div>
+        <div class="row"><div class="f"><label>Valor fixado</label><span>R$ 1.000,00</span></div><div class="f"><label>Fixado em</label><span>15/03/2023</span></div><div class="f"><label>Reajuste anual</label><span>IPCA ▾</span></div><div class="f"><label>Mês do reajuste</label><span>março ▾</span></div></div>
+        <div class="help">O valor é reajustado a cada 12 meses pelo índice acumulado. Padrão: no aniversário da fixação; mude se a sentença disser outro mês.</div>
+      </div>
+
+      <div class="sec"><h4>3 · Prestações em atraso</h4>
+        <div class="row"><div class="f"><label>Dia do vencimento</label><span>5</span></div><span class="radio">● Meses em atraso</span><div class="f"><label>&nbsp;</label><span>3</span></div><span class="radio">○ De / até (mês/ano)</span><span class="btn">Lançar em lote</span></div>
+        <div class="help">Cada clique acrescenta as prestações do período à tabela ao lado, sem apagar as anteriores (ex.: jan a mar; depois jul a set). Competência repetida não é duplicada. Edição, exclusão e inclusão avulsa ficam na tabela.</div>
+      </div>
+
+      <div class="sec"><h4>4 · Pagamentos</h4>
+        <div class="row"><div class="f"><label>Valor por mês</label><span>R$ 400,00</span></div><div class="f"><label>Dia do pagamento</label><span>5</span></div><div class="f"><label>De</label><span>ago/2026</span></div><div class="f"><label>Até</label><span>set/2026</span></div><span class="btn">Lançar em lote</span></div>
+        <div class="help">Lança um pagamento por mês no período. Pagamentos avulsos entram na tabela de pagamentos, à direita. Cada pagamento é atualizado da sua data até a data do cálculo e abatido do total (método do SAJ).</div>
+      </div>
+
+      <div class="sec"><h4>5 · Encargos e data do cálculo</h4>
+        <div class="row"><div class="f"><label>Metodologia de encargos</label><span>TJMS/SAJ · v1 ▾</span></div><span class="btn ghost">Ajustar períodos…</span></div>
+        <div class="help">Até 29/08/2024: IGP-M + juros de 1% ao mês. Desde 30/08/2024: IPCA + taxa legal (SELIC − IPCA), Lei 14.905/2024. Correção pro rata no mês da data; juros por mês-calendário; índices negativos com piso no valor original.</div>
+        <div class="row"><div class="f"><label>Multa (art. 523)</label><span>0 %</span></div><div class="f"><label>Honorários</label><span>0 %</span></div><div class="f"><label>Data de elaboração</label><span>10/10/2026</span></div></div>
+        <div class="help">Multa e honorários: só no rito da penhora; 10% cada é o usual.</div>
+        <div class="row"><div class="f" style="width:100%"><label>Observações para o relatório</label><span style="min-height:28px">Conforme sentença de fls. 45…</span></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="kpis">
+        <div class="kpi"><small>Prestações atualizadas</small><strong>R$ 3.053,77</strong></div>
+        <div class="kpi"><small>Amortizações atualizadas</small><strong>R$ 972,64</strong></div>
+        <div class="kpi" style="border-color:#1d6b34;border-width:2px"><small>Total devido em 10/10/2026</small><strong>R$ 2.081,13</strong></div>
+        <div class="kpi"><small>Multa e honorários</small><strong>R$ 0,00</strong></div>
+        <div class="kpi" style="border-color:#1d6b34;border-width:2px"><small>Total geral</small><strong>R$ 2.081,13</strong></div>
+      </div>
+      <table>
+        <tr><th>Competência</th><th>Venc.</th><th>Valor</th><th>Fator</th><th>Corrigido</th><th>Juros %</th><th>Juros R$</th><th>Atualizado</th><th></th></tr>
+        <tr><td>ago/2026 ▸</td><td>05/08/26</td><td>1.000,00</td><td>1,005492</td><td>1.005,49</td><td>2,6269</td><td>26,41</td><td>1.031,90</td><td>✎ ✕</td></tr>
+        <tr class="mem"><td colspan="9"><b>Memória · ago/2026</b> — Correção: IPCA ago/2026 (−0,32%) pro rata 26/31 dias, set/2026 (+0,82%); out/2026 ainda sem índice. Juros: taxa legal ago (27/31 dias), set (inteiro), out (10/31 dias) = 2,6269% sobre 1.005,49.</td></tr>
+        <tr><td>set/2026 ▸</td><td>05/09/26</td><td>1.000,00</td><td>1,006828</td><td>1.006,83</td><td>1,4215</td><td>14,31</td><td>1.021,14</td><td>✎ ✕</td></tr>
+        <tr><td>out/2026 ▸</td><td>05/10/26</td><td>1.000,00</td><td>1,000000</td><td>1.000,00</td><td>0,0734</td><td>0,73</td><td>1.000,73</td><td>✎ ✕</td></tr>
+        <tr><td colspan="9" style="text-align:left"><span class="btn ghost">+ Prestação</span> &nbsp; <span style="color:#6e716c">✎ abre "Personalizar": valor, vencimento, descrição, termos inicial e final da correção e dos juros, metodologia própria por períodos</span></td></tr>
+      </table>
+      <table style="margin-top:8px">
+        <tr><th>Pagamento</th><th>Data</th><th>Valor</th><th>Fator</th><th>Corrigido</th><th>Juros %</th><th>Juros R$</th><th>Atualizado</th><th></th></tr>
+        <tr><td>Pagamento parcial</td><td>05/08/2026</td><td>400,00</td><td>1,005492</td><td>402,20</td><td>2,6269</td><td>10,57</td><td>412,77</td><td>✎ ✕</td></tr>
+        <tr><td>Pagamento parcial</td><td>05/09/2026</td><td>400,00</td><td>1,006828</td><td>402,73</td><td>1,4215</td><td>5,72</td><td>408,45</td><td>✎ ✕</td></tr>
+        <tr><td>Pagamento parcial</td><td>20/09/2026</td><td>150,00</td><td>1,002726</td><td>150,41</td><td>0,6719</td><td>1,01</td><td>151,42</td><td>✎ ✕</td></tr>
+        <tr><td colspan="9" style="text-align:left"><span class="btn ghost">+ Pagamento</span> &nbsp; <span style="color:#6e716c">data, valor e descrição</span></td></tr>
+      </table>
+      <div class="warn">⚠ IPCA de out/2026 ainda não divulgado (previsto para cerca de 10/11): mês contado com fator 1,000000. Nenhum dado inventado.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Índices oficiais BCB/SGS · IPCA até set/2026 · consultados em 10/10/2026 14:02</span><span>Apura v0.1 · Defensoria Pública de MS</span></div>
+</div>
+
+</main></body>
+</html>
