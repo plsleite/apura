@@ -163,6 +163,61 @@ describe("fatorCorrecao", () => {
     });
   });
 
+  it("mês sem índice com fração zero ('mesSeguinte') fica na memória mas não é listado", () => {
+    const r = fatorCorrecao({
+      ...opcoes,
+      incidenciaMesInicial: "mesSeguinte",
+      termoInicial: "2018-05-10",
+      termoFinal: "2018-06-20",
+      indices: indicesDe("2018-05", "2018-06", tabelaIgpm("2018-04")),
+    });
+    expect(paraTexto(r.fator, 6)).toBe("1.000000");
+    expect(r.indices[0]).toEqual({
+      serie: "189",
+      competencia: "2018-05",
+      valor: null,
+      fracao: "0/31",
+    });
+    expect(r.mesesSemIndice).toEqual(["2018-06"]);
+  });
+
+  it("mês inicial sem índice com fração zero (lançamento no último dia) não é listado e não muda o fator", () => {
+    const termos = { termoInicial: "2018-04-30", termoFinal: "2018-06-20" } as const;
+    const semAbril = fatorCorrecao({
+      ...opcoes,
+      ...termos,
+      indices: indicesDe("2018-04", "2018-06", tabelaIgpm("2018-05", ["2018-04"])),
+    });
+    expect(paraTexto(semAbril.fator, 6)).toBe("1.013800");
+    expect(semAbril.indices[0]).toEqual({
+      serie: "189",
+      competencia: "2018-04",
+      valor: null,
+      fracao: "0/30",
+    });
+    expect(semAbril.mesesSemIndice).toEqual(["2018-06"]);
+    const comAbril = fatorCorrecao({
+      ...opcoes,
+      ...termos,
+      indices: indicesDe("2018-04", "2018-06", tabelaIgpm("2018-05")),
+    });
+    expect(paraTexto(comAbril.fator, 6)).toBe("1.013800");
+  });
+
+  it("termo inicial igual ao final num mês sem índice: fração zero, fator 1 e nenhum aviso", () => {
+    const r = fatorCorrecao({
+      ...opcoes,
+      termoInicial: "2018-05-25",
+      termoFinal: "2018-05-25",
+      indices: indicesDe("2018-05", "2018-05", tabelaIgpm("2018-04")),
+    });
+    expect(paraTexto(r.fator, 6)).toBe("1.000000");
+    expect(r.indices).toEqual([
+      { serie: "189", competencia: "2018-05", valor: null, fracao: "0/31" },
+    ]);
+    expect(r.mesesSemIndice).toEqual([]);
+  });
+
   it("trata a deflação conforme a opção: piso, sem piso ou zerar negativos", () => {
     const indices = indicesDe("2017-04", "2017-07");
     const termos = { termoInicial: "2017-04-01", termoFinal: "2017-07-31" } as const;
@@ -175,6 +230,18 @@ describe("fatorCorrecao", () => {
     const zerando = fatorCorrecao({ ...opcoes, ...termos, deflacao: "zerarNegativos", indices });
     expect(paraTexto(zerando.fator, 6)).toBe("1.000000");
     expect(zerando.pisoAplicado).toBe(false);
+  });
+
+  it("'zerarNegativos' zera só os meses negativos quando há sinais mistos", () => {
+    const r = fatorCorrecao({
+      ...opcoes,
+      deflacao: "zerarNegativos",
+      termoInicial: "2017-04-10",
+      termoFinal: "2018-05-25",
+      indices: indicesDe("2017-04", "2018-05", tabelaIgpm()),
+    });
+    expect(paraTexto(r.fator, 6)).toBe("1.042965");
+    expect(r.pisoAplicado).toBe(false);
   });
 
   it("termo final anterior ao inicial: fator 1, sem índices e sem avisos", () => {

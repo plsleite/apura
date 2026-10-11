@@ -62,14 +62,15 @@ export interface ResultadoCorrecao {
   fator: Decimal;
   indices: IndiceAplicado[];
   pisoAplicado: boolean;
-  /** competências com série definida mas sem valor na tabela */
+  /** competências com série definida, sem valor na tabela e com fração maior que zero */
   mesesSemIndice: Competencia[];
 }
 
 /**
  * Fator de correção (§6.4): pro rata geométrico no mês do termo inicial, meses inteiros,
- * pro rata no mês do termo final quando o índice dele existe, meses sem índice com fator 1,
- * deflação conforme a opção. Fator 1 quando o termo final é anterior ao inicial.
+ * pro rata no mês do termo final quando o índice dele existe, meses sem índice com fator 1
+ * (listados em `mesesSemIndice` só quando a fração deles é maior que zero), deflação conforme
+ * a opção. Fator 1 quando o termo final é anterior ao inicial.
  */
 export function fatorCorrecao(p: ParametrosCorrecao): ResultadoCorrecao {
   const indices: IndiceAplicado[] = [];
@@ -104,7 +105,10 @@ export function fatorCorrecao(p: ParametrosCorrecao): ResultadoCorrecao {
       valor: mes.valor,
       fracao: numerador === dias ? "1" : `${numerador}/${dias}`,
     });
-    if (mes.serie !== null && mes.valor === null) mesesSemIndice.push(mes.competencia);
+    // Só avisa quando o mês entra na conta: com fração zero, a falta do índice não muda o fator.
+    if (mes.serie !== null && mes.valor === null && numerador > 0) {
+      mesesSemIndice.push(mes.competencia);
+    }
     if (mes.valor === null || numerador === 0) continue;
 
     let variacao = decimal(mes.valor);
