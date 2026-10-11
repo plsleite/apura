@@ -3,6 +3,7 @@ import type { Calculo, Lancamento } from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
 import { calcular } from "./calcular.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
+import { metodologiaSelicUnica, tabelaRegimeNovo } from "./testes/regime-novo.ts";
 
 function calculoCom(lancamentos: Lancamento[], dataElaboracao = "2018-05-25"): Calculo {
   return {
@@ -214,5 +215,154 @@ describe("calcular", () => {
       "As amortizações atualizadas (R$ 519,35) igualam ou superam as prestações atualizadas (R$ 0,00): não há valor devido na data do cálculo.",
     );
     expect(calcular(calculoCom([]), tabelaIgpm()).avisos).toEqual(["Nenhum lançamento."]);
+  });
+});
+
+describe("calcular (regime novo, multa e honorários, validações)", () => {
+  const hoje = "2026-10-11";
+  const lancamento = (
+    id: string,
+    tipo: Lancamento["tipo"],
+    data: string,
+    valorInformado: string,
+    encargos?: Lancamento["encargos"],
+  ): Lancamento => ({ id, tipo, data, valorInformado, origem: "avulso", editado: true, encargos });
+
+  it("regime novo de ponta a ponta: IPCA e taxa legal conferidos na Calculadora do Cidadão", () => {
+    const r = calcular(
+      calculoCom([lancamento("p", "prestacao", "2024-09-30", "1000.00")], hoje),
+      tabelaRegimeNovo(),
+    );
+    expect(r.lancamentos[0]).toMatchObject({
+      correcao: { fator: "1.099852", pisoAplicado: false },
+      corrigido: "1099.85",
+      juros: { percentual: "17.247591" },
+      jurosValor: "189.70",
+      atualizado: "1289.55",
+      avisos: [
+        "IPCA de out/2026 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
+      ],
+    });
+    expect(r.consultaIndices.series).toEqual(["189", "433", "4390", "29543"]);
+    expect(r.consultaIndices.ultimoMesPorSerie).toEqual({
+      "189": "2026-09",
+      "433": "2026-09",
+      "4390": "2026-10",
+      "29543": "2026-10",
+    });
+  });
+
+  it("multa e honorários do art. 523, §1º, do CPC: cada um sobre o total devido, sem cumulação", () => {
+    const calculo = calculoCom(
+      [
+        lancamento("p-2026-01", "prestacao", "2026-01-10", "1000.00"),
+        lancamento("p-2026-02", "prestacao", "2026-02-10", "1000.00"),
+        lancamento("a-2026-03", "amortizacao", "2026-03-10", "500.00"),
+      ],
+      hoje,
+    );
+    calculo.acrescimos = { multaPercentual: "10", honorariosPercentual: "10" };
+    const r = calcular(calculo, tabelaRegimeNovo());
+    expect(r.lancamentos.map((l) => l.atualizado)).toEqual(["1108.03", "1092.52", "538.69"]);
+    expect(r.totais).toEqual({
+      prestacoes: "2200.55",
+      amortizacoes: "538.69",
+      totalDevido: "1661.86",
+      multa: "166.19",
+      honorarios: "166.19",
+      totalGeral: "1994.24",
+    });
+  });
+
+  it("sem valor devido, multa e honorários são zero e há aviso", () => {
+    const calculo = calculoCom([amortizacao]);
+    calculo.acrescimos = { multaPercentual: "10", honorariosPercentual: "10" };
+    const r = calcular(calculo, tabelaIgpm());
+    expect(r.totais).toMatchObject({
+      totalDevido: "-519.35",
+      multa: "0.00",
+      honorarios: "0.00",
+      totalGeral: "-519.35",
+    });
+    expect(r.avisos).toContain(
+      "Multa e honorários não foram aplicados porque não há valor devido.",
+    );
+  });
+
+  it("termo final próprio posterior à data de elaboração é limitado a ela, com aviso", () => {
+    const comTermos: Lancamento = {
+      ...prestacao,
+      encargos: { termoFinalCorrecao: "2018-12-31", termoFinalJuros: "2018-12-31" },
+    };
+    const r = calcular(calculoCom([comTermos]), tabelaIgpm());
+    expect(r.lancamentos[0]).toMatchObject({
+      correcao: { fator: "1.013020" },
+      juros: { percentual: "16.516129" },
+      atualizado: "533.40",
+    });
+    expect(r.lancamentos[0]?.avisos.slice(0, 2)).toEqual([
+      "Termo final da correção (31/12/2018) posterior à data de elaboração: limitado a 25/05/2018.",
+      "Termo final dos juros (31/12/2018) posterior à data de elaboração: limitado a 25/05/2018.",
+    ]);
+  });
+
+  it("metodologia com lacuna: aviso global, e o lançamento na lacuna fica sem correção e sem juros", () => {
+    const calculo = calculoCom(
+      [lancamento("p", "prestacao", "2024-07-10", "1000.00")],
+      "2024-08-20",
+    );
+    calculo.metodologia.periodos = [
+      {
+        de: null,
+        ate: "2024-06-30",
+        correcao: { indice: "IGP-M" },
+        juros: { tipo: "percentualMensal", taxaMensal: "1" },
+      },
+      { de: "2024-09-01", ate: null, correcao: { indice: "IPCA" }, juros: { tipo: "taxaLegal" } },
+    ];
+    const r = calcular(calculo, tabelaRegimeNovo());
+    expect(r.avisos[0]).toBe(
+      "A metodologia não cobre o período de 01/07/2024 a 31/08/2024: esses dias ficam sem correção e sem juros.",
+    );
+    expect(r.lancamentos[0]).toMatchObject({
+      correcao: { fator: "1.000000" },
+      juros: { percentual: "0.000000" },
+      atualizado: "1000.00",
+    });
+    expect(r.lancamentos[0]?.correcao.indices.map((i) => i.serie)).toEqual([null, null]);
+  });
+
+  it("metodologia própria do lançamento também é validada, com aviso no próprio lançamento", () => {
+    const propria = metodologiaPadrao();
+    propria.periodos = [propria.periodos[0]!];
+    const r = calcular(
+      calculoCom([{ ...prestacao, encargos: { metodologia: propria } }]),
+      tabelaIgpm(),
+    );
+    expect(r.lancamentos[0]?.avisos).toContain(
+      "A metodologia não cobre datas posteriores a 29/08/2024: esses dias ficam sem correção e sem juros.",
+    );
+    expect(r.avisos).not.toContain(
+      "A metodologia não cobre datas posteriores a 29/08/2024: esses dias ficam sem correção e sem juros.",
+    );
+  });
+
+  it("SELIC única de ponta a ponta reproduz o SAJ: R$ 10.000,00 de 10/03/2024 com a tabela até ago/2026", () => {
+    const calculo = calculoCom([lancamento("p", "prestacao", "2024-03-10", "10000.00")], hoje);
+    calculo.metodologia = metodologiaSelicUnica();
+    const r = calcular(calculo, tabelaRegimeNovo({ "4390": "2026-08" }));
+    expect(r.lancamentos[0]).toMatchObject({
+      correcao: { fator: "1.358127" },
+      corrigido: "13581.27",
+      juros: { percentual: "0.000000", detalhe: [] },
+      jurosValor: "0.00",
+      atualizado: "13581.27",
+    });
+    expect(r.lancamentos[0]?.correcao.indices[0]).toEqual({
+      serie: "4390",
+      competencia: "2024-03",
+      valor: "0.83",
+      fracao: "21/31",
+    });
   });
 });

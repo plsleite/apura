@@ -13,6 +13,7 @@ import type {
   Calculo,
   CodigoSerie,
   Competencia,
+  DataISO,
   IndiceUsado,
   Lancamento,
   LancamentoCalculado,
@@ -22,10 +23,35 @@ import type {
 } from "../compartilhado/tipos.ts";
 import { fatorCorrecao, resolverIndicesMensais } from "./correcao.ts";
 import { jurosSimples } from "./juros.ts";
+import { validarMetodologia } from "./periodos.ts";
+
+/** Ordena códigos de série como números ("189" antes de "1619"). */
+function compararSeries(a: CodigoSerie, b: CodigoSerie): number {
+  return Number(a) - Number(b);
+}
+
+/**
+ * Termo final próprio posterior à data de elaboração é limitado a ela, com aviso: o cálculo
+ * atualiza até a data em que é feito (§6.4).
+ */
+function limitarTermoFinal(
+  termo: DataISO | undefined,
+  dataElaboracao: DataISO,
+  rotulo: string,
+  avisos: string[],
+): DataISO {
+  if (termo === undefined || termo <= dataElaboracao) return termo ?? dataElaboracao;
+  avisos.push(
+    `Termo final ${rotulo} (${formatarData(termo)}) posterior à data de elaboração: limitado a ${formatarData(dataElaboracao)}.`,
+  );
+  return dataElaboracao;
+}
 
 /**
  * Atualiza um lançamento (prestação ou amortização) da sua data até a data de elaboração,
- * ou pelos termos próprios e metodologia própria quando informados (§6.4 e §6.5).
+ * ou pelos termos próprios e metodologia própria quando informados (§6.4 e §6.5). O fator e o
+ * percentual multiplicam com precisão integral e só são arredondados para exibição (convenção
+ * do SAJ); corrigido e juros têm 2 casas.
  */
 export function atualizarLancamento(
   lancamento: Lancamento,
@@ -34,11 +60,24 @@ export function atualizarLancamento(
 ): LancamentoCalculado {
   const metodologia = lancamento.encargos?.metodologia ?? calculo.metodologia;
   const { fatorCasas, percentualCasas, valorCasas } = metodologia.arredondamento;
-  const termoInicialCorrecao = lancamento.encargos?.termoInicialCorrecao ?? lancamento.data;
-  const termoFinalCorrecao = lancamento.encargos?.termoFinalCorrecao ?? calculo.dataElaboracao;
-  const termoInicialJuros = lancamento.encargos?.termoInicialJuros ?? lancamento.data;
-  const termoFinalJuros = lancamento.encargos?.termoFinalJuros ?? calculo.dataElaboracao;
   const avisos: string[] = [];
+  if (lancamento.encargos?.metodologia !== undefined) {
+    avisos.push(...validarMetodologia(lancamento.encargos.metodologia));
+  }
+  const termoInicialCorrecao = lancamento.encargos?.termoInicialCorrecao ?? lancamento.data;
+  const termoFinalCorrecao = limitarTermoFinal(
+    lancamento.encargos?.termoFinalCorrecao,
+    calculo.dataElaboracao,
+    "da correção",
+    avisos,
+  );
+  const termoInicialJuros = lancamento.encargos?.termoInicialJuros ?? lancamento.data;
+  const termoFinalJuros = limitarTermoFinal(
+    lancamento.encargos?.termoFinalJuros,
+    calculo.dataElaboracao,
+    "dos juros",
+    avisos,
+  );
 
   // Valor-base: nesta fase, só o valor informado (a apuração pela base dos alimentos é a fase 3).
   let valorBase = ZERO;
@@ -126,9 +165,17 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
   const prestacoes = somar("prestacao");
   const amortizacoes = somar("amortizacao");
   const totalDevido = prestacoes.minus(amortizacoes);
-  // Multa e honorários do art. 523, §1º, do CPC entram na fase 2; aqui são zero.
-  const multa = ZERO;
-  const honorarios = ZERO;
+  // Multa e honorários do art. 523, §1º, do CPC (§6.6): cada percentual sobre o total devido,
+  // separadamente (os honorários não incidem sobre a multa); nada quando não há valor devido.
+  const percentualMulta = decimal(calculo.acrescimos.multaPercentual);
+  const percentualHonorarios = decimal(calculo.acrescimos.honorariosPercentual);
+  const haValorDevido = totalDevido.gt(ZERO);
+  const multa = haValorDevido
+    ? arredondar(totalDevido.times(percentualMulta).div(CEM), valorCasas)
+    : ZERO;
+  const honorarios = haValorDevido
+    ? arredondar(totalDevido.times(percentualHonorarios).div(CEM), valorCasas)
+    : ZERO;
   const totalGeral = totalDevido.plus(multa).plus(honorarios);
   const totais: Totais = {
     prestacoes: paraTexto(prestacoes, valorCasas),
@@ -139,13 +186,16 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
     totalGeral: paraTexto(totalGeral, valorCasas),
   };
 
-  const avisos: string[] = [];
+  const avisos: string[] = [...validarMetodologia(calculo.metodologia)];
   if (lancamentos.length === 0) {
     avisos.push("Nenhum lançamento.");
-  } else if (totalDevido.lte(ZERO)) {
+  } else if (!haValorDevido) {
     avisos.push(
       `As amortizações atualizadas (${formatarMoeda(amortizacoes)}) igualam ou superam as prestações atualizadas (${formatarMoeda(prestacoes)}): não há valor devido na data do cálculo.`,
     );
+    if (!percentualMulta.isZero() || !percentualHonorarios.isZero()) {
+      avisos.push("Multa e honorários não foram aplicados porque não há valor devido.");
+    }
   }
 
   // Índices efetivamente usados (sem repetição) e resumo dos meses sem índice. Um mês de
@@ -174,11 +224,14 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
       }
     }
   }
-  const indicesUsados = [...usados.values()].sort((a, b) =>
-    a.serie === b.serie ? (a.competencia < b.competencia ? -1 : 1) : a.serie < b.serie ? -1 : 1,
+  const indicesUsados = [...usados.values()].sort(
+    (a, b) =>
+      compararSeries(a.serie, b.serie) ||
+      (a.competencia < b.competencia ? -1 : a.competencia > b.competencia ? 1 : 0),
   );
   if (semIndice.size > 0) {
     const lista = [...semIndice.entries()]
+      .sort(([a], [b]) => compararSeries(a, b))
       .map(
         ([serie, meses]) =>
           `${NOME_DA_SERIE[serie]} de ${[...meses].sort().map(formatarCompetencia).join(", ")}`,
@@ -187,7 +240,7 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
     avisos.push(`Meses sem índice na tabela (entraram sem correção): ${lista}.`);
   }
 
-  const series = (Object.keys(indices.series) as CodigoSerie[]).sort();
+  const series = (Object.keys(indices.series) as CodigoSerie[]).sort(compararSeries);
   const ultimoMesPorSerie: Partial<Record<CodigoSerie, Competencia>> = {};
   for (const serie of series) {
     const ultimo = Object.keys(indices.series[serie] ?? {})
