@@ -399,4 +399,40 @@ describe("regime novo e SELIC única", () => {
     const semPiso = fatorCorrecao({ ...opcoes, ...termos, deflacao: "aplicarSemPiso", indices });
     expect(paraTexto(semPiso.fator, 6)).toBe("0.996800");
   });
+
+  it("lançamento dentro do mês da consulta: a SELIC parcial é rateada pelos dias já decorridos", () => {
+    const indices = resolverIndicesMensais(
+      metodologiaSelicUnica(),
+      tabelaRegimeNovo(),
+      "2026-10",
+      "2026-10",
+    );
+    const dia10 = fatorCorrecao({
+      ...opcoes,
+      termoInicial: "2026-10-10",
+      termoFinal: "2026-10-11",
+      indices,
+    });
+    expect(paraTexto(dia10.fator, 6)).toBe("1.000327");
+    expect(dia10.indices).toEqual([
+      { serie: "4390", competencia: "2026-10", valor: "0.36", fracao: "1/11" },
+    ]);
+    const dia1 = fatorCorrecao({
+      ...opcoes,
+      termoInicial: "2026-10-01",
+      termoFinal: "2026-10-11",
+      indices,
+    });
+    expect(paraTexto(dia1.fator, 6)).toBe("1.003272");
+    expect(dia1.indices[0]?.fracao).toBe("10/11");
+    const mesSeguinte = fatorCorrecao({
+      ...opcoes,
+      incidenciaMesInicial: "mesSeguinte",
+      termoInicial: "2026-10-05",
+      termoFinal: "2026-10-11",
+      indices,
+    });
+    expect(paraTexto(mesSeguinte.fator, 6)).toBe("1.000000");
+    expect(mesSeguinte.indices[0]?.fracao).toBe("0/31");
+  });
 });

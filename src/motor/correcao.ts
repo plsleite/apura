@@ -99,21 +99,31 @@ export function fatorCorrecao(p: ParametrosCorrecao): ResultadoCorrecao {
     const ehInicial = mes.competencia === competenciaInicial;
     const ehFinal = mes.competencia === competenciaFinal;
 
-    // Quantos "dias do mês" entram na conta: a fração do mês é numerador ÷ dias.
+    // Quantos "dias do mês" entram na conta: a fração do mês é numerador ÷ denominador.
     let numerador: number;
     if (ehInicial && p.incidenciaMesInicial === "mesSeguinte") numerador = 0;
     else if (ehInicial && ehFinal) numerador = fim.dia - inicio.dia;
     else if (ehInicial) numerador = dias - inicio.dia;
     else if (ehFinal) numerador = fim.dia;
     else numerador = dias;
-    // O valor parcial do mês corrente da SELIC já é "até hoje": entra inteiro, sem rateio.
-    if (mes.parcial === true && numerador > 0) numerador = dias;
+    let denominador = dias;
+    // O valor parcial do mês corrente da SELIC é "até a consulta": quando o lançamento cai nesse mês,
+    // é rateado pelos dias do dia 1 ao termo final; quando o mês entra inteiro, entra inteiro. Com
+    // lançamento no mês e termo final em outro mês, vale o pro rata normal do mês inicial.
+    if (mes.parcial === true && numerador > 0) {
+      if (ehInicial && ehFinal) {
+        denominador = fim.dia;
+        numerador = fim.dia - inicio.dia;
+      } else if (!ehInicial) {
+        numerador = dias;
+      }
+    }
 
     indices.push({
       serie: mes.serie,
       competencia: mes.competencia,
       valor: mes.valor,
-      fracao: numerador === dias ? "1" : `${numerador}/${dias}`,
+      fracao: numerador === denominador ? "1" : `${numerador}/${denominador}`,
     });
     // Só avisa quando o mês entra na conta: com fração zero, a falta do índice não muda o fator.
     if (mes.serie !== null && mes.valor === null && numerador > 0) {
@@ -125,7 +135,9 @@ export function fatorCorrecao(p: ParametrosCorrecao): ResultadoCorrecao {
     if (p.deflacao === "zerarNegativos" && variacao.isNegative()) variacao = ZERO;
     const fatorDoMes = UM.plus(variacao.div(CEM));
     fator = fator.times(
-      numerador === dias ? fatorDoMes : fatorDoMes.pow(decimal(String(numerador)).div(dias)),
+      numerador === denominador
+        ? fatorDoMes
+        : fatorDoMes.pow(decimal(String(numerador)).div(denominador)),
     );
   }
 
