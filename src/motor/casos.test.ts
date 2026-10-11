@@ -23,16 +23,28 @@ describe("casos de referência", () => {
         const obtido = resultado.lancamentos.find((l) => l.id === id);
         expect(obtido).toBeDefined();
         if (!obtido) return;
-        const campos: Array<[string, string | undefined, string]> = [
+        // Campos obrigatórios: sempre comparados; um caso sem eles (ex.: "corigido") falha.
+        const obrigatorios: Array<[string, string | undefined, string]> = [
           ["corrigido", esperado.corrigido, obtido.corrigido],
           ["jurosValor", esperado.jurosValor, obtido.jurosValor],
           ["atualizado", esperado.atualizado, obtido.atualizado],
+        ];
+        // Campos opcionais: comparados só quando o caso os informa.
+        const opcionais: Array<[string, string | undefined, string]> = [
           ["fator", esperado.fator, obtido.correcao.fator],
           ["jurosPercentual", esperado.jurosPercentual, obtido.juros.percentual],
         ];
-        const esperados: Record<string, string> = {};
+        const esperados: Record<string, string | undefined> = {};
         const obtidos: Record<string, string> = {};
-        for (const [campo, valorEsperado, valorObtido] of campos) {
+        for (const [campo, valorEsperado, valorObtido] of obrigatorios) {
+          expect(
+            valorEsperado,
+            `campo obrigatório "${campo}" ausente no esperado de ${id}`,
+          ).toBeDefined();
+          esperados[campo] = valorEsperado;
+          obtidos[campo] = valorObtido;
+        }
+        for (const [campo, valorEsperado, valorObtido] of opcionais) {
           if (valorEsperado !== undefined) {
             esperados[campo] = valorEsperado;
             obtidos[campo] = valorObtido;
@@ -47,6 +59,7 @@ describe("casos de referência", () => {
     });
 
     it("o fator e o percentual impressos reproduzem o centavo", () => {
+      expect(resultado.lancamentos.length).toBeGreaterThan(0);
       for (const l of resultado.lancamentos) {
         const corrigido = arredondar(
           decimal(l.valorBase).times(decimal(l.correcao.fator)),
