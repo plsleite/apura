@@ -22,7 +22,7 @@
 - Arquivo de cálculo com `formato: "apura/calculo@1"`. Metodologia padrão `id: "tjms-saj"`, `versao: 1`, `nome: "TJMS/SAJ"`: até 29/08/2024 IGP-M + 1% ao mês; desde 30/08/2024 IPCA + taxa legal.
 - O motor nunca lança erro por dado do usuário: devolve avisos em frases completas, em português.
 - Dados pessoais: nenhum número de processo real nem nome de parte em testes e casos de referência. O PDF do SAJ (guardado fora do repositório) fica fora do repositório e não é copiado.
-- Commits em português no formato "módulo: o que muda", terminados com a linha `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`. `.superpowers/` e `node_modules/` ignorados.
+- Commits em português no formato "módulo: o que muda", terminados com a linha `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. `.superpowers/` e `node_modules/` ignorados.
 - Fora desta fase (não implementar): regime novo (taxa legal, SELIC única), transição de 30/08/2024, apuração do valor-base, lotes, multa e honorários, casos-limite da §6.7, cliente ao vivo do BCB, interface, relatório. Onde o código desta fase encostar nesses pontos, ele devolve aviso ou valor neutro e deixa o gancho descrito na seção "Notas para as fases seguintes".
 
 ## Foco da revisão
@@ -95,7 +95,7 @@ Dependências entre módulos (§4.2 do design): `motor/` e `indices/` dependem s
 - Todos os comandos rodam na raiz do repositório. Uma tarefa de cada vez, na ordem.
 - Ciclo de cada regra: escrever o teste → rodar e vê-lo falhar → escrever o mínimo que passa → rodar e vê-lo passar → `npm run verificar` → commit. O passo "verificar" roda Prettier (conferência), ESLint, `tsc -b` e todos os testes; só se commita com tudo verde.
 - Os valores esperados nos testes vêm do Anexo A do design e de contas conferidas com aritmética decimal; se uma implementação não bater, a implementação está errada, não o valor esperado. Não ajuste valores esperados para "fazer passar": pare e relate.
-- Mensagens de commit no formato "módulo: o que muda", com a linha `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` ao final (os comandos abaixo já a incluem).
+- Mensagens de commit no formato "módulo: o que muda", com a linha `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` ao final (os comandos abaixo já a incluem).
 - Se o `npm run format` alterar arquivos depois de escritos, isso é normal: o Prettier impõe o estilo; o conteúdo não muda.
 
 ---
@@ -387,7 +387,7 @@ Esperado: "✓ built in …" e a pasta `dist/` (ignorada pelo git).
 - [ ] **Passo 11: Commit**
 
 ```bash
-git add -A && git commit -m "projeto: base Vite, React, TypeScript estrito, Vitest, ESLint, Prettier e decimal.js" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add -A && git commit -m "projeto: base Vite, React, TypeScript estrito, Vitest, ESLint, Prettier e decimal.js" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 2: `CLAUDE.md` e `README.md`
@@ -553,7 +553,7 @@ Execute: `npm run verificar`
 Esperado: tudo verde (arquivos `.md` não são tocados pelo Prettier).
 
 ```bash
-git add CLAUDE.md README.md && git commit -m "docs: CLAUDE.md com regras do projeto e README" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add CLAUDE.md README.md && git commit -m "docs: CLAUDE.md com regras do projeto e README" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 3: Primitiva decimal e arredondamento comercial
@@ -670,7 +670,7 @@ Execute: `npm run format && npm run verificar`
 Esperado: tudo verde.
 
 ```bash
-git add src/compartilhado/decimal.ts src/compartilhado/decimal.test.ts && git commit -m "compartilhado: decimal configurado e arredondamento comercial" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/compartilhado/decimal.ts src/compartilhado/decimal.test.ts && git commit -m "compartilhado: decimal configurado e arredondamento comercial" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 4: Datas como texto: dias do mês, competências, dias entre datas e rateio por mês-calendário
@@ -930,7 +930,7 @@ Esperado: todos os testes passam (decimal 6 + datas 7).
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/compartilhado/datas.ts src/compartilhado/datas.test.ts && git commit -m "compartilhado: datas ISO, dias entre datas e rateio por mês-calendário" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/compartilhado/datas.ts src/compartilhado/datas.test.ts && git commit -m "compartilhado: datas ISO, dias entre datas e rateio por mês-calendário" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 5: Formatação pt-BR (moeda, data, competência, percentual)
@@ -1037,7 +1037,7 @@ Esperado: todos passam.
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/compartilhado/formatacao.ts src/compartilhado/formatacao.test.ts && git commit -m "compartilhado: formatação pt-BR de moeda, datas, percentuais e fatores" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/compartilhado/formatacao.ts src/compartilhado/formatacao.test.ts && git commit -m "compartilhado: formatação pt-BR de moeda, datas, percentuais e fatores" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 6: Tipos do domínio e metodologia padrão "TJMS/SAJ v1"
@@ -1423,7 +1423,7 @@ Esperado: todos passam.
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/compartilhado/tipos.ts src/compartilhado/tipos.test.ts src/metodologias && git commit -m "compartilhado: tipos do cálculo, resultado e índices; metodologia padrão TJMS/SAJ v1" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/compartilhado/tipos.ts src/compartilhado/tipos.test.ts src/metodologias && git commit -m "compartilhado: tipos do cálculo, resultado e índices; metodologia padrão TJMS/SAJ v1" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 7: Períodos da metodologia (qual regra vale em cada data)
@@ -1547,7 +1547,7 @@ Esperado: todos passam.
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/motor/periodos.ts src/motor/periodos.test.ts && git commit -m "motor: período da metodologia vigente em cada data" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/motor/periodos.ts src/motor/periodos.test.ts && git commit -m "motor: período da metodologia vigente em cada data" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 8: Fator de correção (pro rata geométrico, meses inteiros, mês final, meses faltantes, deflação)
@@ -1928,7 +1928,7 @@ Esperado: todos passam, inclusive "1.013020" para 10/01/2017.
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/motor/correcao.ts src/motor/correcao.test.ts src/motor/testes && git commit -m "motor: fator de correção pro rata com meses faltantes e deflação" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/motor/correcao.ts src/motor/correcao.test.ts src/motor/testes && git commit -m "motor: fator de correção pro rata com meses faltantes e deflação" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 9: Juros simples por mês-calendário contando as duas pontas
@@ -2114,7 +2114,7 @@ Esperado: todos passam, inclusive "16.516129".
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/motor/juros.ts src/motor/juros.test.ts && git commit -m "motor: juros simples por mês-calendário contando as duas pontas" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/motor/juros.ts src/motor/juros.test.ts && git commit -m "motor: juros simples por mês-calendário contando as duas pontas" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 10: Atualização de cada lançamento, totais, índices usados e avisos
@@ -2516,7 +2516,7 @@ Esperado: todos passam.
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/motor/calcular.ts src/motor/calcular.test.ts && git commit -m "motor: atualização de lançamentos, totais, índices usados e avisos" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/motor/calcular.ts src/motor/calcular.test.ts && git commit -m "motor: atualização de lançamentos, totais, índices usados e avisos" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 11: Caso de referência SAJ TJMS 25/05/2018 e o teste genérico de casos
@@ -2734,7 +2734,7 @@ Esperado: o arquivo `casos.test.ts` mostra 28 testes de lançamento + 3 (totais,
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/motor/casos src/motor/casos.test.ts && git commit -m "motor: caso de referência SAJ TJMS 25/05/2018 reproduzido centavo a centavo" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/motor/casos src/motor/casos.test.ts && git commit -m "motor: caso de referência SAJ TJMS 25/05/2018 reproduzido centavo a centavo" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 12: Catálogo de séries e leitura das respostas do SGS (sem rede)
@@ -3018,7 +3018,7 @@ Esperado: todos passam.
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add src/indices && git commit -m "indices: catálogo de séries do BCB e leitura das respostas do SGS" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add src/indices && git commit -m "indices: catálogo de séries do BCB e leitura das respostas do SGS" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 13: Script de atualização de índices, cópia embutida do IGP-M e tabela embutida
@@ -3218,7 +3218,7 @@ Esperado: todos passam, inclusive o total 188,28 com os dados embutidos.
 Execute: `npm run format && npm run verificar`
 
 ```bash
-git add scripts/atualizar-indices.ts dados/indices/189.json src/indices/embutidos.ts src/indices/embutidos.test.ts && git commit -m "indices: script de atualização e cópia embutida do IGP-M (série 189)" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add scripts/atualizar-indices.ts dados/indices/189.json src/indices/embutidos.ts src/indices/embutidos.test.ts && git commit -m "indices: script de atualização e cópia embutida do IGP-M (série 189)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Tarefa 14: Fechamento da fase: roteiro, CLAUDE.md, verificação final
@@ -3255,7 +3255,7 @@ seção ao concluir cada fase.
 - [ ] **Passo 4: Commit**
 
 ```bash
-git add docs/superpowers/roteiro.md CLAUDE.md && git commit -m "docs: fase 1 concluída no roteiro e no CLAUDE.md" -m "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git add docs/superpowers/roteiro.md CLAUDE.md && git commit -m "docs: fase 1 concluída no roteiro e no CLAUDE.md" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 - [ ] **Passo 5: Integrar o trabalho**
