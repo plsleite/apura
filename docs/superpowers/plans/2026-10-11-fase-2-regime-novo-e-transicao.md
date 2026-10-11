@@ -2914,11 +2914,62 @@ Use a skill `superpowers:finishing-a-development-branch`: o repositório ainda n
 
 ### Pendências registradas na execução da fase 2
 
-Preencher ao fim da execução com os achados das revisões. Itens já conhecidos ao escrever o plano:
+Achados das revisões que ficaram para fases seguintes ou como melhorias menores, agrupados por destino, e as decisões tomadas na execução. Os três primeiros itens já eram conhecidos ao escrever o plano:
 
 - **Melhorias menores da fase 1 não tratadas aqui:** cast `as ArquivoSerie` sem checar formato e código; totais arredondados com as casas da metodologia global mesmo quando um lançamento tem metodologia própria; teste de casos não compara avisos; nomes curtos das séries duplicados (`SERIES` e `NOME_DA_SERIE`); `ValorMensal` repete o formato de `ArquivoSerie.valores`.
 - **Gabaritos opcionais do SAJ:** aba Honorários preenchida (base dos honorários no SAJ); juros "taxa selic" com indexador nenhum (como o SAJ aplica a SELIC como juros); lançamento datado no dia do cálculo.
 - **Regra do mês corrente parcial da SELIC** vale quando o termo final cai no mês da consulta; se o termo final for anterior ao mês da consulta e a série tiver o mês completo, aplica-se o pro rata normal.
+
+**Fase 3**
+
+- Os casos SELIC e transição trazem `base.valor` de "1000.00", mas os lançamentos valem R$ 10.000,00; o campo é ignorado hoje e passará a conflitar se a fase 3 derivar os lançamentos da base, então deve ser corrigido nos dois casos.
+- O teste de embutidos (`src/indices/embutidos.test.ts`) espera as séries 188 e 1619 ausentes; ao embuti-las, a fase 3 precisa ajustá-lo (já anotado nas notas acima).
+
+**Fase 4**
+
+- O mês corrente parcial da SELIC é identificado por `competenciaDe(tabela.consultadoEm)` (em `src/motor/correcao.ts`), que usa a data em UTC: uma consulta feita depois das 20h (horário de Mato Grosso do Sul) no último dia do mês marcaria o mês seguinte como parcial. A fase 4 deve gravar e ler a data da consulta no fuso de Brasília.
+
+**Fase 5**
+
+- Período invertido (início depois do fim) é descartado sem aviso e confunde o texto dos avisos de `validarMetodologia`; a tela deve recusá-lo, ou o motor passa a avisar.
+- Percentuais de multa e honorários vazios ou inválidos fazem `calcular` lançar `DecimalError` (contra a regra 4 do `CLAUDE.md`), e percentual negativo é aceito sem aviso; tratar no motor ou garantir na tela.
+
+**Fase 6**
+
+- `IndiceAplicado` e `IndiceUsado` não registram que o mês da SELIC é parcial; sem essa marca, o relatório não poderá dizer "valor parcial até dd/mm".
+- O motor devolve `totalGeral` negativo quando as amortizações superam as prestações; o relatório não pode exibi-lo como valor devido (§6.6 do design).
+
+**Sem fase (melhorias menores)**
+
+- As fixtures de teste (`src/motor/testes/regime-novo.ts`) usam `obtidoEm` e `consultadoEm` fixos (12:00Z), anteriores ao download real das séries, e os horários dos casos de referência são cosméticos e incoerentes entre si; serve ao determinismo dos testes, mas convém uniformizar.
+- `tabelaRegimeNovo` (limites) e `metodologiaSelicUnica` não têm teste direto; hoje são cobertas pelos testes de correção, juros e cálculo.
+- Faltam asserções de virada de século (2100-02-28) e de ida e volta `diaSeguinte(diaAnterior(x))` nos testes de datas.
+- `diaAnterior("1900-01-01")` devolve 1899-12-31, data que `decompor` recusa; o limite inferior de 1900 não está documentado.
+- Em `validarMetodologia`, o empate de início entre períodos é resolvido pela ordem da lista, mas o aviso diz "iniciado antes".
+- `periodosOrdenados` não tem teste direto, e falta linha em branco entre testes em `src/motor/periodos.test.ts`.
+- A cadeia com mais de dois períodos e início aberto no meio só é coberta pelo caso (c) do teste de períodos aninhados.
+- Não há teste de mês parcial da SELIC no meio do período (consulta anterior ao termo final).
+- O JSDoc de `fatorCorrecao` (`src/motor/correcao.ts`) ainda diz que o mês corrente parcial da SELIC entra inteiro, sem citar a exceção do mês inicial.
+- Em `src/motor/juros.ts`, um tipo de juros desconhecido cai em silêncio (a fase 1 avisava); acrescentar ramo explícito de `selicUnica` e um `else` com aviso, ou checagem exaustiva.
+- Faltam testes de trecho de taxa legal que termina antes do termo final (dois períodos de taxa legal) e de lançamento anterior a 30/08/2024 com termo final em 30/08/2024.
+- A tolerância fixa de R$ 0,01 em `src/motor/casos.test.ts` fica apertada para valor-base acima de R$ 10.000 (o fator impresso erra até 5e-7 × valor); usar `valorBase × 0,0000005 + 0,01` no corrigido.
+- Sem lançamentos e com percentuais de multa ou honorários maiores que zero, o motor não gera o aviso correspondente.
+- Os testes não cobrem a ordem numérica de `indicesUsados` e do resumo de meses sem índice; o teste de multa usa 10% e 10%, de modo que a troca de campos passaria; falta checar a ausência do aviso com percentuais zero.
+- O caso SELIC do SAJ usa `aplicarComPiso`, enquanto os demais casos do SAJ usam `aplicarSemPiso`; não há efeito numérico.
+- No caso do SAJ de 2026, o IGP-M de dez/2025 (−0,02) está rotulado "embutida" embora difira do BCB (−0,01); o motivo está explicado em `observacoes`.
+- As `observacoes` do caso de deflação citam um "teste unitário" com R$ 996,80 e R$ 1.015,51 que nenhum teste afirma; as do caso de encargos próprios leem "a 31/03/2026" como inclusivo; e o caso não registra o piso, porque o formato não tem campo para isso.
+- A regra `no-restricted-globals` do ESLint pega só o nome nu (`globalThis.Date` e `self.fetch` passam); `performance`, `Math.random`, `setTimeout`, `Intl`, `crypto`, `navigator`, `XMLHttpRequest` e `indexedDB` não estão na lista; importações impuras (`../indices`, `../ui`) não são barradas; e o padrão de arquivos cobre só `.ts`.
+
+**Decisões tomadas na execução**
+
+- Na Task 4, basta ver falharem os três testes da SELIC no RED: os demais passam no código antigo porque o parâmetro `casas` saiu das opções, o que é efeito da remoção e não falha de TDD.
+- As Tasks 7 e 8 foram despachadas e revisadas juntas, com dois commits, por serem a mesma natureza (transcrição de casos em JSON).
+- O trailer de coautoria de cada commit nomeia o modelo que de fato o executou.
+- Na Task 3, `validarMetodologia` passou a comparar cada período com o fim de cobertura mais distante já alcançado (nulo = aberto), com mensagens novas para sobreposição com início ou fim abertos; `dividirPorPeriodos` já estava certa.
+- Na Task 4, quando o mês parcial da SELIC é ao mesmo tempo o mês inicial e o final do lançamento, a fração é (dia final − dia inicial) ÷ dia final; o mês parcial que é só final continua inteiro, e o que é só inicial segue o pro rata normal. A SELIC única normalmente vale só até 29/08/2024, então o caso é raro; o ponto 5 de validação jurídica fica registrado no relatório final.
+- Na Task 6, o termo inicial próprio dos juros posterior à data de elaboração dá juros zero sem aviso, como manda a §6.4 do design ("juros zero, sem erro"), e foi mantido.
+- O alinhamento do `CLAUDE.md` e do design à precisão integral ficou para esta Task 10, e o texto da SELIC única no design registra a exceção do mês inicial.
+- A contagem final é de 225 testes, e não 223, porque as correções das Tasks 3 e 4 acrescentaram um teste cada.
 
 ## Auto-revisão do plano
 

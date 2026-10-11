@@ -22,8 +22,8 @@ Este arquivo diz em que ponto o projeto está e como retomar o trabalho em qualq
 | Fase | Escopo | Situação |
 |---|---|---|
 | 1 · Fundação e motor do regime antigo | projeto Vite/React/TS, Vitest, ESLint/Prettier, CLAUDE.md, primitivas (decimal, datas, rateio), caso SAJ 2018 reproduzido, cópia embutida do IGP-M e script de índices | concluída em 2026-10-11 · plano: `docs/superpowers/plans/2026-10-10-fase-1-fundacao-e-motor-regime-antigo.md` |
-| 2 · Regime novo e transição | taxa legal, IPCA, transição 30/08/2024, SELIC única, deflação com piso, encargos próprios (termos e metodologia por períodos), multa e honorários; casos conferidos na Calculadora do Cidadão | plano a escrever |
-| 3 · Bases e lotes | valor fixo com reajuste, % do salário mínimo, % dos rendimentos; lotes cumulativos de prestações e amortizações; casos-limite | pendente |
+| 2 · Regime novo e transição | taxa legal, IPCA, transição 30/08/2024, SELIC única capitalizada, deflação com piso, encargos próprios, multa e honorários; gabaritos do SAJ de 2026 e casos conferidos na Calculadora do Cidadão | concluída em 2026-10-11 · plano: `docs/superpowers/plans/2026-10-11-fase-2-regime-novo-e-transicao.md` |
+| 3 · Bases e lotes | valor fixo com reajuste, % do salário mínimo, % dos rendimentos; lotes cumulativos de prestações e amortizações; casos-limite | plano a escrever |
 | 4 · Índices ao vivo | cliente BCB, cache, congelamento por cálculo, calendário de divulgação, rotina mensal | pendente |
 | 5 · Interface | layout em duas colunas, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas | pendente |
 | 6 · Relatório e PDF | componente, metodologia gerada, matriz de índices, marca, fontes, impressão | pendente |
@@ -34,7 +34,7 @@ Depois do MVP: ver a seção 6 da visão do produto (art. 524, servidor e usuár
 ## Insumos que dependem do responsável
 
 - Pontos de validação jurídica (seção 7 do design): cada fase pergunta os que lhe tocam.
-- Gabaritos da contadoria do TJMS ou do SAJ Tribunais, especialmente um relatório posterior a 30/08/2024 (fase 2).
+- Gabaritos do SAJ Tribunais: obtidos em 11/10/2026 (IGP-M 2024–2026 e SELIC capitalizada); o SAJ não calcula a taxa legal, cujo gabarito é a Calculadora do Cidadão do BCB. Opcionais: relatório do SAJ com a aba Honorários preenchida; relatório com juros "taxa selic" e indexador nenhum.
 - Criação do repositório privado no GitHub e da conta no Cloudflare Pages (fase 7, ou antes se os testadores precisarem).
 
 ## Prompt de retomada (modelo)
