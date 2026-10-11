@@ -1,0 +1,73 @@
+{
+  "formato": "apura/caso-de-referencia@1",
+  "nome": "Multa e honorários do art. 523, §1º, do CPC (10% e 10%) sobre o total devido, cálculo de 11/10/2026",
+  "fonte": "Calculadora do Cidadão do BCB, consultada em 11/10/2026: taxa legal 10/01/2026→11/10/2026: 0,06704690; 10/02/2026→11/10/2026: 0,05708781; 10/03/2026→11/10/2026: 0,05010630. Correção pelo IPCA e centavos por aritmética decimal independente; multa e honorários conforme §6.6 do design.",
+  "observacoes": "Cada percentual incide separadamente sobre o total devido (prestações atualizadas menos amortizações atualizadas); os honorários não incidem sobre a multa; total geral = total devido + multa + honorários.",
+  "calculo": {
+    "formato": "apura/calculo@1",
+    "tipo": "alimentos",
+    "id": "caso-multa-e-honorarios",
+    "criadoEm": "2026-10-11T00:00:00.000Z",
+    "atualizadoEm": "2026-10-11T00:00:00.000Z",
+    "dataElaboracao": "2026-10-11",
+    "cabecalho": {"defensor": "", "orgao": "", "processo": "", "exequente": "", "executado": ""},
+    "base": {"tipo": "valorFixo", "valor": "1000.00", "dataFixacao": "2026-10-11", "indiceReajuste": "nenhum", "mesReajuste": 1},
+    "lotes": {},
+    "lancamentos": [
+      {"id": "p-2026-01-10", "tipo": "prestacao", "data": "2026-01-10", "competencia": "2026-01", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
+      {"id": "p-2026-02-10", "tipo": "prestacao", "data": "2026-02-10", "competencia": "2026-02", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
+      {"id": "a-2026-03-10", "tipo": "amortizacao", "data": "2026-03-10", "descricao": "Pagamento parcial", "valorInformado": "500.00", "origem": "avulso", "editado": true}
+    ],
+    "metodologia": {
+      "id": "tjms-saj",
+      "versao": 1,
+      "nome": "TJMS/SAJ",
+      "ajustada": false,
+      "periodos": [
+        {"de": null, "ate": "2024-08-29", "correcao": {"indice": "IGP-M"}, "juros": {"tipo": "percentualMensal", "taxaMensal": "1"}},
+        {"de": "2024-08-30", "ate": null, "correcao": {"indice": "IPCA"}, "juros": {"tipo": "taxaLegal"}}
+      ],
+      "incidenciaMesInicial": "proRata",
+      "deflacao": "aplicarComPiso",
+      "arredondamento": {"fatorCasas": 6, "percentualCasas": 6, "valorCasas": 2, "modo": "comercial"}
+    },
+    "acrescimos": {"multaPercentual": "10", "honorariosPercentual": "10"},
+    "observacoes": ""
+  },
+  "indices": {
+    "consultadoEm": "2026-10-11T13:00:00.000Z",
+    "series": {
+      "433": {
+        "2026-01": {"valor": "0.33", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-02": {"valor": "0.70", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-03": {"valor": "0.88", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-04": {"valor": "0.67", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-05": {"valor": "0.58", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-06": {"valor": "0.16", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-07": {"valor": "0.07", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-08": {"valor": "-0.32", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-09": {"valor": "0.82", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"}
+      },
+      "29543": {
+        "2026-01": {"valor": "0.967510", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-02": {"valor": "0.962232", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-03": {"valor": "0.155714", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-04": {"valor": "0.768672", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-05": {"valor": "0.198293", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-06": {"valor": "0.450641", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-07": {"valor": "0.706607", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-08": {"valor": "1.154527", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-09": {"valor": "1.499119", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-10": {"valor": "0.379020", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"}
+      }
+    }
+  },
+  "esperado": {
+    "lancamentos": [
+      {"id": "p-2026-01-10", "fator": "1.038409", "corrigido": "1038.41", "jurosPercentual": "6.704690", "jurosValor": "69.62", "atualizado": "1108.03"},
+      {"id": "p-2026-02-10", "fator": "1.033516", "corrigido": "1033.52", "jurosPercentual": "5.708781", "jurosValor": "59.00", "atualizado": "1092.52"},
+      {"id": "a-2026-03-10", "fator": "1.025988", "corrigido": "512.99", "jurosPercentual": "5.010630", "jurosValor": "25.70", "atualizado": "538.69"}
+    ],
+    "totais": {"prestacoes": "2200.55", "amortizacoes": "538.69", "totalDevido": "1661.86", "multa": "166.19", "honorarios": "166.19", "totalGeral": "1994.24"}
+  }
+}

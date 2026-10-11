@@ -1,59 +1,97 @@
-import { ratearPorMesCalendario } from "../compartilhado/datas.ts";
-import { arredondar, decimal, paraTexto, ZERO, type Decimal } from "../compartilhado/decimal.ts";
-import { formatarData } from "../compartilhado/formatacao.ts";
-import type { DataISO, DetalheJuros, Metodologia } from "../compartilhado/tipos.ts";
+import { diaAnterior, ratearPorMesCalendario } from "../compartilhado/datas.ts";
+import { decimal, paraTexto, ZERO, type Decimal } from "../compartilhado/decimal.ts";
+import { formatarCompetencia, formatarData } from "../compartilhado/formatacao.ts";
+import { CODIGO_DA_SERIE } from "../compartilhado/tipos.ts";
+import type {
+  Competencia,
+  DataISO,
+  DetalheJuros,
+  Metodologia,
+  TabelaIndices,
+} from "../compartilhado/tipos.ts";
 import { dividirPorPeriodos } from "./periodos.ts";
 
 export interface ParametrosJuros {
   termoInicial: DataISO;
   termoFinal: DataISO;
   metodologia: Metodologia;
-  /** casas decimais do percentual (6 na metodologia padrão) */
+  /** tabela congelada: a taxa legal (série 29543) vem daqui */
+  indices: TabelaIndices;
+  /** casas decimais do percentual exibido em cada linha do detalhe (6 na metodologia padrão) */
   casas: number;
 }
 
 export interface ResultadoJuros {
-  /** percentual total, já arredondado a `casas` */
+  /** percentual total com precisão integral (arredonde só para exibir) */
   percentual: Decimal;
   detalhe: DetalheJuros[];
   avisos: string[];
+  /**
+   * competências cuja taxa legal (série 29543) faltou na tabela num trecho com pelo menos um dia
+   * (esses dias ficaram sem juros), em ordem cronológica e sem repetição; vazia quando não faltou
+   */
+  mesesSemTaxaLegal: Competencia[];
 }
 
 /**
- * Juros simples do termo inicial ao termo final (§6.4). Regime antigo (`percentualMensal`):
- * em cada mês tocado, taxa × dias ÷ diasDoMes, contando o dia inicial e o dia final, como o
- * SAJ. Cada período da metodologia aplica a própria taxa aos dias que lhe cabem.
- * Regras `taxaLegal` e `selicUnica` são da fase 2: aqui geram aviso e não somam.
+ * Juros simples do termo inicial ao termo final (§6.4), somando os trechos de cada período da
+ * metodologia:
+ * - `percentualMensal` (regime antigo): em cada mês tocado, taxa × dias ÷ diasDoMes, contando o
+ *   dia inicial e o dia final, como o SAJ;
+ * - `taxaLegal` (regime novo, Lei 14.905/2024): taxa do mês (série 29543) × dias ÷ dias corridos
+ *   do mês, contando o primeiro dia do trecho e não contando o dia do termo final, como a
+ *   Calculadora do Cidadão do BCB (30/08/2024 a 31/08/2024 = 1 dia). Na transição, o trecho da
+ *   taxa legal começa em 30/08/2024 e esse dia conta;
+ * - `selicUnica`: sem juros separados, porque a SELIC entra capitalizada na correção.
  */
 export function jurosSimples(p: ParametrosJuros): ResultadoJuros {
   const detalhe: DetalheJuros[] = [];
   const avisos: string[] = [];
-  if (p.termoFinal < p.termoInicial)
-    return { percentual: arredondar(ZERO, p.casas), detalhe, avisos };
-
+  const mesesSemTaxaLegal: Competencia[] = [];
   let percentual = ZERO;
+  if (p.termoFinal < p.termoInicial) return { percentual, detalhe, avisos, mesesSemTaxaLegal };
+
   for (const trecho of dividirPorPeriodos(p.metodologia, p.termoInicial, p.termoFinal)) {
     const regra = trecho.periodo.juros;
-    if (regra.tipo !== "percentualMensal") {
-      avisos.push(
-        `Juros pela regra "${regra.tipo}" ainda não implementados: o período de ${formatarData(trecho.de)} a ${formatarData(trecho.ate)} ficou sem juros.`,
-      );
-      continue;
-    }
-    const taxa = decimal(regra.taxaMensal);
-    for (const mes of ratearPorMesCalendario(trecho.de, trecho.ate)) {
-      const parcela = taxa.times(mes.dias).div(mes.diasDoMes);
-      percentual = percentual.plus(parcela);
-      detalhe.push({
-        regime: "percentualMensal",
-        de: mes.de,
-        ate: mes.ate,
-        dias: mes.dias,
-        diasDoMes: mes.diasDoMes,
-        taxa: regra.taxaMensal,
-        percentual: paraTexto(parcela, p.casas),
-      });
+    if (regra.tipo === "percentualMensal") {
+      const taxa = decimal(regra.taxaMensal);
+      for (const mes of ratearPorMesCalendario(trecho.de, trecho.ate)) {
+        const parcela = taxa.times(mes.dias).div(mes.diasDoMes);
+        percentual = percentual.plus(parcela);
+        detalhe.push({
+          regime: "percentualMensal",
+          de: mes.de,
+          ate: mes.ate,
+          dias: mes.dias,
+          diasDoMes: mes.diasDoMes,
+          taxa: regra.taxaMensal,
+          percentual: paraTexto(parcela, p.casas),
+        });
+      }
+    } else if (regra.tipo === "taxaLegal") {
+      const ultimoDia = trecho.ate === p.termoFinal ? diaAnterior(trecho.ate) : trecho.ate;
+      for (const mes of ratearPorMesCalendario(trecho.de, ultimoDia)) {
+        const taxa = p.indices.series[CODIGO_DA_SERIE.taxaLegal]?.[mes.competencia]?.valor;
+        if (taxa === undefined) {
+          if (!mesesSemTaxaLegal.includes(mes.competencia)) mesesSemTaxaLegal.push(mes.competencia);
+          avisos.push(
+            `Taxa legal de ${formatarCompetencia(mes.competencia)} não disponível na tabela de índices: os dias de ${formatarData(mes.de)} a ${formatarData(mes.ate)} ficaram sem juros.`,
+          );
+          continue;
+        }
+        const parcela = decimal(taxa).times(mes.dias).div(mes.diasDoMes);
+        percentual = percentual.plus(parcela);
+        detalhe.push({
+          regime: "taxaLegal",
+          de: mes.de,
+          ate: mes.ate,
+          dias: mes.dias,
+          diasDoMes: mes.diasDoMes,
+          taxa,
+          percentual: paraTexto(parcela, p.casas),
+        });
+      }
     }
   }
-  return { percentual: arredondar(percentual, p.casas), detalhe, avisos };
+  return { percentual, detalhe, avisos, mesesSemTaxaLegal: mesesSemTaxaLegal.sort() };
 }

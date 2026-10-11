@@ -6,9 +6,11 @@ import {
   compor,
   dataValida,
   decompor,
+  diaAnterior,
   diasDesdeEpoca,
   diasDoMes,
   diasEntre,
+  diaSeguinte,
   mesSeguinte,
   primeiroDiaDoMes,
   ratearPorMesCalendario,
@@ -108,5 +110,15 @@ describe("datas", () => {
       { competencia: "2018-05", de: "2018-05-25", ate: "2018-05-25", dias: 1, diasDoMes: 31 },
     ]);
     expect(ratearPorMesCalendario("2018-05-25", "2018-05-24")).toEqual([]);
+  });
+
+  it("anda um dia para trás e para a frente, inclusive na virada de mês e de ano", () => {
+    expect(diaAnterior("2026-10-11")).toBe("2026-10-10");
+    expect(diaAnterior("2026-10-01")).toBe("2026-09-30");
+    expect(diaAnterior("2024-03-01")).toBe("2024-02-29");
+    expect(diaAnterior("2025-01-01")).toBe("2024-12-31");
+    expect(diaSeguinte("2024-02-29")).toBe("2024-03-01");
+    expect(diaSeguinte("2024-12-31")).toBe("2025-01-01");
+    expect(diaSeguinte("2024-08-29")).toBe("2024-08-30");
   });
 });

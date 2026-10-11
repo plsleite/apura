@@ -281,17 +281,17 @@ Cada lançamento, prestação ou amortização, é atualizado independentemente,
 3. Mês da data de elaboração: se o índice desse mês já existir (só ocorre em cálculos com data de elaboração no passado), aplica-se pro rata geométrico de `dia ÷ diasDoMes`; se não existir, o mês entra com fator 1,000000 e o relatório lista o mês como "ainda não divulgado". Meses intermediários sem índice também entram com 1,000000 e aviso (nunca há estimativa).
 4. O índice de cada mês é o da metodologia vigente no primeiro dia daquele mês: até agosto/2024 o índice do período antigo (IGP-M por padrão), de setembro/2024 em diante o IPCA.
 5. Deflação: índices negativos entram com o sinal que têm; com `deflacao = "aplicarComPiso"` (padrão), se o fator acumulado ficar abaixo de 1,000000 ele é elevado a 1,000000 e o relatório registra o piso. Alternativas: `"aplicarSemPiso"` e `"zerarNegativos"`.
-6. O fator é arredondado a 6 casas (comercial) **antes** de multiplicar: `corrigido = arred2(valorBase × fator6)`.
+6. O fator multiplica com precisão integral e é impresso com 6 casas (decisão de 11/10/2026, ponto 9): `corrigido = arred2(valorBase × fator)`.
 7. Termos próprios (§6.5): o passo 1 usa o termo inicial da correção e o passo 3 usa o termo final da correção, quando informados.
 8. Períodos da metodologia: o índice de cada mês é o do período em que cai o primeiro dia do mês. Uma metodologia pode ter quantos períodos forem necessários (ex.: IGP-M de 2020 a 2022, IPCA de 2023 em diante).
 
 **Juros de mora** (percentual aditivo, simples, sobre o valor corrigido)
 
 - Regime antigo (`percentualMensal`, 1% ao mês por padrão): rateio por mês-calendário, `taxa × dias ÷ diasDoMes` em cada mês tocado, contando o dia do termo inicial e o dia final (ambas as pontas), como o SAJ. Período: do termo inicial dos juros (padrão: data do lançamento) até o termo final dos juros (padrão: data de elaboração); dentro dele, cada período da metodologia aplica a própria taxa aos dias que lhe cabem (ex.: 1% ao mês de 2020 a 2022 e 2% ao mês de 2023 em diante), e os percentuais se somam.
-- Regime novo (`taxaLegal`): taxa legal mensal da série 29543 do BCB, acumulada por juros simples; nos meses parciais, `TL_m × dias ÷ diasCorridosDoMes`, com dias contados como diferença entre as datas (o dia inicial não conta), conforme a metodologia e o exemplo oficial do BCB (Resolução CMN 5.171/2024, art. 6º). Em 30 e 31/08/2024 vale a taxa de agosto/2024 (art. 8º, parágrafo único). A taxa do mês corrente é publicada no 1º dia útil do próprio mês, portanto não há lacuna. Piso zero já embutido na série.
+- Regime novo (`taxaLegal`): taxa legal mensal da série 29543 do BCB, acumulada por juros simples; nos meses parciais, `TL_m × dias ÷ diasCorridosDoMes`, com dias contados como diferença entre as datas (conta-se o dia inicial e não se conta o dia do termo final, como a Calculadora do Cidadão; decisão de 11/10/2026), conforme a metodologia e o exemplo oficial do BCB (Resolução CMN 5.171/2024, art. 6º). Em 30 e 31/08/2024 vale a taxa de agosto/2024 (art. 8º, parágrafo único). A taxa do mês corrente é publicada no 1º dia útil do próprio mês, portanto não há lacuna. Piso zero já embutido na série.
 - Transição: para lançamento anterior a 30/08/2024, juros do regime antigo até 29/08/2024 (inclusive) e taxa legal de 30/08/2024 até a data de elaboração; os dois percentuais se somam (juros simples de ponta a ponta) e incidem uma única vez sobre o valor corrigido.
-- SELIC única (`selicUnica`, alternativa para o período antigo, Tema 1.368 do STJ): sem correção; percentual = soma das taxas mensais da série 4390 rateadas por mês-calendário como no regime antigo; no mês corrente, o valor parcial já publicado pelo BCB entra sem rateio.
-- O percentual total é arredondado a 6 casas antes de aplicar: `jurosValor = arred2(corrigido × percentual6 ÷ 100)`. `atualizado = corrigido + jurosValor`.
+- SELIC única (`selicUnica`, alternativa para o período antigo, Tema 1.368 do STJ): a SELIC (série 4390) entra como índice de correção capitalizado mês a mês, com pro rata geométrico no mês inicial, como o SAJ; não há juros separados; no mês corrente, o valor parcial já publicado pelo BCB entra inteiro, sem rateio (decisão de 11/10/2026); quando o lançamento cai no próprio mês do cálculo, o valor parcial é rateado pelos dias decorridos, (dia do cálculo − dia do lançamento) ÷ dia do cálculo (regra adotada na execução da fase 2 e confirmada pelo responsável em 11/10/2026).
+- O percentual total multiplica com precisão integral e é impresso com 6 casas: `jurosValor = arred2(corrigido × percentual ÷ 100)`. `atualizado = corrigido + jurosValor`.
 - Termo inicial dos juros posterior à data de elaboração, ou período de zero dias: juros zero, sem erro.
 
 ### 6.5 Encargos próprios por lançamento e metodologia por períodos
@@ -320,7 +320,7 @@ A metodologia global é o padrão; a personalização é a exceção e aparece d
 
 ### 6.8 Arredondamento
 
-Modo comercial (meio para cima) em todos os pontos: valor-base (2 casas), fator (6), percentual de juros (6), corrigido (2), juros (2), multa e honorários (2). Quem pegar o fator e o percentual impressos e refizer a conta chega ao mesmo centavo.
+Modo comercial (meio para cima) nos valores: valor-base (2 casas), corrigido (2), juros (2), multa e honorários (2). O fator e o percentual de juros são impressos com 6 casas, mas multiplicam com precisão integral (como o SAJ): quem refizer a conta com os números impressos pode encontrar diferença de até R$ 0,01 (decisão de 11/10/2026).
 
 ---
 
@@ -330,16 +330,18 @@ Confirmar com colegas ou com a contadoria do TJMS antes de implementar a regra c
 
 1. Correção pro rata geométrica no mês do lançamento e meses inteiros até o último índice divulgado (confirmado no SAJ 2018); pro rata no mês final quando o índice existir (a confirmar).
 2. Juros de 1% ao mês rateados por mês-calendário contando as duas pontas, sobre o valor corrigido (confirmado no SAJ 2018).
-3. Transição em 30/08/2024: índice de agosto/2024 pelo regime antigo; juros antigos até 29/08; taxa legal de agosto em 30 e 31/08. Contagem de dias da taxa legal pela metodologia do BCB (dia inicial não conta), diferente da contagem do SAJ no regime antigo; pendente de um relatório do SAJ posterior a 2024.
+3. Transição em 30/08/2024: índice de agosto/2024 pelo regime antigo; juros antigos até 29/08; taxa legal de agosto em 30 e 31/08. Contagem de dias da taxa legal pela metodologia do BCB, diferente da contagem do SAJ no regime antigo (decidido em 11/10/2026; ver nota abaixo).
 4. Taxa legal: série 29543, soma simples, pro rata por dias corridos, sobre o valor corrigido pelo IPCA; conferir períodos na Calculadora do Cidadão do BCB.
-5. SELIC única (Tema 1.368): rateio mensal e tratamento do mês corrente parcial.
+5. SELIC única (Tema 1.368): rateio mensal e tratamento do mês corrente parcial (decidido em 11/10/2026; ver nota abaixo).
 6. Reajuste anual do valor fixo: momento do primeiro reajuste e janela de 12 meses; reajuste pelo salário mínimo como proporção.
 7. Método de amortização do SAJ (lançamentos negativos atualizados até a data do cálculo) como padrão único do MVP.
-8. Multa e honorários: base (total devido) e não cumulação; só no rito da penhora.
-9. Arredondamento: fator e percentual com 6 casas, valores com 2 casas por lançamento, a confrontar com gabaritos.
+8. Multa e honorários: base (total devido) e não cumulação; só no rito da penhora (decidido em 11/10/2026; ver nota abaixo).
+9. Arredondamento: fator e percentual impressos com 6 casas e multiplicados com precisão integral, valores com 2 casas por lançamento, a confrontar com gabaritos (decidido em 11/10/2026; ver nota abaixo).
 10. IGP-M como índice padrão do período antigo em MS, com INPC e IPCA como alternativas.
 11. 13º e férias quando a base é percentual dos rendimentos.
-12. Deflação: índices negativos aplicados com piso no valor original.
+12. Deflação: índices negativos aplicados com piso no valor original (decidido em 11/10/2026; ver nota abaixo).
+
+**Decisões registradas em 11/10/2026 (fase 2).** Pontos 3 e 4: o SAJ Tribunais não calcula a taxa legal (segue IGP-M e 1% ao mês); o gabarito do regime novo é a Calculadora do Cidadão do BCB, que conta o dia inicial e não conta o dia final; na transição, 30/08/2024 conta. Ponto 5: SELIC única capitalizada mês a mês como índice de correção, sem juros, como o SAJ. Para lançamento no próprio mês do cálculo, a execução adotou ratear o valor parcial da SELIC pelos dias decorridos, (dia do cálculo − dia do lançamento) ÷ dia do cálculo, regra confirmada pelo responsável em 11/10/2026. Ponto 8: confirmado. Ponto 9: fator e percentual multiplicam com precisão integral e são impressos com 6 casas, como o SAJ. Ponto 12: piso mantido (STJ, REsp 1.265.580/RS), decidido sobre o fator bruto; o SAJ não aplica piso. Observação: a tabela do SAJ traz IGP-M de dez/2025 = −0,02 (BCB: −0,01).
 
 ---
 
@@ -457,7 +459,7 @@ Gerado a partir do que foi aplicado, nunca de parâmetros do sistema: não cita 
 - **TDD**: toda regra começa com um teste que falha e um exemplo numérico; o motor é testado sem interface e sem rede.
 - **Casos de referência** em `src/motor/casos/*.json`: Cálculo de entrada, índices congelados (valores da época) e saída esperada linha a linha, com fonte. Primeiro caso: SAJ TJMS 25/05/2018 (Anexo A). Seguintes: regime novo conferido na Calculadora do Cidadão do BCB; transição em 30/08/2024; um por tipo de base; deflação com piso; encargos próprios; multa e honorários; gabaritos da contadoria quando chegarem.
 - **Unitários**: datas (dias entre datas, dias do mês, rateio por mês-calendário), arredondamento comercial, fator de correção (pro rata geométrico, meses inteiros, mês final, meses faltantes, piso), juros por regime, taxa legal, SELIC única, metodologia com três ou mais períodos e taxas distintas, termos finais anteriores à data de elaboração, geração em lote (cumulativa, sem duplicar, dia 31), valor-base, multa e honorários, serialização.
-- **Propriedades**: ordem dos lançamentos não altera totais; salvar e reabrir devolve o mesmo Resultado com os mesmos índices; fator e percentual impressos reproduzem o centavo.
+- **Propriedades**: ordem dos lançamentos não altera totais; salvar e reabrir devolve o mesmo Resultado com os mesmos índices; refeita a conta com o fator e o percentual impressos, o valor difere do calculado em no máximo R$ 0,01 (§6.8).
 - **Índices**: parser e cliente testados com respostas gravadas do BCB (ordem invertida, mês corrente parcial, HTML em vez de JSON, erros 400/404/406), sem rede.
 - **Interface**: testes de componente (Testing Library) para lote cumulativo, edição e recálculo, recentes e preferências. Impressão: roteiro de conferência manual.
 - **Integração contínua**: GitHub Actions roda lint, tipos e testes a cada envio; publicação só com testes verdes.

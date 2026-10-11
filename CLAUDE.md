@@ -27,10 +27,11 @@ de decidir, uma pergunta por vez, em múltipla escolha com a opção recomendada
 
 ## Estado
 
-Fase 1 (fundação e motor do regime antigo) concluída em 2026-10-11: projeto, primitivas, motor do
-regime antigo reproduzindo o caso SAJ 2018 e cópia embutida do IGP-M. Próxima: fase 2 (regime novo
-e transição), com plano a escrever. A tabela de fases do roteiro é a referência; atualize-a e esta
-seção ao concluir cada fase.
+Fase 2 (regime novo e transição) concluída em 2026-10-11: taxa legal com a contagem da Calculadora
+do Cidadão, IPCA, transição em 30/08/2024, SELIC única capitalizada, deflação com piso, encargos
+próprios, multa e honorários, precisão integral e sete casos de referência novos (dois do SAJ de
+2026, cinco conferidos na Calculadora). Próxima: fase 3 (bases e lotes), com plano a escrever. A
+tabela de fases do roteiro é a referência; atualize-a e esta seção ao concluir cada fase.
 
 ## Comandos
 
@@ -58,7 +59,7 @@ docs/superpowers/plans/   planos de implementação (um por fase)
 scripts/                  atualizar-indices.ts
 src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts
 src/motor/                periodos.ts · correcao.ts · juros.ts · calcular.ts · casos/ (casos de referência)
-src/motor/testes/         dados de teste: tabela IGP-M usada pelos testes unitários
+src/motor/testes/         dados de teste: tabela IGP-M 2017–2018 e séries do regime novo 2024–2026 usadas pelos testes unitários
 src/indices/              series.ts · cliente-bcb.ts · embutidos.ts (cache, congelamento e calendário: fase 4)
 src/indices/testes/       dados de teste: resposta gravada do SGS
 src/metodologias/         tjms-saj.v1.json · padrao.ts
@@ -74,8 +75,9 @@ src/relatorio/            relatório e impressão (fase 6)
    `src/compartilhado/decimal.ts` (que o importa de `decimal.js` com importação nomeada,
    `import { Decimal } from "decimal.js"`: a importação padrão quebra a checagem de tipos do script
    de índices); nunca `number`. Nos arquivos e no `Resultado`, texto decimal com ponto
-   (`"451.91"`). Arredondamento comercial (meio para cima): fator e percentual com 6 casas, valores
-   com 2, e o fator e o percentual são arredondados antes de multiplicar.
+   (`"451.91"`). Arredondamento comercial (meio para cima) nos valores (2 casas); o fator e o
+   percentual de juros multiplicam com precisão integral e são impressos com 6 casas (convenção do
+   SAJ, decidida em 11/10/2026).
 3. **Datas como texto ISO** (`"AAAA-MM-DD"`, competências `"AAAA-MM"`), com os utilitários de
    `src/compartilhado/datas.ts`. Nada de `Date` no motor.
 4. **Motor puro.** `src/motor/` não usa `Date.now()`, `fetch`, DOM ou armazenamento; recebe o
@@ -97,7 +99,8 @@ src/relatorio/            relatório e impressão (fase 6)
 
 A seção 7 do design lista as convenções que ainda dependem de confirmação jurídica ou de gabaritos
 da contadoria. Não as "resolva" sozinho: implemente o padrão decidido no design e pergunte ao
-responsável quando a fase tocar em uma delas.
+responsável quando a fase tocar em uma delas. Os pontos 3, 4, 5, 8, 9 e 12 foram decididos em
+11/10/2026 (nota ao fim da §7 do design).
 
 ## Como registrar um caso de referência
 
@@ -107,7 +110,8 @@ Um caso é um arquivo JSON em `src/motor/casos/AAAA-MM-DD-<origem>-<tema>.json` 
 - `nome` e `fonte` (de onde vieram os valores: relatório do SAJ, Calculadora do Cidadão, contadoria);
 - `calculo`: o `Calculo` completo de entrada;
 - `indices`: a `TabelaIndices` congelada **como estava na data do cálculo** (só os meses que a
-  fonte usou; incluir um mês posterior muda o resultado);
+  fonte usou; incluir um mês posterior muda o resultado); quando a fonte usa um valor diferente do
+  BCB (ex.: IGP-M de dez/2025 no SAJ), o caso congela o valor da fonte e explica em `observacoes`;
 - `esperado`: por lançamento, `corrigido`, `jurosValor` e `atualizado` (e, quando a fonte os der,
   `fator` e `jurosPercentual`); e os `totais`.
 

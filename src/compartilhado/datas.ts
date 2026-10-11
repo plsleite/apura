@@ -132,3 +132,19 @@ export function ratearPorMesCalendario(inicio: DataISO, fim: DataISO): TrechoMen
   }
   return trechos;
 }
+
+/** Dia anterior: "2026-10-01" → "2026-09-30". */
+export function diaAnterior(data: DataISO): DataISO {
+  const { ano, mes, dia } = decompor(data);
+  if (dia > 1) return compor(ano, mes, dia - 1);
+  const anoAnterior = mes === 1 ? ano - 1 : ano;
+  const mesAnterior = mes === 1 ? 12 : mes - 1;
+  return compor(anoAnterior, mesAnterior, diasDoMes(anoAnterior, mesAnterior));
+}
+
+/** Dia seguinte: "2024-02-29" → "2024-03-01". */
+export function diaSeguinte(data: DataISO): DataISO {
+  const { ano, mes, dia } = decompor(data);
+  if (dia < diasDoMes(ano, mes)) return compor(ano, mes, dia + 1);
+  return mes === 12 ? compor(ano + 1, 1, 1) : compor(ano, mes + 1, 1);
+}
