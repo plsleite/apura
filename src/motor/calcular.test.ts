@@ -244,10 +244,13 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
         "IPCA de out/2026 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
       ],
     });
-    expect(r.consultaIndices.series).toEqual(["189", "433", "4390", "29543"]);
+    // séries em ordem numérica (como texto, "1619" viria antes de "188")
+    expect(r.consultaIndices.series).toEqual(["188", "189", "433", "1619", "4390", "29543"]);
     expect(r.consultaIndices.ultimoMesPorSerie).toEqual({
+      "188": "2026-09",
       "189": "2026-09",
       "433": "2026-09",
+      "1619": "2026-12",
       "4390": "2026-10",
       "29543": "2026-10",
     });
