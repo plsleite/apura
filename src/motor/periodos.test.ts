@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Metodologia } from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
-import { dividirPorPeriodos, periodoVigenteEm } from "./periodos.ts";
+import { dividirPorPeriodos, periodoVigenteEm, validarMetodologia } from "./periodos.ts";
 
 describe("períodos da metodologia", () => {
   const padrao = metodologiaPadrao();
@@ -42,5 +42,82 @@ describe("períodos da metodologia", () => {
     expect(unico).toHaveLength(1);
     expect(unico[0]).toMatchObject({ de: "2017-01-10", ate: "2018-05-25" });
     expect(dividirPorPeriodos(padrao, "2018-05-25", "2017-01-10")).toEqual([]);
+  });
+  it("a metodologia padrão é contínua: nenhum aviso", () => {
+    expect(validarMetodologia(padrao)).toEqual([]);
+  });
+
+  it("avisa lacuna entre períodos, e os dias da lacuna ficam fora dos trechos", () => {
+    const comLacuna: Metodologia = {
+      ...padrao,
+      periodos: [
+        {
+          de: null,
+          ate: "2020-12-31",
+          correcao: { indice: "IGP-M" },
+          juros: { tipo: "percentualMensal", taxaMensal: "1" },
+        },
+        { de: "2021-02-01", ate: null, correcao: { indice: "IPCA" }, juros: { tipo: "taxaLegal" } },
+      ],
+    };
+    expect(validarMetodologia(comLacuna)).toEqual([
+      "A metodologia não cobre o período de 01/01/2021 a 31/01/2021: esses dias ficam sem correção e sem juros.",
+    ]);
+    expect(
+      dividirPorPeriodos(comLacuna, "2020-12-10", "2021-02-10").map((t) => [t.de, t.ate]),
+    ).toEqual([
+      ["2020-12-10", "2020-12-31"],
+      ["2021-02-01", "2021-02-10"],
+    ]);
+  });
+
+  it("avisa sobreposição; o período iniciado antes fica com os dias comuns, sem contar dia duas vezes", () => {
+    const sobrepostos: Metodologia = {
+      ...padrao,
+      periodos: [
+        { de: "2021-01-01", ate: null, correcao: { indice: "IPCA" }, juros: { tipo: "taxaLegal" } },
+        {
+          de: null,
+          ate: "2021-01-31",
+          correcao: { indice: "IGP-M" },
+          juros: { tipo: "percentualMensal", taxaMensal: "1" },
+        },
+      ],
+    };
+    expect(validarMetodologia(sobrepostos)).toEqual([
+      "Os períodos se sobrepõem de 01/01/2021 a 31/01/2021: nesses dias prevaleceu o período iniciado antes.",
+    ]);
+    expect(periodoVigenteEm(sobrepostos, "2021-01-15")?.correcao.indice).toBe("IGP-M");
+    expect(
+      dividirPorPeriodos(sobrepostos, "2020-12-10", "2021-02-10").map((t) => [
+        t.de,
+        t.ate,
+        t.periodo.correcao.indice,
+      ]),
+    ).toEqual([
+      ["2020-12-10", "2021-01-31", "IGP-M"],
+      ["2021-02-01", "2021-02-10", "IPCA"],
+    ]);
+  });
+
+  it("avisa extremos descobertos e metodologia sem períodos", () => {
+    const fechada: Metodologia = {
+      ...padrao,
+      periodos: [
+        {
+          de: "2020-01-01",
+          ate: "2020-12-31",
+          correcao: { indice: "IGP-M" },
+          juros: { tipo: "percentualMensal", taxaMensal: "1" },
+        },
+      ],
+    };
+    expect(validarMetodologia(fechada)).toEqual([
+      "A metodologia não cobre datas anteriores a 01/01/2020: esses dias ficam sem correção e sem juros.",
+      "A metodologia não cobre datas posteriores a 31/12/2020: esses dias ficam sem correção e sem juros.",
+    ]);
+    expect(validarMetodologia({ ...padrao, periodos: [] })).toEqual([
+      "A metodologia não tem períodos: nenhum lançamento recebe correção nem juros.",
+    ]);
   });
 });
