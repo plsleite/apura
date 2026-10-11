@@ -7,7 +7,7 @@ execução de alimentos (demonstrativo discriminado e atualizado do crédito, ar
 aplicativo que roda inteiro no navegador, sem servidor, publicado como site estático, com relatório
 em HTML e PDF na identidade visual da DPE-MS.
 
-Leia, nesta ordem, antes de qualquer tarefa:
+Ao iniciar uma sessão de trabalho, leia, nesta ordem:
 
 1. `docs/superpowers/roteiro.md` — fases, situação atual e como retomar.
 2. `docs/superpowers/specs/2026-10-10-apura-mvp-alimentos-design.md` — design do MVP, fonte de
@@ -17,6 +17,9 @@ Leia, nesta ordem, antes de qualquer tarefa:
    decisão técnica pode inviabilizá-la.
 4. O plano da fase em andamento, em `docs/superpowers/plans/`.
 
+Quem executa uma tarefa já especificada num brief (por exemplo, um subagente de execução de plano)
+segue o brief e consulta esses documentos só no ponto que o brief indicar.
+
 Não reabra decisões já tomadas nesses documentos. Quem fala com você é um Defensor Público,
 coordenador de TI, sem formação em programação: escreva em português, explique escolhas técnicas em
 linguagem acessível com prós e contras, prefira a solução mais simples que atenda e pergunte antes
@@ -24,8 +27,10 @@ de decidir, uma pergunta por vez, em múltipla escolha com a opção recomendada
 
 ## Estado
 
-Fase 1 (fundação e motor do regime antigo) em execução. A tabela de fases do roteiro é a
-referência; atualize-a e esta seção ao concluir cada fase.
+Fase 1 (fundação e motor do regime antigo) concluída em 2026-10-11: projeto, primitivas, motor do
+regime antigo reproduzindo o caso SAJ 2018 e cópia embutida do IGP-M. Próxima: fase 2 (regime novo
+e transição), com plano a escrever. A tabela de fases do roteiro é a referência; atualize-a e esta
+seção ao concluir cada fase.
 
 ## Comandos
 
@@ -64,9 +69,11 @@ src/relatorio/            relatório e impressão (fase 6)
 1. **TDD.** Toda regra nasce com um teste que falha e um exemplo numérico; só então o código.
    O motor é testado sem interface e sem rede.
 2. **Decimal.** Dinheiro, percentuais, índices e fatores são `Decimal`, importado somente de
-   `src/compartilhado/decimal.ts`; nunca `number`. Nos arquivos e no `Resultado`, texto decimal com
-   ponto (`"451.91"`). Arredondamento comercial (meio para cima): fator e percentual com 6 casas,
-   valores com 2, e o fator e o percentual são arredondados antes de multiplicar.
+   `src/compartilhado/decimal.ts` (que o importa de `decimal.js` com importação nomeada,
+   `import { Decimal } from "decimal.js"`: a importação padrão quebra a checagem de tipos do script
+   de índices); nunca `number`. Nos arquivos e no `Resultado`, texto decimal com ponto
+   (`"451.91"`). Arredondamento comercial (meio para cima): fator e percentual com 6 casas, valores
+   com 2, e o fator e o percentual são arredondados antes de multiplicar.
 3. **Datas como texto ISO** (`"AAAA-MM-DD"`, competências `"AAAA-MM"`), com os utilitários de
    `src/compartilhado/datas.ts`. Nada de `Date` no motor.
 4. **Motor puro.** `src/motor/` não usa `Date.now()`, `fetch`, DOM ou armazenamento; recebe o
