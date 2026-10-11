@@ -186,8 +186,11 @@ Lancamento {
 
 EncargosProprios {
   termoInicialCorrecao?: "AAAA-MM-DD"      // padrão: data do lançamento
+  termoFinalCorrecao?: "AAAA-MM-DD"        // padrão: data de elaboração
   termoInicialJuros?: "AAAA-MM-DD"         // padrão: data do lançamento
-  metodologia?: Metodologia                // substitui a metodologia global só neste lançamento
+  termoFinalJuros?: "AAAA-MM-DD"           // padrão: data de elaboração
+  metodologia?: Metodologia                // substitui a metodologia global só neste lançamento,
+                                           // com seus próprios períodos (de/até), índices e taxas
 }
 ```
 
@@ -273,25 +276,32 @@ Cada lançamento, prestação ou amortização, é atualizado independentemente,
 **Correção monetária** (fator multiplicativo)
 
 1. Mês da data do lançamento: com `incidenciaMesInicial = "proRata"` (padrão), o fator do mês é `(1 + i/100) ^ ((diasDoMes − dia) ÷ diasDoMes)`; com `"mesSeguinte"`, o mês não entra.
-2. Meses seguintes inteiros, até o último mês com índice divulgado que não ultrapasse o mês da data de elaboração.
+2. Meses seguintes inteiros, até o último mês com índice divulgado que não ultrapasse o mês do termo final da correção (padrão: data de elaboração).
 3. Mês da data de elaboração: se o índice desse mês já existir (só ocorre em cálculos com data de elaboração no passado), aplica-se pro rata geométrico de `dia ÷ diasDoMes`; se não existir, o mês entra com fator 1,000000 e o relatório lista o mês como "ainda não divulgado". Meses intermediários sem índice também entram com 1,000000 e aviso (nunca há estimativa).
 4. O índice de cada mês é o da metodologia vigente no primeiro dia daquele mês: até agosto/2024 o índice do período antigo (IGP-M por padrão), de setembro/2024 em diante o IPCA.
 5. Deflação: índices negativos entram com o sinal que têm; com `deflacao = "aplicarComPiso"` (padrão), se o fator acumulado ficar abaixo de 1,000000 ele é elevado a 1,000000 e o relatório registra o piso. Alternativas: `"aplicarSemPiso"` e `"zerarNegativos"`.
 6. O fator é arredondado a 6 casas (comercial) **antes** de multiplicar: `corrigido = arred2(valorBase × fator6)`.
-7. Termo inicial da correção diferente da data do lançamento (encargos próprios): o passo 1 usa o termo inicial.
+7. Termos próprios (§6.5): o passo 1 usa o termo inicial da correção e o passo 3 usa o termo final da correção, quando informados.
+8. Períodos da metodologia: o índice de cada mês é o do período em que cai o primeiro dia do mês. Uma metodologia pode ter quantos períodos forem necessários (ex.: IGP-M de 2020 a 2022, IPCA de 2023 em diante).
 
 **Juros de mora** (percentual aditivo, simples, sobre o valor corrigido)
 
-- Regime antigo (`percentualMensal`, 1% ao mês por padrão): rateio por mês-calendário, `taxa × dias ÷ diasDoMes` em cada mês tocado, contando o dia do termo inicial e o dia final (ambas as pontas), como o SAJ. Período: do termo inicial dos juros (padrão: data do lançamento) até a data de elaboração, limitado a 29/08/2024 quando houver transição.
+- Regime antigo (`percentualMensal`, 1% ao mês por padrão): rateio por mês-calendário, `taxa × dias ÷ diasDoMes` em cada mês tocado, contando o dia do termo inicial e o dia final (ambas as pontas), como o SAJ. Período: do termo inicial dos juros (padrão: data do lançamento) até o termo final dos juros (padrão: data de elaboração); dentro dele, cada período da metodologia aplica a própria taxa aos dias que lhe cabem (ex.: 1% ao mês de 2020 a 2022 e 2% ao mês de 2023 em diante), e os percentuais se somam.
 - Regime novo (`taxaLegal`): taxa legal mensal da série 29543 do BCB, acumulada por juros simples; nos meses parciais, `TL_m × dias ÷ diasCorridosDoMes`, com dias contados como diferença entre as datas (o dia inicial não conta), conforme a metodologia e o exemplo oficial do BCB (Resolução CMN 5.171/2024, art. 6º). Em 30 e 31/08/2024 vale a taxa de agosto/2024 (art. 8º, parágrafo único). A taxa do mês corrente é publicada no 1º dia útil do próprio mês, portanto não há lacuna. Piso zero já embutido na série.
 - Transição: para lançamento anterior a 30/08/2024, juros do regime antigo até 29/08/2024 (inclusive) e taxa legal de 30/08/2024 até a data de elaboração; os dois percentuais se somam (juros simples de ponta a ponta) e incidem uma única vez sobre o valor corrigido.
 - SELIC única (`selicUnica`, alternativa para o período antigo, Tema 1.368 do STJ): sem correção; percentual = soma das taxas mensais da série 4390 rateadas por mês-calendário como no regime antigo; no mês corrente, o valor parcial já publicado pelo BCB entra sem rateio.
 - O percentual total é arredondado a 6 casas antes de aplicar: `jurosValor = arred2(corrigido × percentual6 ÷ 100)`. `atualizado = corrigido + jurosValor`.
 - Termo inicial dos juros posterior à data de elaboração, ou período de zero dias: juros zero, sem erro.
 
-### 6.5 Encargos próprios por lançamento
+### 6.5 Encargos próprios por lançamento e metodologia por períodos
 
-Qualquer lançamento pode ter termo inicial da correção, termo inicial dos juros e metodologia próprios (ex.: danos morais com correção desde o arbitramento e juros desde o evento danoso; repetição de indébito com correção do desembolso e juros da citação; sentença de alimentos que fixe termo diverso). A metodologia global é o padrão; a personalização é a exceção e aparece descrita no relatório sem a palavra "personalização": o texto diz os termos e índices daquele lançamento.
+**Metodologia por períodos.** Tanto a metodologia global quanto a de um lançamento são listas de períodos (de/até), cada um com seu índice de correção e sua regra de juros (percentual mensal com a taxa que o usuário informar, taxa legal ou SELIC única). O usuário pode dividir um período em uma data e remover divisões, pela tela. Exemplo: juros de 1% ao mês e IGP-M de 2020 a 2022; juros de 2% ao mês e IPCA de 2023 em diante. A transição legal de 30/08/2024 é apenas a divisão que já vem pré-carregada.
+
+**Termos próprios.** Qualquer lançamento pode ter, para a correção e para os juros separadamente, termo inicial (padrão: data do lançamento) e termo final (padrão: data de elaboração). Exemplos: danos morais com correção desde o arbitramento e juros desde o evento danoso; repetição de indébito com correção do desembolso e juros da citação; sentença de alimentos que fixe termo diverso; encargos que cessam em uma data (depósito judicial) anterior à data de elaboração.
+
+**Metodologia própria.** Um lançamento pode ainda substituir a metodologia global pela sua, com períodos, índices e taxas próprios, editada no mesmo painel da metodologia global.
+
+A metodologia global é o padrão; a personalização é a exceção e aparece descrita no relatório sem a palavra "personalização": o texto diz os termos, índices e taxas daquele lançamento.
 
 ### 6.6 Totais, multa e honorários
 
@@ -379,12 +389,12 @@ Barra superior: nome do sistema ("Apura · Sistema de Cálculos Judiciais · DPE
 2. **Base dos alimentos**: três opções; só os campos da opção escolhida aparecem; ajuda sobre reajuste e salário mínimo.
 3. **Prestações em atraso**: dia do vencimento; "Meses em atraso" ou "De / até"; botão "Lançar em lote" (cumulativo).
 4. **Pagamentos**: valor por mês, dia do pagamento, de / até; botão "Lançar em lote".
-5. **Encargos e data do cálculo**: metodologia com resumo em uma frase e "Ajustar…" (índice e juros de cada período, incidência no mês inicial, deflação); multa e honorários (padrão 0, sugestão 10); data de elaboração; observações para o relatório.
+5. **Encargos e data do cálculo**: metodologia com resumo em uma frase e "Ajustar…", que abre o editor de períodos: lista de períodos (de/até) com índice de correção e regra de juros (tipo e taxa) em cada um, "Dividir em uma data" e "Remover divisão", incidência no mês inicial e tratamento da deflação; multa e honorários (padrão 0, sugestão 10); data de elaboração; observações para o relatório.
 
 ### 9.3 Lado direito
 
 - Cinco indicadores, na ordem: prestações atualizadas · amortizações atualizadas · total devido na data (destaque) · multa e honorários · total geral (destaque).
-- Tabela de prestações: competência, vencimento, valor, fator, corrigido, juros (% e R$), atualizado; clique na competência expande a memória (índices mês a mês, dias de juros por mês e regime); lápis abre "Personalizar" (valor, vencimento, descrição, termos iniciais, metodologia própria); ✕ exclui; "+ Prestação" inclui avulsa.
+- Tabela de prestações: competência, vencimento, valor, fator, corrigido, juros (% e R$), atualizado; clique na competência expande a memória (índices mês a mês, dias de juros por mês e regime); lápis abre "Personalizar" (valor, vencimento, descrição, termos inicial e final da correção e dos juros, e metodologia própria no mesmo editor de períodos); ✕ exclui; "+ Prestação" inclui avulsa.
 - Tabela de amortizações com as mesmas colunas; "+ Pagamento" inclui avulsa.
 - Caixa de avisos em frases completas, só quando houver.
 - Rodapé: situação dos índices (sem botão) e versão do Apura.
@@ -431,7 +441,7 @@ Não há linha de "competências em aberto" nem qualquer referência à Súmula 
 Gerado a partir do que foi aplicado, nunca de parâmetros do sistema: não cita nome ou versão de perfil, nem "personalização". Parágrafos:
 
 - **Base.** Como o valor de cada prestação foi apurado (valor fixo e reajustes aplicados, com percentuais; ou percentual do salário mínimo; ou percentual dos rendimentos), e menção a valores editados à mão.
-- **Termo inicial.** "Encargos desde o vencimento de cada prestação (mora automática, art. 397 do CC). Correção pelo índice do mês do vencimento, proporcional aos dias restantes (pro rata), e pelos meses seguintes até {último mês divulgado}; juros até a data do cálculo." Lançamentos com termos próprios são descritos aqui.
+- **Termos.** "Encargos desde o vencimento de cada prestação (mora automática, art. 397 do CC). Correção pelo índice do mês do vencimento, proporcional aos dias restantes (pro rata), e pelos meses seguintes até {último mês divulgado}; juros até a data do cálculo." Lançamentos com termos iniciais ou finais próprios são descritos aqui, com suas datas.
 - **Encargos.** Texto fixo aprovado: "Até 29/08/2024, IGP-M e juros de 1% ao mês, simples, pro rata die; desde 30/08/2024, IPCA (art. 389, parágrafo único, do CC) e juros pela taxa legal (art. 406, §1º, do CC; Lei 14.905/2024; Resolução CMN 5.171/2024), série 29543 do BCB, acumulada por juros simples e pro rata por dias corridos, sobre o valor corrigido." Adaptado automaticamente quando a metodologia for outra (INPC, IPCA, SELIC única).
 - **Amortizações.** "Cada pagamento é atualizado pelos mesmos critérios, da data do pagamento até a data do cálculo, e abatido do total atualizado."
 - **Multa e honorários.** Quando houver: percentuais, base e não cumulação.
@@ -445,7 +455,7 @@ Gerado a partir do que foi aplicado, nunca de parâmetros do sistema: não cita 
 
 - **TDD**: toda regra começa com um teste que falha e um exemplo numérico; o motor é testado sem interface e sem rede.
 - **Casos de referência** em `src/motor/casos/*.json`: Cálculo de entrada, índices congelados (valores da época) e saída esperada linha a linha, com fonte. Primeiro caso: SAJ TJMS 25/05/2018 (Anexo A). Seguintes: regime novo conferido na Calculadora do Cidadão do BCB; transição em 30/08/2024; um por tipo de base; deflação com piso; encargos próprios; multa e honorários; gabaritos da contadoria quando chegarem.
-- **Unitários**: datas (dias entre datas, dias do mês, rateio por mês-calendário), arredondamento comercial, fator de correção (pro rata geométrico, meses inteiros, mês final, meses faltantes, piso), juros por regime, taxa legal, SELIC única, geração em lote (cumulativa, sem duplicar, dia 31), valor-base, multa e honorários, serialização.
+- **Unitários**: datas (dias entre datas, dias do mês, rateio por mês-calendário), arredondamento comercial, fator de correção (pro rata geométrico, meses inteiros, mês final, meses faltantes, piso), juros por regime, taxa legal, SELIC única, metodologia com três ou mais períodos e taxas distintas, termos finais anteriores à data de elaboração, geração em lote (cumulativa, sem duplicar, dia 31), valor-base, multa e honorários, serialização.
 - **Propriedades**: ordem dos lançamentos não altera totais; salvar e reabrir devolve o mesmo Resultado com os mesmos índices; fator e percentual impressos reproduzem o centavo.
 - **Índices**: parser e cliente testados com respostas gravadas do BCB (ordem invertida, mês corrente parcial, HTML em vez de JSON, erros 400/404/406), sem rede.
 - **Interface**: testes de componente (Testing Library) para lote cumulativo, edição e recálculo, recentes e preferências. Impressão: roteiro de conferência manual.
