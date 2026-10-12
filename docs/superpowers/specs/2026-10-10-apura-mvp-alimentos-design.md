@@ -178,7 +178,7 @@ Lancamento {
   data: "AAAA-MM-DD"                       // vencimento ou data do pagamento
   competencia?: "AAAA-MM"                  // prestações
   descricao?: string                       // ex.: "13º salário 2025", "Pagamento parcial"
-  valorInformado?: string                  // amortizações sempre; prestações só se editadas à mão
+  valorInformado?: string                  // amortizações sempre; prestações só quando o valor foi informado à mão (as demais, pela base, §6.3)
   rendimento?: string                      // base em % dos rendimentos: rendimento daquele mês
   encargos?: EncargosProprios              // §6.5
   origem: "lote" | "avulso"
@@ -221,7 +221,9 @@ Metodologia padrão "TJMS/SAJ v1": período até 29/08/2024 com IGP-M e 1% ao m�
 Resultado {
   lancamentos: Array<{
     id; tipo; data; competencia?; descricao?
-    valorBase: string; memoriaBase: string          // ex.: "48,23% do salário mínimo de jan/2017 (R$ 937,00)"
+    valorBase: string; memoriaBase: string          // ex.: "30% do salário mínimo de mar/2024 (R$ 1.412,00) = R$ 423,60"
+    editado: boolean                                 // valor informado à mão, não apurado pela base (§6.3)
+    situacao: "atualizado" | "vincenda" | "ignorado" // §6.7 (fase 3)
     correcao: { fator: string; indices: Array<{ serie; competencia; valor; fracao }>; pisoAplicado: boolean }
     corrigido: string
     juros: { percentual: string; detalhe: Array<{ regime; de; ate; dias; diasDoMes?; taxa; percentual }> }
@@ -255,20 +257,24 @@ Todas as regras abaixo nascem com teste e exemplo numérico (§11). O motor nunc
 - "N meses em atraso": a última prestação é a do vencimento mais recente que não ultrapassa a data de elaboração; as demais vêm para trás, mês a mês. Exemplo de referência: dia 5, 3 meses, elaboração em 10/10/2026 → 05/08, 05/09 e 05/10/2026. Elaboração em 03/10/2026 → 05/07, 05/08 e 05/09/2026.
 - Dia 31 (ou 29/30) em mês mais curto → último dia do mês.
 - Lotes são cumulativos: cada "Lançar em lote" acrescenta à lista. Competência já existente não é duplicada; o aviso diz quais foram puladas.
+- A competência de cada prestação é o mês do vencimento, e a base (§6.3) usa sempre o mês da data do vencimento (decisão de 11/10/2026). As prestações do lote nascem sem valor informado (o motor as apura pela base), com origem "lote" e id `p-AAAA-MM` (`p-AAAA-MM-2`, `-3`… se o id já existir).
 - Vencimento em fim de semana ou feriado: mantido como está (mora automática, art. 397 do CC); o usuário pode editar datas individualmente.
 
 ### 6.2 Geração em lote de amortizações
 
-- Entrada: valor por mês, dia do pagamento (padrão: o dia do vencimento), intervalo de competências. Gera um lançamento `amortizacao` por mês, descrição "Pagamento parcial", editável. Amortizações avulsas são lançadas na tabela de resultado.
+- Entrada: valor por mês, dia do pagamento (a tela o preenche com o dia do vencimento; o motor recebe sempre o dia) e intervalo de meses. Gera um lançamento `amortizacao` por mês, descrição "Pagamento parcial", editável, com id `a-AAAA-MM`. Meses que já têm pagamento lançado são pulados, com aviso (decisão de 11/10/2026); um segundo pagamento no mesmo mês entra como pagamento avulso. Amortizações avulsas são lançadas na tabela de resultado.
 
 ### 6.3 Valor-base de cada prestação
 
-- Valor fixo com reajuste: no mês do reajuste (padrão: mês da fixação; editável), o valor vigente é multiplicado pelo índice acumulado dos 12 meses anteriores ao mês do reajuste; a partir daí, a cada 12 meses. Se o usuário escolher outro mês de reajuste, o primeiro reajuste usa o acumulado desde o mês da fixação até o mês anterior ao reajuste. Reajuste "pelo salário mínimo": valor × (salário mínimo do mês do vencimento ÷ salário mínimo do mês da fixação). "Nenhum": valor constante.
-- Percentual do salário mínimo: percentual × salário mínimo vigente no mês do vencimento (série 1619).
-- Percentual dos rendimentos: percentual × rendimento do mês (o do lançamento, se informado; senão o padrão).
-- Valor editado à mão prevalece e é marcado como "editado" no resultado e no relatório.
-- Valor-base arredondado a 2 casas. `memoriaBase` explica a conta em uma frase.
-- 13º salário e férias, quando a base for percentual dos rendimentos, entram como prestação avulsa com descrição (ponto de validação 11).
+- A base usa sempre o mês da data do vencimento da prestação (a competência é o rótulo da linha e, no lote, é igual ao mês do vencimento). Toda prestação sem valor informado, de lote ou avulsa, é apurada pela base (decisões de 11/10/2026, fase 3).
+- Valor fixo com reajuste por índice (IGP-M, INPC ou IPCA): no mês do reajuste (padrão: mês da fixação; editável), o valor vigente é multiplicado pelo índice acumulado dos 12 meses anteriores ao mês do reajuste; a partir daí, a cada 12 meses. O primeiro reajuste cai 12 meses após a fixação quando o mês do reajuste é o próprio mês da fixação (fixado em 15/03/2024, reajuste em março: mar/2025, com o acumulado de mar/2024 a fev/2025); com outro mês escolhido, cai na primeira ocorrência dele depois do mês da fixação, com o acumulado desde o mês da fixação até o mês anterior ao reajuste (pode ter menos de 12 meses). O acumulado (produto dos fatores mensais) multiplica com precisão integral e aparece na memória com 4 casas; o valor reajustado é arredondado a 2 casas a cada reajuste, e o seguinte parte dele. Acumulado negativo ou zero não reduz o valor: o valor vigente é mantido e a memória registra. Se faltar na tabela algum mês do acumulado, o reajuste não é aplicado, o valor vigente anterior é mantido e o aviso diz até que mês o índice está disponível.
+- Reajuste "pelo salário mínimo": valor × (salário mínimo do mês do vencimento ÷ salário mínimo do mês da fixação), sem usar o mês de reajuste (o valor acompanha o salário mínimo no mês em que ele muda). "Nenhum": valor constante.
+- Prestação anterior ao mês da fixação: entra com o valor fixado, sem reajuste, com aviso.
+- Percentual do salário mínimo: percentual × salário mínimo do mês do vencimento (série 1619). Mês ainda sem salário mínimo publicado: usa-se o último publicado, que vigora até o novo decreto, com aviso; a proveniência registra o mês realmente usado.
+- Percentual dos rendimentos: percentual × rendimento do mês (o do lançamento, se informado; senão o padrão). Não há reajuste automático: quando o rendimento muda, o usuário informa o novo rendimento nos meses afetados ou altera o padrão.
+- Valor informado à mão prevalece: a linha do resultado traz `editado = true`, aviso no lançamento e resumo no resultado; o relatório menciona esses valores. Amortizações têm o valor sempre informado e não recebem a marca.
+- Valor-base arredondado a 2 casas. `memoriaBase` explica a conta em uma frase (ex.: "30% do salário mínimo de mar/2024 (R$ 1.412,00) = R$ 423,60"; "R$ 500,00 fixados em 15/03/2024, reajustados em mar/2025 (IPCA de mar/2024 a fev/2025: 5,0576%) = R$ 525,29").
+- 13º salário e férias, quando a base for percentual dos rendimentos, entram como prestação avulsa com descrição e com o rendimento do evento informado no lançamento; o motor aplica o percentual (ponto de validação 11, decidido em 11/10/2026).
 
 ### 6.4 Atualização de cada lançamento (método SAJ)
 
@@ -291,7 +297,7 @@ Cada lançamento, prestação ou amortização, é atualizado independentemente,
 - Regime novo (`taxaLegal`): taxa legal mensal da série 29543 do BCB, acumulada por juros simples; nos meses parciais, `TL_m × dias ÷ diasCorridosDoMes`, com dias contados como diferença entre as datas (conta-se o dia inicial e não se conta o dia do termo final, como a Calculadora do Cidadão; decisão de 11/10/2026), conforme a metodologia e o exemplo oficial do BCB (Resolução CMN 5.171/2024, art. 6º). Em 30 e 31/08/2024 vale a taxa de agosto/2024 (art. 8º, parágrafo único). A taxa do mês corrente é publicada no 1º dia útil do próprio mês, portanto não há lacuna. Piso zero já embutido na série.
 - Transição: para lançamento anterior a 30/08/2024, juros do regime antigo até 29/08/2024 (inclusive) e taxa legal de 30/08/2024 até a data de elaboração; os dois percentuais se somam (juros simples de ponta a ponta) e incidem uma única vez sobre o valor corrigido.
 - SELIC única (`selicUnica`, alternativa para o período antigo, Tema 1.368 do STJ): a SELIC (série 4390) entra como índice de correção capitalizado mês a mês, com pro rata geométrico no mês inicial, como o SAJ; não há juros separados; no mês corrente, o valor parcial já publicado pelo BCB entra inteiro, sem rateio (decisão de 11/10/2026); quando o lançamento cai no próprio mês do cálculo, o valor parcial é rateado pelos dias decorridos, (dia do cálculo − dia do lançamento) ÷ dia do cálculo (regra adotada na execução da fase 2 e confirmada pelo responsável em 11/10/2026).
-- O percentual total multiplica com precisão integral e é impresso com 6 casas: `jurosValor = arred2(corrigido × percentual ÷ 100)`. `atualizado = corrigido + jurosValor`.
+- O percentual total multiplica com precisão integral, é impresso com 6 casas e incide sobre o valor corrigido sem arredondar, como o SAJ (decisão de 11/10/2026, fase 3): `jurosValor = arred2(valorBase × fator × percentual ÷ 100)`. `atualizado = corrigido + jurosValor`.
 - Termo inicial dos juros posterior à data de elaboração, ou período de zero dias: juros zero, sem erro.
 
 ### 6.5 Encargos próprios por lançamento e metodologia por períodos
@@ -312,15 +318,15 @@ A metodologia global é o padrão; a personalização é a exceção e aparece d
 
 ### 6.7 Casos-limite (com aviso, sem travar)
 
-- Prestação com data posterior à data de elaboração: entra pelo valor nominal, sem encargos, marcada "vincenda" (art. 323 do CPC); pode ser excluída.
-- Amortização posterior à data de elaboração: ignorada, com aviso.
-- Mês sem salário mínimo, sem rendimento ou sem índice de reajuste: prestação sinalizada; o usuário completa o dado.
-- Valor zero ou negativo informado: aviso; lançamento ignorado nos totais.
+- Prestação com data posterior à data de elaboração: entra pelo valor nominal, sem correção e sem juros, mesmo com termos próprios, com `situacao = "vincenda"` (art. 323 do CPC) e aviso; soma nos totais; pode ser excluída.
+- Amortização posterior à data de elaboração: `situacao = "ignorado"`, fora dos totais, com aviso; a linha permanece no resultado pelo valor nominal.
+- Mês sem salário mínimo publicado: usa-se o último publicado, com aviso (§6.3). Mês sem índice de reajuste: o reajuste não é aplicado e o valor vigente anterior é mantido, com aviso. Sem nenhum salário mínimo anterior, sem rendimento válido ou com texto decimal inválido na base: a prestação fica sem valor (`ignorado`), com aviso pedindo o valor à mão.
+- Valor zero ou negativo, texto decimal inválido (`"1,5"`, vazio, `"NaN"`, `"Infinity"`) ou pagamento sem valor: aviso; lançamento `ignorado` nos totais. Amortizações são informadas como valores positivos (o SAJ as imprime negativas).
 - Datas inválidas: validação na tela; o motor recebe só datas válidas.
 
 ### 6.8 Arredondamento
 
-Modo comercial (meio para cima) nos valores: valor-base (2 casas), corrigido (2), juros (2), multa e honorários (2). O fator e o percentual de juros são impressos com 6 casas, mas multiplicam com precisão integral (como o SAJ): quem refizer a conta com os números impressos pode encontrar diferença de até R$ 0,01 (decisão de 11/10/2026).
+Modo comercial (meio para cima) nos valores: valor-base (2 casas), corrigido (2), juros (2), multa e honorários (2). O fator e o percentual de juros são impressos com 6 casas, mas multiplicam com precisão integral (como o SAJ): quem refizer a conta com os números impressos pode encontrar diferença de até R$ 0,01 (decisão de 11/10/2026). Os juros incidem sobre o corrigido sem arredondar (`valorBase × fator × percentual`), como o SAJ (decisão de 11/10/2026, fase 3).
 
 ---
 
@@ -331,17 +337,19 @@ Confirmar com colegas ou com a contadoria do TJMS antes de implementar a regra c
 1. Correção pro rata geométrica no mês do lançamento e meses inteiros até o último índice divulgado (confirmado no SAJ 2018); pro rata no mês final quando o índice existir (a confirmar).
 2. Juros de 1% ao mês rateados por mês-calendário contando as duas pontas, sobre o valor corrigido (confirmado no SAJ 2018).
 3. Transição em 30/08/2024: índice de agosto/2024 pelo regime antigo; juros antigos até 29/08; taxa legal de agosto em 30 e 31/08. Contagem de dias da taxa legal pela metodologia do BCB, diferente da contagem do SAJ no regime antigo (decidido em 11/10/2026; ver nota abaixo).
-4. Taxa legal: série 29543, soma simples, pro rata por dias corridos, sobre o valor corrigido pelo IPCA; conferir períodos na Calculadora do Cidadão do BCB.
+4. Taxa legal: série 29543, soma simples, pro rata por dias corridos, sobre o valor corrigido pelo IPCA, conferida na Calculadora do Cidadão do BCB (decidido em 11/10/2026; ver nota abaixo).
 5. SELIC única (Tema 1.368): rateio mensal e tratamento do mês corrente parcial (decidido em 11/10/2026; ver nota abaixo).
-6. Reajuste anual do valor fixo: momento do primeiro reajuste e janela de 12 meses; reajuste pelo salário mínimo como proporção.
-7. Método de amortização do SAJ (lançamentos negativos atualizados até a data do cálculo) como padrão único do MVP.
+6. Reajuste anual do valor fixo: momento do primeiro reajuste e janela de 12 meses; reajuste pelo salário mínimo como proporção (decidido em 11/10/2026; ver nota da fase 3).
+7. Método de amortização do SAJ (lançamentos negativos atualizados até a data do cálculo) como padrão único do MVP (decidido em 11/10/2026; ver nota da fase 3).
 8. Multa e honorários: base (total devido) e não cumulação; só no rito da penhora (decidido em 11/10/2026; ver nota abaixo).
-9. Arredondamento: fator e percentual impressos com 6 casas e multiplicados com precisão integral, valores com 2 casas por lançamento, a confrontar com gabaritos (decidido em 11/10/2026; ver nota abaixo).
-10. IGP-M como índice padrão do período antigo em MS, com INPC e IPCA como alternativas.
-11. 13º e férias quando a base é percentual dos rendimentos.
+9. Arredondamento: fator e percentual impressos com 6 casas e multiplicados com precisão integral, juros sobre o corrigido sem arredondar, valores com 2 casas por lançamento, confrontados com os gabaritos do SAJ (decidido em 11/10/2026; ver notas abaixo).
+10. IGP-M como índice padrão do período antigo em MS, com INPC, IPCA e SELIC única como alternativas (decidido em 11/10/2026; ver nota da fase 3).
+11. 13º e férias quando a base é percentual dos rendimentos (decidido em 11/10/2026; ver nota da fase 3).
 12. Deflação: índices negativos aplicados com piso no valor original (decidido em 11/10/2026; ver nota abaixo).
 
 **Decisões registradas em 11/10/2026 (fase 2).** Pontos 3 e 4: o SAJ Tribunais não calcula a taxa legal (segue IGP-M e 1% ao mês); o gabarito do regime novo é a Calculadora do Cidadão do BCB, que conta o dia inicial e não conta o dia final; na transição, 30/08/2024 conta. Ponto 5: SELIC única capitalizada mês a mês como índice de correção, sem juros, como o SAJ. Para lançamento no próprio mês do cálculo, a execução adotou ratear o valor parcial da SELIC pelos dias decorridos, (dia do cálculo − dia do lançamento) ÷ dia do cálculo, regra confirmada pelo responsável em 11/10/2026. Ponto 8: confirmado. Ponto 9: fator e percentual multiplicam com precisão integral e são impressos com 6 casas, como o SAJ. Ponto 12: piso mantido (STJ, REsp 1.265.580/RS), decidido sobre o fator bruto; o SAJ não aplica piso. Observação: a tabela do SAJ traz IGP-M de dez/2025 = −0,02 (BCB: −0,01).
+
+**Decisões registradas em 11/10/2026 (fase 3).** Ponto 6: regra da §6.3 confirmada e completada: primeiro reajuste 12 meses após a fixação (ou na primeira ocorrência do mês escolhido, com o acumulado desde a fixação), acumulado com precisão integral impresso com 4 casas, valor arredondado a 2 casas a cada reajuste, acumulado negativo não reduz, reajuste pelo salário mínimo pela proporção do mês do vencimento sem usar o mês de reajuste, prestação anterior à fixação pelo valor fixado com aviso. Ponto 7: método do SAJ confirmado como padrão único. Ponto 9 (complemento): os juros incidem sobre o corrigido sem arredondar, como o SAJ (relatório de 11/10/2026 com 22 prestações, duas delas na fronteira do centavo). Ponto 10: IGP-M confirmado como padrão do período antigo, com INPC, IPCA e SELIC única como alternativas; a SELIC já inclui correção e juros, e o motor avisa quando um período a combina com índice de correção (um relatório do SAJ de 11/10/2026 que usa a SELIC como indexador e como juros conta a SELIC dos meses intermediários duas vezes, combinação que o Apura não oferece; a coluna de correção dele coincide com a SELIC única do Apura). Ponto 8 (confirmação adicional): no mesmo relatório, os honorários do SAJ incidem sobre atualização menos amortização, a base do Apura. Ponto 11: 13º e férias como prestação avulsa com o rendimento do evento informado; o rendimento é sempre informado (padrão ou do mês), sem reajuste automático. Lacunas fechadas: competência = mês do vencimento; lote de pagamentos pula meses já lançados; salário mínimo ainda não publicado → último publicado; a marca "editado" vale só para prestações com valor informado; o resultado traz `situacao` e `editado` em cada linha. Gabaritos: dois relatórios do SAJ de 11/10/2026 reproduzidos centavo a centavo, um com base "valor informado" (R$ 1.500,00 × 0,30, sem reajuste, como caso de % dos rendimentos) e outro com INPC, base "salário mínimo do período" e pagamentos mensais (tabela de INPC igual à do BCB); o SAJ não tem valor fixo com reajuste por índice, cujo caso é conferido na Calculadora do Cidadão e por aritmética independente.
 
 ---
 
@@ -604,7 +612,7 @@ Fonte: "Relatório de Cálculo Processual – Sintético", TJMS/SAJ, emitido em 
 - juros = Σ por mês-calendário de 1% × dias ÷ diasDoMes, contando o dia do lançamento e o dia 25/05/2018; ex.: 10/01/2017 → 22/31 + 15 meses + 25/31 = 16,516129% → 457,79 × 16,516129% = 75,61;
 - juros sobre o valor corrigido; corrigido e juros arredondados a 2 casas.
 
-Hipótese não confirmada: a base parece ser 48,23% do salário mínimo (937,00 em 2017 → 451,91; 954,00 em 2018 → 460,11), mas 937 × 48,23% = 451,9151 arredonda para 451,92, não 451,91. O caso de referência usa os valores nominais como informados; a hipótese do percentual fica como teste separado da base em % do salário mínimo, a confirmar.
+Base confirmada na fase 3 (11/10/2026): valor fixo de R$ 451,91 fixado em 10/01/2017 e reajustado pela proporção do salário mínimo (937,00 em 2017; 954,00 em 2018): 451,91 × 954 ÷ 937 = 460,109… = R$ 460,11, exatamente o valor de 2018. A hipótese de 48,23% do salário mínimo não confere (937 × 48,23% = 451,9151 → 451,92). O caso de referência original usa os valores nominais como informados; o caso `2018-05-25-saj-tjms-base-valor-fixo-reajuste-sm.json` recalcula as mesmas 28 linhas pela base.
 
 ## Anexo B · Glossário
 

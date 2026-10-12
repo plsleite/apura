@@ -4836,31 +4836,40 @@ Achados que ficaram para fases seguintes ou como melhorias menores, agrupados po
 
 - Fuso da data da consulta (já registrado na fase 2) e congelamento com a data-hora real.
 - Quando a série 1619 ganhar o ano seguinte, as prestações que usaram o "último publicado" mudam de valor ao recalcular: o aviso de "índice usado mudou" (§8.2) deve nomear o salário mínimo.
+- `scripts/atualizar-indices.ts` recusa respostas com `content-type` diferente de `application/json`, e o BCB às vezes rotula JSON válido como `text/html`: a Task 1 precisou de várias tentativas até as seis séries saírem na mesma rodada. `interpretarRespostaSgs` já recusa corpo que não seja lista JSON, então a checagem do cabeçalho pode sair; o cliente ao vivo não deve depender do cabeçalho.
+- `lerArquivoSerie` confere só o envelope do arquivo (os itens de `valores` não são checados) e faz o cast antes do `typeof`; a condição sobre `obtidoEm` não tem teste próprio. Relevante quando a fase 4 reaproveitar o leitor para cache e dados ao vivo.
 
 **Fase 5**
 
-- Percentuais de multa e honorários vazios, inválidos ou negativos ainda fazem `calcular` lançar `DecimalError`; `decimalOuNulo` já existe para tratá-los no motor, se a fase 5 preferir isso à validação na tela.
-- Dia do vencimento ou do pagamento fora de 1 a 31, "meses em atraso" menor que 1 e intervalo invertido geram aviso e lote vazio no motor; a tela deve impedi-los antes.
+- Percentuais de multa e honorários e `taxaMensal` ainda são lidos com `decimal()` e lançam `DecimalError` com texto inválido; `decimalOuNulo` já existe para tratá-los no motor, se a fase 5 preferir isso à validação na tela.
+- A tela valida, antes de chamar o motor, `dataElaboracao`, `dataFixacao` (malformada ou anterior a 1900 lança no motor, pela convenção da §6.7) e `base.tipo` (desconhecido devolve `undefined` em `apurarValorBase`); grava `rendimento` omitido, e não `""`, quando o campo está vazio (texto vazio conta como informado e gera aviso); o campo `Lancamento.editado` é só da tela (o motor não o lê).
+- Dia do vencimento ou do pagamento fora de 1 a 31, "meses em atraso" menor que 1 e intervalo invertido geram aviso e lote vazio; a tela impede antes. Intervalos de milhares de meses são lentos (o gerador é quadrático porque `idLivre` reconstrói o conjunto de ids a cada lançamento) e a competência "9999-12" faz `competenciasEntre` lançar; a tela limita o intervalo.
 - Lote de pagamentos: um segundo pagamento no mesmo mês só entra como avulso (decisão de 11/10/2026); a tela deve dizer isso no aviso.
-- SELIC única combinada com juros: a tela avisa; o modelo de dados não representa SELIC como correção com juros separados. O relatório SELIC do SAJ de 11/10/2026 mostra o efeito da combinação (SELIC contada duas vezes nos meses intermediários): bom exemplo para o texto de ajuda.
+- SELIC única combinada com juros ou índice: a tela avisa; o relatório SELIC do SAJ de 11/10/2026 mostra o efeito (SELIC contada duas vezes nos meses intermediários), bom exemplo para o texto de ajuda.
+- Salário mínimo anterior a jul/1994 fica na série 1619 em moeda nominal da época; uma prestação em % do salário mínimo com vencimento anterior sairia em moeda antiga (fora do MVP; a tela pode limitar as datas).
 
 **Fase 6**
 
-- A `memoriaBase` do valor fixo reajustado por índice cresce uma cláusula por reajuste ("em mar/2025 (…) e em mar/2026 (…)"): com muitos anos a frase fica longa; o relatório decide se resume (ex.: "reajustado em mar/2025, mar/2026 e mar/2027: 5,0576%, 3,8125% e …").
-- Linhas `ignorado` aparecem no resultado pelo valor nominal; o relatório não pode somá-las nem exibi-las como devidas.
-- O resumo "Prestações com valor informado à mão" lista competências (ou datas, quando a prestação não tem competência).
+- A `memoriaBase` do valor fixo reajustado por índice cresce uma cláusula por reajuste; com muitos anos a frase fica longa; o relatório decide se resume. Quando falta índice no meio de uma janela, a memória e o aviso não dizem que os reajustes seguintes também não foram aplicados.
+- Linhas `ignorado` aparecem no resultado pelo valor nominal; o relatório não pode somá-las nem exibi-las como devidas. Uma prestação com texto inválido sai `editado = true` e entra nos dois resumos ("informado à mão" e "não computados"); rótulos se repetem quando há vários lançamentos ignorados na mesma competência (agrupar).
+- `temTermosProprios` não considera `encargos.metodologia`: uma vincenda que só tem metodologia própria não recebe o aviso de que os encargos próprios não se aplicam, embora receba os avisos de validação dessa metodologia.
 
 **Sem fase (melhorias menores)**
 
-- `rotulo` em `calcular.ts` usa a data quando a prestação não tem competência; a tela sempre grava competência, então o caminho é raro.
-- A Calculadora do Cidadão usa a série 28655 para o IGP-M (número-índice com 3 casas), e não a 189: por isso o caso de reajuste por índice usa o IPCA; um caso com reajuste pelo IGP-M só pode ser conferido por aritmética.
-- `idLivre` percorre sufixos a partir de 2; com muitos ids repetidos (centenas) seria lento, o que não ocorre na prática.
-- O caso do SAJ de 30% × R$ 1.500,00 registra em `observacoes` que o SAJ soma as linhas sem arredondar (11.216,66 contra 11.216,68); o Apura soma as linhas impressas, como nos outros casos do SAJ.
-- O teste genérico compara `editado` como texto ("true"/"false") para reaproveitar a lista de campos opcionais.
+- Lacunas de teste apontadas nas revisões: a regra "pagamento sem valor informado fica ignorado" e o rótulo de prestação sem competência (pela data) não têm teste próprio; o guard `competencias.length > 0` em `gerarLotePrestacoes`, o sufixo `-3` de `idLivre` e a colisão de ids `a-`, os avisos de `mesesEmAtraso` 0 e dia 32; `somarMeses` com saltos de vários anos; literal esperado em `decimalOuNulo`; os ramos "de … a …" e "desde …" de `descreverPeriodo`; o valor de um único reajuste conferido só com `toFixed(2)`; a guarda `Number.isInteger(mesReajuste)` com NaN e 2,5; competência diferente do mês do vencimento na base; o teste "avisos do resultado batem" passa vazio nos casos sem `esperado.avisos` (usar `it.runIf`).
+- Código: a variável local `mesAnterior` em `diaAnterior` (datas.ts) sombreia a função nova de mesmo nome; pré-condições de `somarMeses` (n inteiro) e `dataNoMes` (dia 1 a 31) não documentadas; `decimalOuNulo` e `textoDecimalValido` não conferem `typeof texto === "string"`; `PRIMEIRA_COMPETENCIA` em lote.ts repete o limite de 1900 de datas.ts; `if (Object.keys(valores).length === 0) continue;` em regime-novo.ts virou código morto; textos de aviso e memória duplicados em base.ts e um `continue` inalcançável em `porIndiceAcumulado`; docblock de `validarMetodologia` e JSDoc de `atualizarLancamento` desatualizados; `import type` duplicado em calcular.test.ts; a função `calcular` ficou longa (totais, avisos, proveniência e resumos juntos); a tolerância do ramo dos juros em casos.test.ts não escala com o percentual (falha segura acima de cerca de 200% acumulados).
+- Casos de referência: o caso do IPCA traz `"lotes": {}` com linha em branco e seis prestações com origem "lote" sem lote (trocar por "avulso"; o esperado não muda); a série 1619 do caso de 2018 pela base traz `obtidoEm` 2018-05-25 enquanto a 189 traz 2026-10-10 (usar a mesma data); as observações dos casos do SAJ de 30% × R$ 1.500,00 e INPC explicam a diferença do total impresso como "soma sem arredondar", mecanismo que não se sustenta nas contas (dizer só que o total impresso pelo SAJ difere da soma das linhas em R$ 0,01 a R$ 0,02 por arredondamento interno não reproduzido) e citam "459,2268" onde a precisão integral dá 459,2266; os pagamentos do caso INPC não trazem `fator` no esperado (o relatório não imprime fator acumulado dos pagamentos); em casos-pela-base.test.ts, `slice(0, 22)` pressupõe a ordem do JSON, `every(…).toBe(true)` não diz qual prestação falhou, o `calcular` final do teste do lote repete o que casos.test.ts já prova e o comentário de abertura não menciona lotes nem SELIC.
+- A Calculadora do Cidadão usa a série 28655 para o IGP-M (número-índice), e não a 189: por isso o caso de reajuste por índice usa o IPCA. `rotulo` em calcular.ts usa a data quando a prestação não tem competência. O teste genérico compara `editado` como texto. O reporter JSON do Vitest gera `.vitest/json/output.json`, que não está no `.gitignore`.
 
 **Decisões tomadas na execução**
 
-- (a preencher pela execução: ver Task 9, Step 5)
+- O trailer de coautoria de cada commit nomeia o modelo que de fato o executou: Claude Haiku 5.5 nas Tasks 2, 3 e 5; Claude Sonnet 5.5 nas demais.
+- Task 3: por achado da revisão da Task 2, `competenciasDoLote` ganhou a guarda do limite inferior das datas (constante `PRIMEIRA_COMPETENCIA = "1900-01"`): "meses em atraso" além de jan/1900 para ali com aviso, e elaboração em jan/1900 com vencimento posterior devolve aviso e nenhuma competência; antes, 1.523 meses ou mais lançavam "Competência inválida".
+- Task 4: a revisão (Opus) apontou que os testes conferiam o arredondamento do valor-base com `toFixed(2)`, que arredonda de novo; uma rodada de correção acrescentou asserções com `toFixed()` sem argumento ("681.01", "500", "500.01", "460.11"), provadas por mutação; base.ts não mudou.
+- As contagens de testes do plano estavam uma unidade abaixo: 354 após a Task 7 e 387 ao fim.
+- As revisões das Tasks 4 e 6 foram feitas em Opus (módulos centrais); as demais em Sonnet; a re-revisão da Task 4 em Haiku.
+- Salário mínimo anterior a jul/1994 (moeda nominal na série 1619) ficou fora do MVP, registrado acima.
+- Relatórios dos subagentes gravados em `.txt`; o da Task 2 foi transcrito pelo controlador.
 
 ## Auto-revisão do plano
 
