@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { arredondar, decimal, Decimal, paraTexto, CEM, UM, ZERO } from "./decimal.ts";
+import {
+  arredondar,
+  decimal,
+  Decimal,
+  decimalOuNulo,
+  paraTexto,
+  textoDecimalValido,
+  CEM,
+  UM,
+  ZERO,
+} from "./decimal.ts";
 
 describe("decimal", () => {
   it("soma 0,1 com 0,2 sem o erro do ponto flutuante", () => {
@@ -38,5 +48,31 @@ describe("decimal", () => {
     // mês de janeiro/2017 (0,64%) pro rata de 21 dias em 31: (1,0064)^(21/31)
     const fator = UM.plus(decimal("0.64").div(CEM)).pow(decimal("21").div(31));
     expect(paraTexto(fator, 6)).toBe("1.004331");
+  });
+});
+
+describe("texto decimal válido", () => {
+  it("aceita dígitos com ponto decimal e sinal; recusa vírgula, vazio, NaN, Infinity e expoente", () => {
+    for (const valido of ["451.91", "-1.10", "30", "0", "0.000000", "10000.00"]) {
+      expect(textoDecimalValido(valido), valido).toBe(true);
+      expect(decimalOuNulo(valido)?.toString()).toBe(new Decimal(valido).toString());
+    }
+    for (const invalido of [
+      "1,5",
+      "",
+      " ",
+      "NaN",
+      "Infinity",
+      "-Infinity",
+      "1e5",
+      "R$ 10",
+      "1.",
+      ".5",
+      "abc",
+    ]) {
+      expect(textoDecimalValido(invalido), JSON.stringify(invalido)).toBe(false);
+      expect(decimalOuNulo(invalido), JSON.stringify(invalido)).toBeNull();
+    }
+    expect(decimalOuNulo(undefined)).toBeNull();
   });
 });

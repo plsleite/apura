@@ -2,7 +2,7 @@
   "formato": "apura/caso-de-referencia@1",
   "nome": "Regime novo (IPCA e taxa legal), conferido na Calculadora do Cidadão do BCB em 11/10/2026",
   "fonte": "Calculadora do Cidadão do BCB, consultada em 11/10/2026: aba Taxa Legal (30/09/2024→11/10/2026: 0,17247591; 10/03/2025→11/10/2026 e 31/03/2025→11/10/2026: 0,14471376; 31/08/2026→11/10/2026: 0,01658626; 01/10/2026→11/10/2026: 0,00122265; 11/10/2026→11/10/2026: 0; 30/06/2025→11/10/2026: 0,12776091) e aba Índices de preços, IPCA (10/2024→09/2026: 1,09985180; 04/2025→09/2026: 1,06217010; 09/2026→09/2026: 1,00820000; 07/2025→09/2026: 1,05235400). Pro rata do mês inicial e centavos por aritmética decimal independente.",
-  "observacoes": "Lançamentos no último dia do mês têm fração zero na correção desse mês, por isso o fator coincide com o índice da Calculadora para os meses inteiros seguintes. Na taxa legal a Calculadora conta o dia inicial e não conta o dia final (exemplo oficial: 30/08/2024 a 31/08/2024 = 1 dia); mar/2025 tem taxa legal zero. Out/2026 sem IPCA na data do cálculo: entra com fator 1 e aviso.",
+  "observacoes": "Lançamentos no último dia do mês têm fração zero na correção desse mês, por isso o fator coincide com o índice da Calculadora para os meses inteiros seguintes. Na taxa legal a Calculadora conta o dia inicial e não conta o dia final (exemplo oficial: 30/08/2024 a 31/08/2024 = 1 dia); mar/2025 tem taxa legal zero. Out/2026 sem IPCA na data do cálculo: entra com fator 1 e aviso. Os juros incidem sobre o corrigido sem arredondar (convenção do SAJ, decidida na fase 3): no pagamento de 30/06/2025, 500 × 1,052354… × 12,776091% = 67,22 (sobre o corrigido arredondado, R$ 526,18, daria 67,23).",
   "calculo": {
     "formato": "apura/calculo@1",
     "tipo": "alimentos",
@@ -20,7 +20,7 @@
       {"id": "p-2026-08-31", "tipo": "prestacao", "data": "2026-08-31", "competencia": "2026-08", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
       {"id": "p-2026-10-01", "tipo": "prestacao", "data": "2026-10-01", "competencia": "2026-10", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
       {"id": "p-2026-10-11", "tipo": "prestacao", "data": "2026-10-11", "competencia": "2026-10", "descricao": "Vencida no dia do cálculo", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
-      {"id": "a-2025-06-30", "tipo": "amortizacao", "data": "2025-06-30", "descricao": "Pagamento parcial", "valorInformado": "500.00", "origem": "avulso", "editado": true}
+      {"id": "a-2025-06-30", "tipo": "amortizacao", "data": "2025-06-30", "descricao": "Pagamento parcial", "valorInformado": "500.00", "origem": "avulso", "editado": false}
     ],
     "metodologia": {
       "id": "tjms-saj",
@@ -106,8 +106,8 @@
       {"id": "p-2026-08-31", "fator": "1.008200", "corrigido": "1008.20", "jurosPercentual": "1.658626", "jurosValor": "16.72", "atualizado": "1024.92"},
       {"id": "p-2026-10-01", "fator": "1.000000", "corrigido": "1000.00", "jurosPercentual": "0.122265", "jurosValor": "1.22", "atualizado": "1001.22"},
       {"id": "p-2026-10-11", "fator": "1.000000", "corrigido": "1000.00", "jurosPercentual": "0.000000", "jurosValor": "0.00", "atualizado": "1000.00"},
-      {"id": "a-2025-06-30", "fator": "1.052354", "corrigido": "526.18", "jurosPercentual": "12.776091", "jurosValor": "67.23", "atualizado": "593.41"}
+      {"id": "a-2025-06-30", "fator": "1.052354", "corrigido": "526.18", "jurosPercentual": "12.776091", "jurosValor": "67.22", "atualizado": "593.40"}
     ],
-    "totais": {"prestacoes": "6752.06", "amortizacoes": "593.41", "totalDevido": "6158.65", "multa": "0.00", "honorarios": "0.00", "totalGeral": "6158.65"}
+    "totais": {"prestacoes": "6752.06", "amortizacoes": "593.40", "totalDevido": "6158.66", "multa": "0.00", "honorarios": "0.00", "totalGeral": "6158.66"}
   }
 }

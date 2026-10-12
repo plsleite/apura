@@ -1,4 +1,5 @@
 import { formatarData } from "../compartilhado/formatacao.ts";
+import { NOME_DA_SERIE } from "../compartilhado/tipos.ts";
 import type { CodigoSerie, DataISO } from "../compartilhado/tipos.ts";
 
 export interface DescricaoSerie {
@@ -9,46 +10,46 @@ export interface DescricaoSerie {
   uso: string;
 }
 
-/** As seis séries do SGS usadas pelo Apura (§8.1 do design). */
+/** As seis séries do SGS usadas pelo Apura (§8.1 do design); o nome curto vem de `NOME_DA_SERIE`, para não haver duas listas. */
 export const SERIES: Record<CodigoSerie, DescricaoSerie> = {
   "433": {
     codigo: "433",
-    nome: "IPCA",
+    nome: NOME_DA_SERIE["433"],
     descricao: "IPCA (IBGE), variação % mensal",
     unidade: "% a.m.",
     uso: "correção do regime novo; alternativa no antigo; reajuste",
   },
   "188": {
     codigo: "188",
-    nome: "INPC",
+    nome: NOME_DA_SERIE["188"],
     descricao: "INPC (IBGE), variação % mensal",
     unidade: "% a.m.",
     uso: "alternativa de correção; reajuste",
   },
   "189": {
     codigo: "189",
-    nome: "IGP-M",
+    nome: NOME_DA_SERIE["189"],
     descricao: "IGP-M (FGV), variação % mensal",
     unidade: "% a.m.",
     uso: "padrão do regime antigo; reajuste",
   },
   "1619": {
     codigo: "1619",
-    nome: "salário mínimo",
+    nome: NOME_DA_SERIE["1619"],
     descricao: "Salário mínimo, R$ por mês",
     unidade: "R$",
     uso: "base em % do salário mínimo; reajuste pelo salário mínimo",
   },
   "29543": {
     codigo: "29543",
-    nome: "taxa legal",
+    nome: NOME_DA_SERIE["29543"],
     descricao: "Taxa legal (art. 406 do CC), % mensal, 6 casas, desde ago/2024",
     unidade: "% a.m.",
     uso: "juros do regime novo",
   },
   "4390": {
     codigo: "4390",
-    nome: "SELIC",
+    nome: NOME_DA_SERIE["4390"],
     descricao: "SELIC acumulada no mês, % (mês corrente parcial)",
     unidade: "% a.m.",
     uso: "alternativa SELIC única",

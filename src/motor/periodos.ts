@@ -82,7 +82,25 @@ export function validarMetodologia(metodologia: Metodologia): string[] {
       `A metodologia não cobre datas posteriores a ${formatarData(fimCoberto)}: esses dias ficam sem correção e sem juros.`,
     );
   }
+  // SELIC única já inclui correção e juros (§6.4): um índice de correção no mesmo período é ignorado.
+  for (const periodo of periodos) {
+    if (periodo.juros.tipo === "selicUnica" && periodo.correcao.indice !== "nenhum") {
+      avisos.push(
+        `${descreverPeriodo(periodo)}, a SELIC já inclui correção e juros: o índice ${periodo.correcao.indice} informado não foi aplicado.`,
+      );
+    }
+  }
   return avisos;
+}
+
+/** "No período de 01/01/2020 a 29/08/2024", "No período desde …", "No período até …" ou "Em toda a metodologia". */
+function descreverPeriodo(periodo: PeriodoMetodologia): string {
+  if (periodo.de !== null && periodo.ate !== null) {
+    return `No período de ${formatarData(periodo.de)} a ${formatarData(periodo.ate)}`;
+  }
+  if (periodo.de !== null) return `No período desde ${formatarData(periodo.de)}`;
+  if (periodo.ate !== null) return `No período até ${formatarData(periodo.ate)}`;
+  return "Em toda a metodologia";
 }
 
 export interface TrechoDePeriodo {

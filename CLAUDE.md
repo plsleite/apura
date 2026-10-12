@@ -27,11 +27,14 @@ de decidir, uma pergunta por vez, em múltipla escolha com a opção recomendada
 
 ## Estado
 
-Fase 2 (regime novo e transição) concluída em 2026-10-11: taxa legal com a contagem da Calculadora
-do Cidadão, IPCA, transição em 30/08/2024, SELIC única capitalizada, deflação com piso, encargos
-próprios, multa e honorários, precisão integral e sete casos de referência novos (dois do SAJ de
-2026, cinco conferidos na Calculadora). Próxima: fase 3 (bases e lotes), com plano a escrever. A
-tabela de fases do roteiro é a referência; atualize-a e esta seção ao concluir cada fase.
+Fase 3 (bases e lotes) concluída em 2026-10-11: valor-base pelas três bases (valor fixo com
+reajuste anual por índice ou pelo salário mínimo, % do salário mínimo, % dos rendimentos), lotes
+cumulativos de prestações e pagamentos, situação dos lançamentos (vincenda e ignorado), valores
+informados à mão, texto decimal inválido tratado, juros sobre o corrigido sem arredondar (SAJ),
+séries 188 e 1619 embutidas e quatro casos de referência novos (dois do SAJ de 11/10/2026: valor
+informado 0,30 × R$ 1.500,00 e INPC com lotes; 2018 pela base; reajuste pelo IPCA conferido na
+Calculadora). Próxima: fase 4 (índices ao vivo), com plano a escrever. A tabela de fases do
+roteiro é a referência; atualize-a e esta seção ao concluir cada fase.
 
 ## Comandos
 
@@ -58,8 +61,8 @@ docs/superpowers/specs/   design e visão
 docs/superpowers/plans/   planos de implementação (um por fase)
 scripts/                  atualizar-indices.ts
 src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts
-src/motor/                periodos.ts · correcao.ts · juros.ts · calcular.ts · casos/ (casos de referência)
-src/motor/testes/         dados de teste: tabela IGP-M 2017–2018 e séries do regime novo 2024–2026 usadas pelos testes unitários
+src/motor/                periodos.ts · correcao.ts · juros.ts · lote.ts · base.ts · calcular.ts · casos/ (casos de referência)
+src/motor/testes/         dados de teste: IGP-M e salário mínimo de 2017–2018 e as seis séries de 2024–2026 usadas pelos testes unitários
 src/indices/              series.ts · cliente-bcb.ts · embutidos.ts (cache, congelamento e calendário: fase 4)
 src/indices/testes/       dados de teste: resposta gravada do SGS
 src/metodologias/         tjms-saj.v1.json · padrao.ts
@@ -77,7 +80,8 @@ src/relatorio/            relatório e impressão (fase 6)
    de índices); nunca `number`. Nos arquivos e no `Resultado`, texto decimal com ponto
    (`"451.91"`). Arredondamento comercial (meio para cima) nos valores (2 casas); o fator e o
    percentual de juros multiplicam com precisão integral e são impressos com 6 casas (convenção do
-   SAJ, decidida em 11/10/2026).
+   SAJ, decidida em 11/10/2026). Os juros incidem sobre o corrigido sem arredondar:
+   `jurosValor = arred2(valorBase × fator × percentual ÷ 100)` (fase 3).
 3. **Datas como texto ISO** (`"AAAA-MM-DD"`, competências `"AAAA-MM"`), com os utilitários de
    `src/compartilhado/datas.ts`. Nada de `Date` no motor.
 4. **Motor puro.** `src/motor/` não usa `Date.now()`, `fetch`, DOM ou armazenamento; recebe o
@@ -100,7 +104,8 @@ src/relatorio/            relatório e impressão (fase 6)
 A seção 7 do design lista as convenções que ainda dependem de confirmação jurídica ou de gabaritos
 da contadoria. Não as "resolva" sozinho: implemente o padrão decidido no design e pergunte ao
 responsável quando a fase tocar em uma delas. Os pontos 3, 4, 5, 8, 9 e 12 foram decididos em
-11/10/2026 (nota ao fim da §7 do design).
+11/10/2026 na fase 2, e os pontos 6, 7, 10 e 11 na fase 3 (notas ao fim da §7 do design); resta a
+parte do ponto 1 sobre o pro rata no mês final.
 
 ## Como registrar um caso de referência
 
@@ -108,12 +113,15 @@ Um caso é um arquivo JSON em `src/motor/casos/AAAA-MM-DD-<origem>-<tema>.json` 
 `apura/caso-de-referencia@1` (tipo `CasoDeReferencia` em `src/compartilhado/tipos.ts`), com:
 
 - `nome` e `fonte` (de onde vieram os valores: relatório do SAJ, Calculadora do Cidadão, contadoria);
-- `calculo`: o `Calculo` completo de entrada;
+- `calculo`: o `Calculo` completo de entrada (prestações sem `valorInformado` quando o caso prova
+  a apuração pela base);
 - `indices`: a `TabelaIndices` congelada **como estava na data do cálculo** (só os meses que a
   fonte usou; incluir um mês posterior muda o resultado); quando a fonte usa um valor diferente do
   BCB (ex.: IGP-M de dez/2025 no SAJ), o caso congela o valor da fonte e explica em `observacoes`;
 - `esperado`: por lançamento, `corrigido`, `jurosValor` e `atualizado` (e, quando a fonte os der,
-  `fator` e `jurosPercentual`); e os `totais`.
+  `fator` e `jurosPercentual`); opcionalmente `valorBase`, `memoriaBase`, `situacao`, `editado` e
+  `avisos` do lançamento; os `totais`; e, opcionalmente, os `avisos` do resultado. Os campos
+  opcionais só são comparados quando o caso os traz.
 
 O teste `src/motor/casos.test.ts` executa todos os arquivos da pasta automaticamente. O PDF ou a
 planilha de origem ficam fora do repositório; o número do processo é omitido. O Prettier ignora de

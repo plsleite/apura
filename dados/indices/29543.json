@@ -3,7 +3,7 @@
   "codigo": "29543",
   "nome": "Taxa legal (art. 406 do CC), % mensal, 6 casas, desde ago/2024",
   "origem": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.29543/dados?formato=json",
-  "obtidoEm": "2026-10-11T16:40:54.706Z",
+  "obtidoEm": "2026-10-11T23:11:55.297Z",
   "valores": [
     {
       "competencia": "2024-08",

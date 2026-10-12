@@ -1,0 +1,142 @@
+{
+  "formato": "apura/caso-de-referencia@1",
+  "nome": "SAJ TJMS, Cálculo Judicial Avulso (alimentos), 30% de R$ 1.500,00 em lote no dia 1, IGP-M e 1% ao mês, cálculo de 11/10/2026",
+  "fonte": "Relatório de Cálculo Judicial – Sintético/Analítico do SAJ Tribunais (TJMS), tipo Alimentos, emitido em 11/10/2026 pelo responsável a partir de dados fictícios (base 'valor informado' R$ 1.500,00, quantidade 0,30, de 01/01/2025 a 01/10/2026, sem pagamentos); sem número de processo; PDF fora do repositório.",
+  "observacoes": "No SAJ, a base 'valor informado' multiplica um valor mensal fixo (R$ 1.500,00) pela quantidade (0,30) e não aplica reajuste algum: R$ 450,00 em todos os 22 meses. No Apura isso corresponde à base em percentual dos rendimentos (30% do rendimento padrão de R$ 1.500,00) ou ao valor fixo sem reajuste; o caso usa a primeira e deixa as prestações sem valor informado, para que o motor apure cada uma pela base. Como a data inicial é dia 1, todas as prestações do SAJ caem no dia 1, igual ao lote do Apura com dia de vencimento 1 (de jan/2025 a out/2026). Parâmetros declarados: IGP-M (FGV) da data do lançamento até 30/09/2026 (pro rata); juro legal simples de 1,00% ao mês sobre o valor corrigido, da data do lançamento até 11/10/2026; sem piso na deflação (jun/2026 sai corrigida abaixo do original). A tabela congelada é a do SAJ: dez/2025 = −0,02 (série 189 do BCB: −0,01). Os juros incidem sobre o corrigido sem arredondar (02/2025: 459,2266 × 20,354839% = 93,47; sobre R$ 459,23 daria 93,48; o mesmo em 09/2025). O total impresso pelo SAJ (11.216,66) difere da soma das linhas impressas (11.216,68) em R$ 0,02, por arredondamento interno não reproduzido; o Apura soma as linhas impressas.",
+  "calculo": {
+    "formato": "apura/calculo@1",
+    "tipo": "alimentos",
+    "id": "caso-saj-2026-percentual-rendimentos",
+    "criadoEm": "2026-10-11T17:00:00.000Z",
+    "atualizadoEm": "2026-10-11T17:00:00.000Z",
+    "dataElaboracao": "2026-10-11",
+    "cabecalho": {
+      "defensor": "",
+      "orgao": "",
+      "processo": "",
+      "exequente": "",
+      "executado": ""
+    },
+    "base": {
+      "tipo": "percentualRendimentos",
+      "percentual": "30",
+      "rendimentoPadrao": "1500.00"
+    },
+    "lotes": {
+      "ultimoLotePrestacoes": {
+        "diaVencimento": 1,
+        "de": "2025-01",
+        "ate": "2026-10"
+      }
+    },
+    "lancamentos": [
+      {"id": "p-2025-01", "tipo": "prestacao", "data": "2025-01-01", "competencia": "2025-01", "origem": "lote", "editado": false},
+      {"id": "p-2025-02", "tipo": "prestacao", "data": "2025-02-01", "competencia": "2025-02", "origem": "lote", "editado": false},
+      {"id": "p-2025-03", "tipo": "prestacao", "data": "2025-03-01", "competencia": "2025-03", "origem": "lote", "editado": false},
+      {"id": "p-2025-04", "tipo": "prestacao", "data": "2025-04-01", "competencia": "2025-04", "origem": "lote", "editado": false},
+      {"id": "p-2025-05", "tipo": "prestacao", "data": "2025-05-01", "competencia": "2025-05", "origem": "lote", "editado": false},
+      {"id": "p-2025-06", "tipo": "prestacao", "data": "2025-06-01", "competencia": "2025-06", "origem": "lote", "editado": false},
+      {"id": "p-2025-07", "tipo": "prestacao", "data": "2025-07-01", "competencia": "2025-07", "origem": "lote", "editado": false},
+      {"id": "p-2025-08", "tipo": "prestacao", "data": "2025-08-01", "competencia": "2025-08", "origem": "lote", "editado": false},
+      {"id": "p-2025-09", "tipo": "prestacao", "data": "2025-09-01", "competencia": "2025-09", "origem": "lote", "editado": false},
+      {"id": "p-2025-10", "tipo": "prestacao", "data": "2025-10-01", "competencia": "2025-10", "origem": "lote", "editado": false},
+      {"id": "p-2025-11", "tipo": "prestacao", "data": "2025-11-01", "competencia": "2025-11", "origem": "lote", "editado": false},
+      {"id": "p-2025-12", "tipo": "prestacao", "data": "2025-12-01", "competencia": "2025-12", "origem": "lote", "editado": false},
+      {"id": "p-2026-01", "tipo": "prestacao", "data": "2026-01-01", "competencia": "2026-01", "origem": "lote", "editado": false},
+      {"id": "p-2026-02", "tipo": "prestacao", "data": "2026-02-01", "competencia": "2026-02", "origem": "lote", "editado": false},
+      {"id": "p-2026-03", "tipo": "prestacao", "data": "2026-03-01", "competencia": "2026-03", "origem": "lote", "editado": false},
+      {"id": "p-2026-04", "tipo": "prestacao", "data": "2026-04-01", "competencia": "2026-04", "origem": "lote", "editado": false},
+      {"id": "p-2026-05", "tipo": "prestacao", "data": "2026-05-01", "competencia": "2026-05", "origem": "lote", "editado": false},
+      {"id": "p-2026-06", "tipo": "prestacao", "data": "2026-06-01", "competencia": "2026-06", "origem": "lote", "editado": false},
+      {"id": "p-2026-07", "tipo": "prestacao", "data": "2026-07-01", "competencia": "2026-07", "origem": "lote", "editado": false},
+      {"id": "p-2026-08", "tipo": "prestacao", "data": "2026-08-01", "competencia": "2026-08", "origem": "lote", "editado": false},
+      {"id": "p-2026-09", "tipo": "prestacao", "data": "2026-09-01", "competencia": "2026-09", "origem": "lote", "editado": false},
+      {"id": "p-2026-10", "tipo": "prestacao", "data": "2026-10-01", "competencia": "2026-10", "origem": "lote", "editado": false}
+    ],
+    "metodologia": {
+      "id": "tjms-saj",
+      "versao": 1,
+      "nome": "TJMS/SAJ",
+      "ajustada": true,
+      "periodos": [
+        {"de": null, "ate": null, "correcao": {"indice": "IGP-M"}, "juros": {"tipo": "percentualMensal", "taxaMensal": "1"}}
+      ],
+      "incidenciaMesInicial": "proRata",
+      "deflacao": "aplicarSemPiso",
+      "arredondamento": {
+        "fatorCasas": 6,
+        "percentualCasas": 6,
+        "valorCasas": 2,
+        "modo": "comercial"
+      }
+    },
+    "acrescimos": {
+      "multaPercentual": "0",
+      "honorariosPercentual": "0"
+    },
+    "observacoes": ""
+  },
+  "indices": {
+    "consultadoEm": "2026-10-11T00:00:00.000Z",
+    "series": {
+      "189": {
+        "2025-01": {"valor": "0.27", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-02": {"valor": "1.06", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-03": {"valor": "-0.34", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-04": {"valor": "0.24", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-05": {"valor": "-0.49", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-06": {"valor": "-1.67", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-07": {"valor": "-0.77", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-08": {"valor": "0.36", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-09": {"valor": "0.42", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-10": {"valor": "-0.36", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-11": {"valor": "0.27", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-12": {"valor": "-0.02", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-01": {"valor": "0.41", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-02": {"valor": "-0.73", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-03": {"valor": "0.52", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-04": {"valor": "2.73", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-05": {"valor": "0.84", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-06": {"valor": "-0.50", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-07": {"valor": "-1.16", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-08": {"valor": "-0.22", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2026-09": {"valor": "1.57", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"}
+      }
+    }
+  },
+  "esperado": {
+    "lancamentos": [
+      {"id": "p-2025-01", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.023555", "corrigido": "460.60", "jurosPercentual": "21.354839", "jurosValor": "98.36", "atualizado": "558.96", "memoriaBase": "30% do rendimento padrão (R$ 1.500,00) = R$ 450,00"},
+      {"id": "p-2025-02", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.020504", "corrigido": "459.23", "jurosPercentual": "20.354839", "jurosValor": "93.47", "atualizado": "552.70"},
+      {"id": "p-2025-03", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.010291", "corrigido": "454.63", "jurosPercentual": "19.354839", "jurosValor": "87.99", "atualizado": "542.62"},
+      {"id": "p-2025-04", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.013545", "corrigido": "456.10", "jurosPercentual": "18.354839", "jurosValor": "83.72", "atualizado": "539.82"},
+      {"id": "p-2025-05", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.011360", "corrigido": "455.11", "jurosPercentual": "17.354839", "jurosValor": "78.98", "atualizado": "534.09"},
+      {"id": "p-2025-06", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.016749", "corrigido": "457.54", "jurosPercentual": "16.354839", "jurosValor": "74.83", "atualizado": "532.37"},
+      {"id": "p-2025-07", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.033695", "corrigido": "465.16", "jurosPercentual": "15.354839", "jurosValor": "71.42", "atualizado": "536.58"},
+      {"id": "p-2025-08", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.041336", "corrigido": "468.60", "jurosPercentual": "14.354839", "jurosValor": "67.27", "atualizado": "535.87"},
+      {"id": "p-2025-09", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.037576", "corrigido": "466.91", "jurosPercentual": "13.354839", "jurosValor": "62.35", "atualizado": "529.26"},
+      {"id": "p-2025-10", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.033501", "corrigido": "465.08", "jurosPercentual": "12.354839", "jurosValor": "57.46", "atualizado": "522.54"},
+      {"id": "p-2025-11", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.037021", "corrigido": "466.66", "jurosPercentual": "11.354839", "jurosValor": "52.99", "atualizado": "519.65"},
+      {"id": "p-2025-12", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.034328", "corrigido": "465.45", "jurosPercentual": "10.354839", "jurosValor": "48.20", "atualizado": "513.65"},
+      {"id": "p-2026-01", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.034392", "corrigido": "465.48", "jurosPercentual": "9.354839", "jurosValor": "43.54", "atualizado": "509.02"},
+      {"id": "p-2026-02", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.030574", "corrigido": "463.76", "jurosPercentual": "8.354839", "jurosValor": "38.75", "atualizado": "502.51"},
+      {"id": "p-2026-03", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.037707", "corrigido": "466.97", "jurosPercentual": "7.354839", "jurosValor": "34.34", "atualizado": "501.31"},
+      {"id": "p-2026-04", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.031585", "corrigido": "464.21", "jurosPercentual": "6.354839", "jurosValor": "29.50", "atualizado": "493.71"},
+      {"id": "p-2026-05", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.004802", "corrigido": "452.16", "jurosPercentual": "5.354839", "jurosValor": "24.21", "atualizado": "476.37"},
+      {"id": "p-2026-06", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "0.996867", "corrigido": "448.59", "jurosPercentual": "4.354839", "jurosValor": "19.54", "atualizado": "468.13"},
+      {"id": "p-2026-07", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.002086", "corrigido": "450.94", "jurosPercentual": "3.354839", "jurosValor": "15.13", "atualizado": "466.07"},
+      {"id": "p-2026-08", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.013537", "corrigido": "456.09", "jurosPercentual": "2.354839", "jurosValor": "10.74", "atualizado": "466.83"},
+      {"id": "p-2026-09", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.015173", "corrigido": "456.83", "jurosPercentual": "1.354839", "jurosValor": "6.19", "atualizado": "463.02"},
+      {"id": "p-2026-10", "valorBase": "450.00", "editado": false, "situacao": "atualizado", "fator": "1.000000", "corrigido": "450.00", "jurosPercentual": "0.354839", "jurosValor": "1.60", "atualizado": "451.60"}
+    ],
+    "totais": {
+      "prestacoes": "11216.68",
+      "amortizacoes": "0.00",
+      "totalDevido": "11216.68",
+      "multa": "0.00",
+      "honorarios": "0.00",
+      "totalGeral": "11216.68"
+    },
+    "avisos": ["Meses sem índice na tabela (entraram sem correção): IGP-M de out/2026."]
+  }
+}

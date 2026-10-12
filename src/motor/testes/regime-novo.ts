@@ -8,9 +8,10 @@ import type {
 import { metodologiaPadrao } from "../../metodologias/padrao.ts";
 
 /**
- * Séries do BCB como estavam em 11/10/2026: IGP-M (189) e IPCA (433) de jan/2024 a set/2026, taxa
- * legal (29543) de ago/2024 a out/2026 e SELIC (4390) de jan/2024 a out/2026, cujo valor de out/2026
- * é o acumulado parcial do mês corrente. Fonte: dados/indices/*.json baixados em 11/10/2026.
+ * Séries do BCB como estavam em 11/10/2026: IGP-M (189), IPCA (433) e INPC (188) de jan/2024 a
+ * set/2026, taxa legal (29543) de ago/2024 a out/2026, SELIC (4390) de jan/2024 a out/2026, cujo
+ * valor de out/2026 é o acumulado parcial do mês corrente, e salário mínimo (1619) de jan/2024 a
+ * dez/2026. Fonte: dados/indices/*.json baixados em 11/10/2026.
  */
 export const REGIME_NOVO: Record<CodigoSerie, Record<Competencia, string>> = {
   // IGP-M
@@ -152,12 +153,85 @@ export const REGIME_NOVO: Record<CodigoSerie, Record<Competencia, string>> = {
     "2026-09": "1.08",
     "2026-10": "0.36",
   },
-  "188": {},
-  "1619": {},
+  // INPC
+  "188": {
+    "2024-01": "0.57",
+    "2024-02": "0.81",
+    "2024-03": "0.19",
+    "2024-04": "0.37",
+    "2024-05": "0.46",
+    "2024-06": "0.25",
+    "2024-07": "0.26",
+    "2024-08": "-0.14",
+    "2024-09": "0.48",
+    "2024-10": "0.61",
+    "2024-11": "0.33",
+    "2024-12": "0.48",
+    "2025-01": "0.00",
+    "2025-02": "1.48",
+    "2025-03": "0.51",
+    "2025-04": "0.48",
+    "2025-05": "0.35",
+    "2025-06": "0.23",
+    "2025-07": "0.21",
+    "2025-08": "-0.21",
+    "2025-09": "0.52",
+    "2025-10": "0.03",
+    "2025-11": "0.03",
+    "2025-12": "0.21",
+    "2026-01": "0.39",
+    "2026-02": "0.56",
+    "2026-03": "0.91",
+    "2026-04": "0.81",
+    "2026-05": "0.65",
+    "2026-06": "0.14",
+    "2026-07": "-0.01",
+    "2026-08": "-0.32",
+    "2026-09": "0.82",
+  },
+  // salário mínimo (os meses futuros do ano já publicados, §8.1)
+  "1619": {
+    "2024-01": "1412.00",
+    "2024-02": "1412.00",
+    "2024-03": "1412.00",
+    "2024-04": "1412.00",
+    "2024-05": "1412.00",
+    "2024-06": "1412.00",
+    "2024-07": "1412.00",
+    "2024-08": "1412.00",
+    "2024-09": "1412.00",
+    "2024-10": "1412.00",
+    "2024-11": "1412.00",
+    "2024-12": "1412.00",
+    "2025-01": "1518.00",
+    "2025-02": "1518.00",
+    "2025-03": "1518.00",
+    "2025-04": "1518.00",
+    "2025-05": "1518.00",
+    "2025-06": "1518.00",
+    "2025-07": "1518.00",
+    "2025-08": "1518.00",
+    "2025-09": "1518.00",
+    "2025-10": "1518.00",
+    "2025-11": "1518.00",
+    "2025-12": "1518.00",
+    "2026-01": "1621.00",
+    "2026-02": "1621.00",
+    "2026-03": "1621.00",
+    "2026-04": "1621.00",
+    "2026-05": "1621.00",
+    "2026-06": "1621.00",
+    "2026-07": "1621.00",
+    "2026-08": "1621.00",
+    "2026-09": "1621.00",
+    "2026-10": "1621.00",
+    "2026-11": "1621.00",
+    "2026-12": "1621.00",
+  },
 };
 
 /**
- * Tabela congelada em 11/10/2026 com as quatro séries. `limites` corta uma série numa competência
+ * Tabela congelada em 11/10/2026 com as seis séries. `limites` corta uma série numa competência
  * (ex.: `{ "4390": "2026-08" }` reproduz a tabela do SAJ, que ia até ago/2026).
  */
 export function tabelaRegimeNovo(
@@ -167,7 +241,6 @@ export function tabelaRegimeNovo(
   for (const [codigo, valores] of Object.entries(REGIME_NOVO) as Array<
     [CodigoSerie, Record<Competencia, string>]
   >) {
-    if (Object.keys(valores).length === 0) continue;
     const limite = limites[codigo];
     const tabela: Record<Competencia, ValorIndice> = {};
     for (const [competencia, valor] of Object.entries(valores)) {

@@ -16,7 +16,7 @@
     "lancamentos": [
       {"id": "p-2026-07-31", "tipo": "prestacao", "data": "2026-07-31", "competencia": "2026-07", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
       {"id": "p-2026-08-31", "tipo": "prestacao", "data": "2026-08-31", "competencia": "2026-08", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
-      {"id": "a-2026-07-31", "tipo": "amortizacao", "data": "2026-07-31", "descricao": "Pagamento parcial", "valorInformado": "300.00", "origem": "avulso", "editado": true}
+      {"id": "a-2026-07-31", "tipo": "amortizacao", "data": "2026-07-31", "descricao": "Pagamento parcial", "valorInformado": "300.00", "origem": "avulso", "editado": false}
     ],
     "metodologia": {
       "id": "tjms-saj",

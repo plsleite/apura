@@ -46,8 +46,8 @@
       {"id": "p-2026-08", "tipo": "prestacao", "data": "2026-08-01", "competencia": "2026-08", "valorInformado": "486.30", "origem": "avulso", "editado": true},
       {"id": "p-2026-09", "tipo": "prestacao", "data": "2026-09-01", "competencia": "2026-09", "valorInformado": "486.30", "origem": "avulso", "editado": true},
       {"id": "p-2026-10", "tipo": "prestacao", "data": "2026-10-01", "competencia": "2026-10", "valorInformado": "486.30", "origem": "avulso", "editado": true},
-      {"id": "a-2024-05", "tipo": "amortizacao", "data": "2024-05-10", "descricao": "Pagamento", "valorInformado": "5000.00", "origem": "avulso", "editado": true},
-      {"id": "a-2024-09", "tipo": "amortizacao", "data": "2024-09-10", "descricao": "Pagamento", "valorInformado": "5000.00", "origem": "avulso", "editado": true}
+      {"id": "a-2024-05", "tipo": "amortizacao", "data": "2024-05-10", "descricao": "Pagamento", "valorInformado": "5000.00", "origem": "avulso", "editado": false},
+      {"id": "a-2024-09", "tipo": "amortizacao", "data": "2024-09-10", "descricao": "Pagamento", "valorInformado": "5000.00", "origem": "avulso", "editado": false}
     ],
     "metodologia": {
       "id": "tjms-saj",

@@ -165,3 +165,26 @@ describe("períodos da metodologia", () => {
     ]);
   });
 });
+
+describe("SELIC única combinada com índice de correção", () => {
+  it("avisa que a SELIC já inclui correção e juros e que o índice do período não foi aplicado", () => {
+    const metodologia = metodologiaPadrao();
+    metodologia.periodos = [
+      { de: null, ate: "2024-08-29", correcao: { indice: "IGP-M" }, juros: { tipo: "selicUnica" } },
+      { de: "2024-08-30", ate: null, correcao: { indice: "IPCA" }, juros: { tipo: "taxaLegal" } },
+    ];
+    expect(validarMetodologia(metodologia)).toEqual([
+      "No período até 29/08/2024, a SELIC já inclui correção e juros: o índice IGP-M informado não foi aplicado.",
+    ]);
+    metodologia.periodos = [
+      { de: null, ate: null, correcao: { indice: "INPC" }, juros: { tipo: "selicUnica" } },
+    ];
+    expect(validarMetodologia(metodologia)).toEqual([
+      "Em toda a metodologia, a SELIC já inclui correção e juros: o índice INPC informado não foi aplicado.",
+    ]);
+    metodologia.periodos = [
+      { de: null, ate: null, correcao: { indice: "nenhum" }, juros: { tipo: "selicUnica" } },
+    ];
+    expect(validarMetodologia(metodologia)).toEqual([]);
+  });
+});

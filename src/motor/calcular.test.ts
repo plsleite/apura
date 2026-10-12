@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { competenciasEntre } from "../compartilhado/datas.ts";
-import type { Calculo, Lancamento } from "../compartilhado/tipos.ts";
+import type { Base, Calculo, Lancamento } from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
 import { calcular } from "./calcular.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
@@ -105,10 +105,12 @@ describe("calcular", () => {
   it("avisa o mês sem índice no lançamento e no resumo", () => {
     const r = calcular(calculoCom([prestacao]), tabelaIgpm());
     expect(r.lancamentos[0]?.avisos).toEqual([
+      "Valor informado à mão (R$ 451,91), não apurado pela base dos alimentos.",
       "IGP-M de mai/2018 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
     ]);
     expect(r.avisos).toEqual([
       "Meses sem índice na tabela (entraram sem correção): IGP-M de mai/2018.",
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: jan/2017.",
     ]);
   });
 
@@ -116,11 +118,13 @@ describe("calcular", () => {
     const r = calcular(calculoCom([prestacao]), tabelaIgpm("2018-04", ["2017-10"]));
     expect(r.lancamentos[0]?.correcao.fator).toBe("1.010998");
     expect(r.lancamentos[0]?.avisos).toEqual([
+      "Valor informado à mão (R$ 451,91), não apurado pela base dos alimentos.",
       "IGP-M de out/2017 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
       "IGP-M de mai/2018 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
     ]);
     expect(r.avisos).toEqual([
       "Meses sem índice na tabela (entraram sem correção): IGP-M de out/2017, mai/2018.",
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: jan/2017.",
     ]);
   });
 
@@ -135,10 +139,12 @@ describe("calcular", () => {
     expect(r.lancamentos[0]?.correcao.fator).toBe("1.000000");
     expect(r.lancamentos[0]?.correcao.indices.map((i) => i.fracao)).toEqual(["0/30", "25/31"]);
     expect(r.lancamentos[0]?.avisos).toEqual([
+      "Valor informado à mão (R$ 451,91), não apurado pela base dos alimentos.",
       "IGP-M de mai/2018 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
     ]);
     expect(r.avisos).toEqual([
       "Meses sem índice na tabela (entraram sem correção): IGP-M de mai/2018.",
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: abr/2018.",
     ]);
     expect(r.indicesUsados).toEqual([]);
   });
@@ -168,29 +174,52 @@ describe("calcular", () => {
     expect(r.lancamentos[0]?.correcao.fator).toBe("1.008652");
   });
 
-  it("lançamento posterior à data de elaboração entra pelo valor nominal, sem encargos, com aviso", () => {
-    const futuro: Lancamento = {
+  it("prestação posterior à data de elaboração é vincenda: valor nominal, sem correção e sem juros, mesmo com termos próprios (§6.7)", () => {
+    const futura: Lancamento = {
       ...prestacao,
       id: "p-2018-06",
       data: "2018-06-10",
       competencia: "2018-06",
     };
-    const r = calcular(calculoCom([futuro]), tabelaIgpm());
+    const r = calcular(calculoCom([futura]), tabelaIgpm());
     expect(r.lancamentos[0]).toMatchObject({
-      correcao: { fator: "1.000000" },
+      situacao: "vincenda",
+      correcao: { fator: "1.000000", indices: [] },
       corrigido: "451.91",
-      juros: { percentual: "0.000000" },
+      juros: { percentual: "0.000000", detalhe: [] },
       jurosValor: "0.00",
       atualizado: "451.91",
     });
     expect(r.lancamentos[0]?.avisos).toEqual([
-      "Data do lançamento (10/06/2018) posterior à data de elaboração (25/05/2018): sem correção e sem juros.",
+      "Valor informado à mão (R$ 451,91), não apurado pela base dos alimentos.",
+      "Prestação com vencimento em 10/06/2018, posterior à data de elaboração (25/05/2018): vincenda, incluída pelo valor nominal, sem correção e sem juros.",
+    ]);
+    // a vincenda entra nos totais pelo valor nominal (art. 323 do CPC)
+    expect(r.totais.prestacoes).toBe("451.91");
+    expect(r.avisos).toContain(
+      "Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: jun/2018.",
+    );
+    // termo inicial próprio da correção no passado não muda nada: continua nominal, com aviso
+    const comTermos: Lancamento = {
+      ...futura,
+      encargos: { termoInicialCorrecao: "2017-01-10", termoInicialJuros: "2017-01-10" },
+    };
+    const r2 = calcular(calculoCom([comTermos]), tabelaIgpm());
+    expect(r2.lancamentos[0]).toMatchObject({
+      situacao: "vincenda",
+      correcao: { fator: "1.000000" },
+      jurosValor: "0.00",
+      atualizado: "451.91",
+    });
+    expect(r2.lancamentos[0]?.avisos.slice(1)).toEqual([
+      "Prestação com vencimento em 10/06/2018, posterior à data de elaboração (25/05/2018): vincenda, incluída pelo valor nominal, sem correção e sem juros.",
+      "Os termos próprios informados não se aplicam à prestação vincenda.",
     ]);
   });
 
-  it("lançamento sem valor informado entra com zero e aviso (a base será apurada na fase 3)", () => {
+  it("prestação sem valor informado é apurada pela base dos alimentos (§6.3), sem a marca de editado", () => {
     const semValor: Lancamento = {
-      id: "p-sem-valor",
+      id: "p-2017-01-lote",
       tipo: "prestacao",
       data: "2017-01-10",
       competencia: "2017-01",
@@ -199,14 +228,18 @@ describe("calcular", () => {
     };
     const r = calcular(calculoCom([semValor]), tabelaIgpm());
     expect(r.lancamentos[0]).toMatchObject({
-      valorBase: "0.00",
-      corrigido: "0.00",
-      jurosValor: "0.00",
-      atualizado: "0.00",
+      valorBase: "451.91",
+      memoriaBase: "Valor fixado em 10/01/2017: R$ 451,91 (sem reajuste)",
+      editado: false,
+      situacao: "atualizado",
+      corrigido: "457.79",
+      jurosValor: "75.61",
+      atualizado: "533.40",
     });
-    expect(r.lancamentos[0]?.avisos).toContain(
-      "Valor não informado: o lançamento entrou com R$ 0,00.",
-    );
+    expect(r.lancamentos[0]?.avisos).toEqual([
+      "IGP-M de mai/2018 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
+    ]);
+    expect(r.avisos).not.toContainEqual(expect.stringContaining("informado à mão"));
   });
 
   it("avisa quando as amortizações igualam ou superam as prestações e quando não há lançamentos", () => {
@@ -241,13 +274,17 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
       jurosValor: "189.70",
       atualizado: "1289.55",
       avisos: [
+        "Valor informado à mão (R$ 1.000,00), não apurado pela base dos alimentos.",
         "IPCA de out/2026 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
       ],
     });
-    expect(r.consultaIndices.series).toEqual(["189", "433", "4390", "29543"]);
+    // séries em ordem numérica (como texto, "1619" viria antes de "188")
+    expect(r.consultaIndices.series).toEqual(["188", "189", "433", "1619", "4390", "29543"]);
     expect(r.consultaIndices.ultimoMesPorSerie).toEqual({
+      "188": "2026-09",
       "189": "2026-09",
       "433": "2026-09",
+      "1619": "2026-12",
       "4390": "2026-10",
       "29543": "2026-10",
     });
@@ -329,7 +366,7 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
       juros: { percentual: "16.516129" },
       atualizado: "533.40",
     });
-    expect(r.lancamentos[0]?.avisos.slice(0, 2)).toEqual([
+    expect(r.lancamentos[0]?.avisos.slice(1, 3)).toEqual([
       "Termo final da correção (31/12/2018) posterior à data de elaboração: limitado a 25/05/2018.",
       "Termo final dos juros (31/12/2018) posterior à data de elaboração: limitado a 25/05/2018.",
     ]);
@@ -393,5 +430,303 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
       valor: "0.83",
       fracao: "21/31",
     });
+  });
+
+  it("juros incidem sobre o corrigido sem arredondar, como o SAJ (R$ 450,00 de 01/02/2025: 93,47 e não 93,48)", () => {
+    const tabela = tabelaRegimeNovo();
+    tabela.series["189"]!["2025-12"] = {
+      valor: "-0.02",
+      fonte: "embutida",
+      obtidoEm: "2026-10-11T12:00:00.000Z",
+    };
+    const calculo = calculoCom(
+      [
+        {
+          ...prestacao,
+          id: "p-2025-02",
+          data: "2025-02-01",
+          competencia: "2025-02",
+          valorInformado: "450.00",
+        },
+      ],
+      hoje,
+    );
+    calculo.metodologia = {
+      ...metodologiaPadrao(),
+      ajustada: true,
+      deflacao: "aplicarSemPiso",
+      periodos: [
+        {
+          de: null,
+          ate: null,
+          correcao: { indice: "IGP-M" },
+          juros: { tipo: "percentualMensal", taxaMensal: "1" },
+        },
+      ],
+    };
+    const r = calcular(calculo, tabela);
+    expect(r.lancamentos[0]).toMatchObject({
+      correcao: { fator: "1.020504" },
+      corrigido: "459.23",
+      juros: { percentual: "20.354839" },
+      jurosValor: "93.47",
+      atualizado: "552.70",
+    });
+  });
+});
+
+describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e proveniência)", () => {
+  const hoje = "2026-10-11";
+  const semValorInformado = (
+    id: string,
+    data: string,
+    extra: Partial<Lancamento> = {},
+  ): Lancamento => ({
+    id,
+    tipo: "prestacao",
+    data,
+    competencia: data.slice(0, 7),
+    origem: "lote",
+    editado: false,
+    ...extra,
+  });
+  const comBase = (base: Base, lancamentos: Lancamento[], dataElaboracao = hoje): Calculo => ({
+    ...calculoCom(lancamentos, dataElaboracao),
+    base,
+  });
+
+  it("pagamento posterior à data de elaboração fica fora dos totais, com aviso no lançamento e no resumo", () => {
+    const futuro: Lancamento = { ...amortizacao, id: "a-2018-06", data: "2018-06-10" };
+    const r = calcular(calculoCom([prestacao, futuro]), tabelaIgpm());
+    expect(r.lancamentos[1]).toMatchObject({
+      situacao: "ignorado",
+      editado: false,
+      valorBase: "440.00",
+      atualizado: "440.00",
+      jurosValor: "0.00",
+    });
+    expect(r.lancamentos[1]?.avisos).toEqual([
+      "Pagamento de 10/06/2018, posterior à data de elaboração (25/05/2018): não computado nos totais.",
+    ]);
+    expect(r.totais).toMatchObject({
+      prestacoes: "533.40",
+      amortizacoes: "0.00",
+      totalDevido: "533.40",
+    });
+    expect(r.avisos).toContain("Lançamentos não computados nos totais: pagamento de 10/06/2018.");
+  });
+
+  it("valor zero ou negativo informado: aviso e lançamento fora dos totais (pagamentos são informados como positivos)", () => {
+    const zero: Lancamento = { ...prestacao, id: "p-zero", valorInformado: "0" };
+    const negativo: Lancamento = { ...amortizacao, id: "a-negativo", valorInformado: "-440.00" };
+    const r = calcular(calculoCom([prestacao, zero, negativo, amortizacao]), tabelaIgpm());
+    expect(r.lancamentos.map((l) => l.situacao)).toEqual([
+      "atualizado",
+      "ignorado",
+      "ignorado",
+      "atualizado",
+    ]);
+    expect(r.lancamentos[1]?.avisos.at(-1)).toBe(
+      "Valor da prestação zero ou negativo (R$ 0,00): não computada nos totais.",
+    );
+    expect(r.lancamentos[2]?.avisos).toEqual([
+      "Valor do pagamento zero ou negativo (-R$ 440,00): não computado nos totais; informe pagamentos como valores positivos.",
+    ]);
+    expect(r.lancamentos[2]).toMatchObject({ valorBase: "-440.00", atualizado: "-440.00" });
+    expect(r.totais).toMatchObject({
+      prestacoes: "533.40",
+      amortizacoes: "519.35",
+      totalDevido: "14.05",
+    });
+    expect(r.avisos).toContain(
+      "Lançamentos não computados nos totais: prestação de jan/2017, pagamento de 10/01/2017.",
+    );
+  });
+
+  it("texto decimal inválido no valor informado não derruba o motor: aviso e lançamento fora dos totais", () => {
+    const invalidos = ["1,5", "", "NaN", "Infinity"].map((texto, i): Lancamento => ({
+      ...prestacao,
+      id: `p-invalido-${i}`,
+      valorInformado: texto,
+    }));
+    const r = calcular(calculoCom([prestacao, ...invalidos]), tabelaIgpm());
+    expect(r.lancamentos.slice(1).every((l) => l.situacao === "ignorado")).toBe(true);
+    expect(r.lancamentos[1]).toMatchObject({
+      valorBase: "0.00",
+      memoriaBase: "Valor informado inválido",
+      atualizado: "0.00",
+    });
+    expect(r.lancamentos[1]?.avisos).toEqual([
+      'Valor informado ("1,5") não é um número válido (use ponto decimal, como 451.91): o lançamento não foi computado nos totais.',
+    ]);
+    expect(r.totais.prestacoes).toBe("533.40");
+    // base com texto inválido tampouco derruba
+    const r2 = calcular(
+      comBase({ tipo: "percentualSalarioMinimo", percentual: "trinta" }, [
+        semValorInformado("p", "2024-03-10"),
+      ]),
+      tabelaRegimeNovo(),
+    );
+    expect(r2.lancamentos[0]).toMatchObject({ situacao: "ignorado", valorBase: "0.00" });
+    expect(r2.totais.prestacoes).toBe("0.00");
+  });
+
+  it("pagamento sem valor informado fica fora dos totais, com aviso e resumo", () => {
+    const semValor: Lancamento = {
+      id: "a-sem-valor",
+      tipo: "amortizacao",
+      data: "2017-01-10",
+      origem: "avulso",
+      editado: false,
+    };
+    const r = calcular(calculoCom([prestacao, semValor]), tabelaIgpm());
+    expect(r.lancamentos[1]).toMatchObject({
+      situacao: "ignorado",
+      editado: false,
+      valorBase: "0.00",
+      memoriaBase: "Valor não informado",
+      atualizado: "0.00",
+    });
+    expect(r.lancamentos[1]?.avisos).toEqual([
+      "Pagamento sem valor informado: não computado nos totais.",
+    ]);
+    expect(r.totais).toMatchObject({
+      prestacoes: "533.40",
+      amortizacoes: "0.00",
+      totalDevido: "533.40",
+    });
+    expect(r.avisos).toContain("Lançamentos não computados nos totais: pagamento de 10/01/2017.");
+  });
+
+  it("marca 'editado' só nas prestações com valor informado, com aviso no lançamento e resumo no resultado", () => {
+    const r = calcular(
+      calculoCom([prestacao, amortizacao, semValorInformado("p-lote", "2017-02-10")]),
+      tabelaIgpm(),
+    );
+    expect(r.lancamentos.map((l) => l.editado)).toEqual([true, false, false]);
+    expect(r.lancamentos[0]?.avisos[0]).toBe(
+      "Valor informado à mão (R$ 451,91), não apurado pela base dos alimentos.",
+    );
+    expect(r.lancamentos[1]?.avisos).toEqual([
+      "IGP-M de mai/2018 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
+    ]);
+    expect(r.avisos).toContain(
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: jan/2017.",
+    );
+  });
+
+  it("prestação sem competência é identificada pela data nos avisos e resumos", () => {
+    const semCompetencia: Lancamento = {
+      ...prestacao,
+      id: "p-sem-competencia",
+      competencia: undefined,
+      data: "2018-06-10",
+    };
+    const r = calcular(calculoCom([semCompetencia]), tabelaIgpm());
+    expect(r.lancamentos[0]?.situacao).toBe("vincenda");
+    expect(r.avisos).toContain(
+      "Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: 10/06/2018.",
+    );
+    expect(r.avisos).toContain(
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: 10/06/2018.",
+    );
+  });
+
+  it("base em % do salário mínimo: valor apurado, salário mínimo em indicesUsados e séries em ordem numérica", () => {
+    const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+    const r = calcular(
+      comBase(base, [
+        semValorInformado("p-2025-01", "2025-01-10"),
+        semValorInformado("p-2026-01", "2026-01-10"),
+      ]),
+      tabelaRegimeNovo(),
+    );
+    expect(r.lancamentos.map((l) => l.valorBase)).toEqual(["455.40", "486.30"]);
+    expect(r.lancamentos[0]?.memoriaBase).toBe(
+      "30% do salário mínimo de jan/2025 (R$ 1.518,00) = R$ 455,40",
+    );
+    expect(r.lancamentos.map((l) => l.editado)).toEqual([false, false]);
+    const salarios = r.indicesUsados.filter((i) => i.serie === "1619");
+    expect(salarios).toEqual([
+      {
+        serie: "1619",
+        competencia: "2025-01",
+        valor: "1518.00",
+        fonte: "embutida",
+        obtidoEm: "2026-10-11T12:00:00.000Z",
+      },
+      {
+        serie: "1619",
+        competencia: "2026-01",
+        valor: "1621.00",
+        fonte: "embutida",
+        obtidoEm: "2026-10-11T12:00:00.000Z",
+      },
+    ]);
+    expect([...new Set(r.indicesUsados.map((i) => i.serie))]).toEqual(["433", "1619", "29543"]);
+  });
+
+  it("prestação vincenda em % do salário mínimo de mês ainda sem salário mínimo publicado: último publicado, nominal, avisos e resumos", () => {
+    const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+    const r = calcular(
+      comBase(base, [semValorInformado("p-2027-01", "2027-01-10")]),
+      tabelaRegimeNovo(),
+    );
+    expect(r.lancamentos[0]).toMatchObject({
+      situacao: "vincenda",
+      valorBase: "486.30",
+      atualizado: "486.30",
+      memoriaBase:
+        "30% do salário mínimo vigente em jan/2027 (R$ 1.621,00, último publicado: dez/2026) = R$ 486,30",
+    });
+    expect(r.lancamentos[0]?.avisos).toEqual([
+      "Salário mínimo de jan/2027 ainda não publicado na tabela de índices: usado o de dez/2026 (R$ 1.621,00), vigente até a publicação do novo.",
+      "Prestação com vencimento em 10/01/2027, posterior à data de elaboração (11/10/2026): vincenda, incluída pelo valor nominal, sem correção e sem juros.",
+    ]);
+    expect(r.avisos).toEqual([
+      "Meses sem índice na tabela para o valor-base das prestações (ver o aviso de cada uma): salário mínimo de jan/2027.",
+      "Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: jan/2027.",
+    ]);
+    expect(r.indicesUsados).toEqual([
+      {
+        serie: "1619",
+        competencia: "2026-12",
+        valor: "1621.00",
+        fonte: "embutida",
+        obtidoEm: "2026-10-11T12:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("valor fixo reajustado pelo IPCA: os 12 meses do acumulado entram em indicesUsados mesmo fora do período de correção", () => {
+    const base: Base = {
+      tipo: "valorFixo",
+      valor: "500.00",
+      dataFixacao: "2024-03-15",
+      indiceReajuste: "IPCA",
+      mesReajuste: 3,
+    };
+    const r = calcular(
+      comBase(base, [semValorInformado("p-2025-03", "2025-03-15")]),
+      tabelaRegimeNovo(),
+    );
+    expect(r.lancamentos[0]).toMatchObject({
+      valorBase: "525.29",
+      editado: false,
+      situacao: "atualizado",
+    });
+    const ipca = r.indicesUsados.filter((i) => i.serie === "433").map((i) => i.competencia);
+    expect(ipca.slice(0, 12)).toEqual(competenciasEntre("2024-03", "2025-02")); // reajuste
+    expect(ipca.slice(12)).toEqual(competenciasEntre("2025-03", "2026-09")); // correção
+    // reajuste sem índice: resumo próprio no resultado
+    const r2 = calcular(
+      comBase({ ...base, dataFixacao: "2025-11-15", mesReajuste: 11 }, [
+        semValorInformado("p-2026-11", "2026-11-15"),
+      ]),
+      tabelaRegimeNovo(),
+    );
+    expect(r2.avisos).toContain(
+      "Meses sem índice na tabela para o valor-base das prestações (ver o aviso de cada uma): IPCA de out/2026.",
+    );
   });
 });

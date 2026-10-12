@@ -4,6 +4,7 @@ import {
   competenciasEntre,
   competenciaValida,
   compor,
+  dataNoMes,
   dataValida,
   decompor,
   diaAnterior,
@@ -11,9 +12,11 @@ import {
   diasDoMes,
   diasEntre,
   diaSeguinte,
+  mesAnterior,
   mesSeguinte,
   primeiroDiaDoMes,
   ratearPorMesCalendario,
+  somarMeses,
   ultimoDiaDoMes,
 } from "./datas.ts";
 
@@ -120,5 +123,26 @@ describe("datas", () => {
     expect(diaSeguinte("2024-02-29")).toBe("2024-03-01");
     expect(diaSeguinte("2024-12-31")).toBe("2025-01-01");
     expect(diaSeguinte("2024-08-29")).toBe("2024-08-30");
+  });
+});
+
+describe("datas (fase 3)", () => {
+  it("anda meses para trás e para a frente", () => {
+    expect(mesAnterior("2018-01")).toBe("2017-12");
+    expect(mesAnterior("2018-02")).toBe("2018-01");
+    expect(somarMeses("2024-03", 12)).toBe("2025-03");
+    expect(somarMeses("2024-03", -3)).toBe("2023-12");
+    expect(somarMeses("2024-11", 2)).toBe("2025-01");
+    expect(somarMeses("2024-03", 0)).toBe("2024-03");
+  });
+
+  it("dia que o mês não tem vira o último dia do mês (dia 31 em mês curto, fevereiro bissexto ou não)", () => {
+    expect(dataNoMes("2026-01", 31)).toBe("2026-01-31");
+    expect(dataNoMes("2026-04", 31)).toBe("2026-04-30");
+    expect(dataNoMes("2026-02", 31)).toBe("2026-02-28");
+    expect(dataNoMes("2024-02", 31)).toBe("2024-02-29");
+    expect(dataNoMes("2024-02", 29)).toBe("2024-02-29");
+    expect(dataNoMes("2025-02", 29)).toBe("2025-02-28");
+    expect(dataNoMes("2026-10", 5)).toBe("2026-10-05");
   });
 });
