@@ -15,7 +15,7 @@ import textoDasExecucoes from "./testes/execucoes-rotina.json?raw";
  * A fixture sintética `testes/execucoes-rotina.json` tem o formato da API do GitHub (lista de
  * workflow_run, da mais recente para a mais antiga) e descreve out/2026 (22 dias úteis):
  * - 10h47: todos os dias úteis criada 12 min depois, menos 13/10 (sem execução) e 20/10
- *   (cancelada pela fila, 40 min depois);
+ *   (cancelada, 40 min depois);
  * - 14h17: 8 min depois, menos 13/10 (falha, 25 min depois) e 20/10 (sem execução);
  * - 22h47: sem execução em 13/10 e 20/10; dos 20 dias restantes, os 10 primeiros com 30 min, os 9
  *   seguintes com 50 min e 30/10 com 95 min (criada às 00h22 de sábado, 31/10); a de 09/10 é uma
@@ -394,7 +394,7 @@ describe("montarRelatorio", () => {
         "",
         "## Execuções agendadas",
         "",
-        "| Rodada | Previstas | Realizadas | Com sucesso | Com falha | Canceladas pela fila | Atraso de início (mediana) | Atraso de início (máximo) |",
+        "| Rodada | Previstas | Realizadas | Com sucesso | Com falha | Canceladas | Atraso de início (mediana) | Atraso de início (máximo) |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         "| 10h47 | 22 | 21 | 20 | 0 | 1 | 12 min | 40 min |",
         "| 14h17 | 22 | 21 | 20 | 1 | 0 | 8 min | 25 min |",
@@ -403,7 +403,8 @@ describe("montarRelatorio", () => {
         "",
         "- Cada execução conta no mês do seu horário agendado, mesmo quando o GitHub a cria depois da meia-noite.",
         "- O atraso de início vai do horário agendado até a criação da execução pelo GitHub.",
-        "- Com falha: qualquer conclusão que não seja sucesso nem cancelamento pela fila.",
+        "- Com falha: qualquer conclusão que não seja sucesso nem cancelamento.",
+        "- Canceladas: pela fila do GitHub (uma execução mais nova tomou o lugar da que esperava), à mão ou pelo próprio GitHub ao passar do tempo-limite da execução; a página da execução diz qual foi.",
         "- Reexecuções (2ª tentativa em diante), que não contam como execução nova: 1.",
         "- Execuções sem rodada reconhecível no título, deixadas fora das contas: 1.",
         "",
@@ -614,6 +615,23 @@ describe("montarRelatorio", () => {
     expect(relatorio).toContain(
       "- Nenhum dia útil sem rodada bem-sucedida: não cumprida (20 dias).",
     );
+  });
+
+  it("execução manual disparada fora da main (skipped): conclusão em português e nenhum minuto na estimativa", () => {
+    const relatorio = montarRelatorio(
+      "2027-02",
+      [
+        execucao({
+          criadaEm: "2027-02-02T09:00:00-03:00",
+          conclusao: "skipped",
+          iniciadaEm: "2027-02-02T12:00:00Z",
+          atualizadaEm: "2027-02-02T12:00:05Z",
+        }),
+      ],
+      [],
+    );
+    expect(relatorio).toContain("- 02/02/2027 09:00 · não executada (disparada fora da main)\n");
+    expect(relatorio).toContain("- Minutos de execução no GitHub Actions: 0 (estimativa:");
   });
 
   it("ignora execuções com data de criação inválida, sem lançar", () => {

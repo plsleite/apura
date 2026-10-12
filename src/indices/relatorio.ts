@@ -309,6 +309,7 @@ const NOME_DA_CONCLUSAO = new Map<string, string>([
   ["cancelled", "cancelada"],
   ["timed_out", "tempo esgotado"],
   ["startup_failure", "falha ao iniciar"],
+  ["skipped", "não executada (disparada fora da main)"],
 ]);
 
 function nomeDaConclusao(conclusao: string | null): string {
@@ -392,7 +393,7 @@ function linhaDaTabela(resumo: ResumoDaRodada): string {
 
 /**
  * Relatório do mês em Markdown: agenda (dias úteis, sem descontar feriados), execuções agendadas
- * por rodada (previstas, realizadas, com sucesso, com falha, canceladas pela fila e atraso de
+ * por rodada (previstas, realizadas, com sucesso, com falha, canceladas e atraso de
  * início, mediana e máximo), execuções manuais, dias úteis sem nenhuma execução agendada
  * bem-sucedida (aproximadamente o que o alarme do Healthchecks acusa), atualizações gravadas e revisões em seção
  * própria, estimativas e referências. Uma execução agendada pertence ao mês pelo horário agendado
@@ -437,7 +438,7 @@ export function montarRelatorio(
       });
     }
     if (execucao.tentativa > 1) reexecucoes += 1;
-    minutos += minutosDeExecucao(execucao);
+    if (execucao.conclusao !== "skipped") minutos += minutosDeExecucao(execucao);
   }
 
   const resumos: ResumoDaRodada[] = ORDEM_DAS_RODADAS.map((rodada) => ({
@@ -489,14 +490,15 @@ export function montarRelatorio(
 
   secao("Execuções agendadas");
   linhas.push(
-    "| Rodada | Previstas | Realizadas | Com sucesso | Com falha | Canceladas pela fila | Atraso de início (mediana) | Atraso de início (máximo) |",
+    "| Rodada | Previstas | Realizadas | Com sucesso | Com falha | Canceladas | Atraso de início (mediana) | Atraso de início (máximo) |",
     "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ...resumos.map(linhaDaTabela),
     linhaDaTabela(geral),
     "",
     "- Cada execução conta no mês do seu horário agendado, mesmo quando o GitHub a cria depois da meia-noite.",
     "- O atraso de início vai do horário agendado até a criação da execução pelo GitHub.",
-    "- Com falha: qualquer conclusão que não seja sucesso nem cancelamento pela fila.",
+    "- Com falha: qualquer conclusão que não seja sucesso nem cancelamento.",
+    "- Canceladas: pela fila do GitHub (uma execução mais nova tomou o lugar da que esperava), à mão ou pelo próprio GitHub ao passar do tempo-limite da execução; a página da execução diz qual foi.",
     `- Reexecuções (2ª tentativa em diante), que não contam como execução nova: ${reexecucoes}.`,
   );
   if (naoReconhecidas > 0) {
