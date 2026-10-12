@@ -18,7 +18,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "verificar": "prettier --check . && eslint . && tsc -b && vitest run",
-    "indices:atualizar": "node scripts/atualizar-indices.ts"
+    "indices:atualizar": "node scripts/atualizar-indices.ts",
+    "indices:relatorio": "node scripts/relatorio-indices.ts"
   },
   "dependencies": {
     "decimal.js": "10.6.0",

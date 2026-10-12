@@ -1,0 +1,101 @@
+# Relatório mensal da rotina de índices (decisão de 12/10/2026): no dia 2 de cada mês, às 12h17
+# de Brasília, lê pela API do GitHub as execuções do workflow "Atualizar índices do BCB" do mês
+# anterior, junta os commits da rotina em dados/indices (git log, por isso o histórico completo) e
+# grava o relatório em docs/monitoramento/AAAA-MM.md, sem e-mail. Também pode ser disparado à mão em
+# "Actions", com um mês opcional (AAAA-MM, já encerrado; vazio = mês anterior). Só pode ser
+# executado e testado quando o repositório estiver no GitHub (fase 7): até lá, é só conferido por
+# leitura.
+# O commit começa com "[CF-Pages-Skip]" para o Cloudflare Pages não publicar o site por causa dele;
+# a pasta docs/ é ignorada pelo Prettier, por isso não há "npm run verificar" antes de gravar.
+name: Relatório da rotina de índices
+
+on:
+  schedule:
+    - cron: "17 12 2 * *" # dia 2 de cada mês, 12h17 em Brasília; cobre o mês anterior
+      timezone: "America/Sao_Paulo"
+  workflow_dispatch:
+    inputs:
+      mes:
+        description: "Mês do relatório (AAAA-MM, já encerrado); vazio = mês anterior"
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  relatorio:
+    # Só a partir da main, e sempre a ponta dela (histórico completo para o git log).
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Escolher o mês
+        shell: bash
+        env:
+          MES_PEDIDO: ${{ inputs.mes }}
+        run: |
+          if [ -n "$MES_PEDIDO" ]; then
+            MES="$MES_PEDIDO"
+          else
+            MES="$(TZ=America/Sao_Paulo date -d "$(TZ=America/Sao_Paulo date +%Y-%m-01) -1 month" +%Y-%m)"
+          fi
+          if ! [[ "$MES" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]]; then
+            echo "::error::Mês inválido: $MES. Informe o mês no formato AAAA-MM, por exemplo 2026-10."
+            exit 1
+          fi
+          # Mês corrente ou futuro: os dias úteis ainda por vir sairiam como "sem execução".
+          ATUAL="$(TZ=America/Sao_Paulo date +%Y-%m)"
+          if ! [[ "$MES" < "$ATUAL" ]]; then
+            echo "::error::O relatório de $MES só pode ser montado depois que o mês terminar. Informe um mês anterior a $ATUAL."
+            exit 1
+          fi
+          echo "MES=$MES" >> "$GITHUB_ENV"
+          echo "Relatório de $MES."
+
+      - name: Ler as execuções da rotina
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DE="$(date -d "$MES-01 -1 day" +%Y-%m-%d)"
+          ATE="$(date -d "$MES-01 +1 month" +%Y-%m-%d)"
+          gh api --method GET --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/atualizar-indices.yml/runs" \
+            -f per_page=100 -f created="$DE..$ATE" --jq '.workflow_runs[]' | jq -s '.' > "$RUNNER_TEMP/execucoes.json"
+          echo "Execuções lidas de $DE a $ATE: $(jq 'length' "$RUNNER_TEMP/execucoes.json")."
+
+      - name: Montar o relatório
+        run: npm run --silent indices:relatorio -- "$MES" "$RUNNER_TEMP/execucoes.json"
+
+      - name: Gravar na main
+        shell: bash
+        run: |
+          git add docs/monitoramento
+          if git diff --cached --quiet; then
+            echo "O relatório de $MES não mudou; nada a gravar."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "[CF-Pages-Skip] monitoramento: relatório da rotina de índices de $MES"
+          # Outro envio pode entrar entre o pull e o push: tenta de novo, até três vezes.
+          for tentativa in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((tentativa * 10))
+          done
+          echo "::error::Não foi possível gravar na main depois de 3 tentativas."
+          exit 1
