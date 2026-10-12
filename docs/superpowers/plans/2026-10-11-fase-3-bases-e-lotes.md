@@ -4873,7 +4873,7 @@ Achados que ficaram para fases seguintes ou como melhorias menores, agrupados po
 - As revisões das Tasks 4 e 6 foram feitas em Opus (módulos centrais); as demais em Sonnet; a re-revisão da Task 4 em Haiku.
 - Salário mínimo anterior a jul/1994 (moeda nominal na série 1619) ficou fora do MVP, registrado acima.
 - Relatórios dos subagentes gravados em `.txt`; o da Task 2 foi transcrito pelo controlador.
-- Onda de correção da revisão final (um commit): `default` em `apurarValorBase` para base desconhecida, testes de competência × vencimento, pagamento sem valor e prestação sem competência, `it.runIf` nos avisos dos casos, renomeação da variável local que sombreava `mesAnterior`, limpeza de código morto, `editado: false` nas amortizações dos casos de 2026, metadados e observações dos casos novos, e três ajustes de texto no design.
+- Onda de correção da revisão final (dois commits, a53e316 e ed35b7b; depois do merge, o reforço `base satisfies never;` no `default` de `apurarValorBase` entrou em cd1fc48): `default` em `apurarValorBase` para base desconhecida, testes de competência × vencimento, pagamento sem valor e prestação sem competência, `it.runIf` nos avisos dos casos, renomeação da variável local que sombreava `mesAnterior`, limpeza de código morto, `editado: false` nas amortizações dos casos de 2026, metadados e observações dos casos novos, e três ajustes de texto no design.
 
 ## Auto-revisão do plano
 
