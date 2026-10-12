@@ -1,3 +1,5 @@
+import { competenciaValida } from "../compartilhado/datas.ts";
+import { textoDecimalValido } from "../compartilhado/decimal.ts";
 import type {
   ArquivoSerie,
   CodigoSerie,
@@ -9,6 +11,42 @@ import { SERIES, urlDaSerie } from "./series.ts";
 export interface ValorMensal {
   competencia: Competencia;
   valor: TextoDecimal;
+}
+
+/** Um item de série como gravado em arquivo: competência "AAAA-MM" válida e valor em texto decimal. */
+export function ehValorMensalValido(item: unknown): item is ValorMensal {
+  if (typeof item !== "object" || item === null) return false;
+  const { competencia, valor } = item as { competencia?: unknown; valor?: unknown };
+  return (
+    typeof competencia === "string" && competenciaValida(competencia) && textoDecimalValido(valor)
+  );
+}
+
+export interface ErroSgs {
+  statusCode: number;
+  detail: string;
+}
+
+/**
+ * Objeto de erro do SGS, `{"erro":{"statusCode":404,"detail":"…Value(s) not found"}}` (intervalo sem
+ * dados, data inválida); qualquer outro texto devolve null. O status HTTP não basta: esse corpo já
+ * chegou com status 200, servido de cache (verificado em 11/10/2026).
+ */
+export function interpretarErroSgs(texto: string): ErroSgs | null {
+  const aparado = texto.trim();
+  if (!aparado.startsWith("{")) return null;
+  try {
+    const dados = JSON.parse(aparado) as { erro?: { statusCode?: unknown; detail?: unknown } };
+    const erro = dados.erro;
+    if (typeof erro !== "object" || erro === null || typeof erro.statusCode !== "number")
+      return null;
+    return {
+      statusCode: erro.statusCode,
+      detail: typeof erro.detail === "string" ? erro.detail : "",
+    };
+  } catch {
+    return null;
+  }
 }
 
 export class RespostaSgsInvalida extends Error {

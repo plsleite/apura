@@ -32,13 +32,15 @@ const FORMATO_TEXTO_DECIMAL = /^-?\d+(\.\d+)?$/;
 
 /**
  * Texto decimal que o motor aceita: dígitos com ponto decimal e sinal opcionais ("451.91", "-1.10",
- * "30"). Recusa vírgula, vazio, espaços, "NaN", "Infinity" e notação com expoente.
+ * "30"). Recusa vírgula, vazio, espaços, "NaN", "Infinity", notação com expoente e qualquer coisa
+ * que não seja texto (número, nulo, objeto): dados de arquivo e respostas do BCB chegam
+ * como `unknown`.
  */
-export function textoDecimalValido(texto: string): boolean {
-  return FORMATO_TEXTO_DECIMAL.test(texto);
+export function textoDecimalValido(texto: unknown): texto is TextoDecimal {
+  return typeof texto === "string" && FORMATO_TEXTO_DECIMAL.test(texto);
 }
 
 /** `Decimal` do texto quando ele é válido; `null` caso contrário (o motor avisa em vez de lançar erro). */
-export function decimalOuNulo(texto: string | undefined): Decimal | null {
-  return texto !== undefined && textoDecimalValido(texto) ? new Decimal(texto) : null;
+export function decimalOuNulo(texto: unknown): Decimal | null {
+  return textoDecimalValido(texto) ? new Decimal(texto) : null;
 }

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { interpretarRespostaSgs, montarArquivoSerie, RespostaSgsInvalida } from "./cliente-bcb.ts";
+import {
+  ehValorMensalValido,
+  interpretarErroSgs,
+  interpretarRespostaSgs,
+  montarArquivoSerie,
+  RespostaSgsInvalida,
+} from "./cliente-bcb.ts";
 import { SERIES, urlDaSerie } from "./series.ts";
 import respostaGravada from "./testes/sgs-189-2017-2018.json?raw";
 
@@ -68,6 +74,39 @@ describe("interpretarRespostaSgs", () => {
 
   it("devolve lista vazia para resposta vazia (quem chama decide o que fazer)", () => {
     expect(interpretarRespostaSgs("[]")).toEqual([]);
+  });
+});
+
+describe("interpretarErroSgs", () => {
+  it("reconhece o objeto de erro do SGS (404 sem valores, 400 data inválida) e ignora o resto", () => {
+    expect(
+      interpretarErroSgs(
+        '{"erro":{"statusCode":404,"detail":"br.gov.bcb.pec.sgs.comum.excecoes.SGSNegocioException: Value(s) not found"}}',
+      ),
+    ).toEqual({
+      statusCode: 404,
+      detail: "br.gov.bcb.pec.sgs.comum.excecoes.SGSNegocioException: Value(s) not found",
+    });
+    expect(interpretarErroSgs('{"erro":{"statusCode":400}}')).toEqual({
+      statusCode: 400,
+      detail: "",
+    });
+    expect(interpretarErroSgs('[{"data":"01/01/2017","valor":"0.64"}]')).toBeNull();
+    expect(interpretarErroSgs("<!DOCTYPE html>")).toBeNull();
+    expect(interpretarErroSgs('{"erro":"texto"}')).toBeNull();
+    expect(interpretarErroSgs("{")).toBeNull();
+  });
+});
+
+describe("ehValorMensalValido", () => {
+  it("aceita competência válida com valor em texto decimal; recusa mês 13, valor numérico e chave ausente", () => {
+    expect(ehValorMensalValido({ competencia: "2017-01", valor: "0.64" })).toBe(true);
+    expect(ehValorMensalValido({ competencia: "2017-13", valor: "0.64" })).toBe(false);
+    expect(ehValorMensalValido({ competencia: "2017-01", valor: 0.64 })).toBe(false);
+    expect(ehValorMensalValido({ competencia: "2017-01", valor: "0,64" })).toBe(false);
+    expect(ehValorMensalValido({ competencia: "2017-01" })).toBe(false);
+    expect(ehValorMensalValido(null)).toBe(false);
+    expect(ehValorMensalValido("2017-01")).toBe(false);
   });
 });
 
