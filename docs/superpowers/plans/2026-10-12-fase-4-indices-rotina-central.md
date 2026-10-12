@@ -10457,6 +10457,62 @@ Use a skill `superpowers:finishing-a-development-branch`: o repositório ainda n
 - **Novas séries (visão do produto).** Um índice novo do SGS entra no tipo `CodigoSerie` e em `NOME_DA_SERIE` (`tipos.ts`), em `series.ts`, em `SERIES_EM_ORDEM_NUMERICA`, `ultimoMesEsperado` e `esperadoAte` (`calendario.ts`), em `divulgacaoPrevista` (`divulgacao.ts`) e na importação de `embutidos.ts`; o arquivo `dados/indices/<codigo>.json` é criado com `npm run indices:atualizar -- <codigo>` antes do commit (sem ele, `embutidos.ts` não compila); daí em diante, a rotina o mantém sem outra mudança.
 - **Inserção excepcional de índices (visão, §4.3).** Não pode ser feita editando `dados/indices/*.json`: a rotina regrava a série do BCB e trataria o valor como revisão. Quando existir, fica numa camada própria (arquivo separado, com autoria e motivo), aplicada sobre a cópia publicada no congelamento.
 
+### Pendências registradas na execução da fase 4
+
+Achados que ficaram para fases seguintes ou como melhorias menores, agrupados por destino, e as decisões tomadas na execução. Os itens abaixo reúnem os ganchos já conhecidos ao escrever o plano e os achados das revisões:
+
+**Fase 5**
+
+- A tela chama `congelarIndices()` ao abrir o app e em "Novo cálculo" (síncrona, sem rede) e usa a tabela devolvida até o próximo "Novo cálculo" ou "Abrir…". Mostra `situacao.rodape` no rodapé e `situacao.avisos` na caixa de avisos, além de `resultado.avisos`.
+- Ao abrir um arquivo, a tela recalcula com a tabela congelada e mostra o resultado de `compararIndicesUsados`, passando `resultado.consultaIndices.em` do arquivo como `consultadoEm`. A função também exige o `consultadoEm` do recálculo, embora não o use.
+- Validar o arquivo aberto antes de usá-lo: `formato`, datas e textos decimais. `dataValida` e `competenciaValida` recebem texto: conferir `typeof … === "string"` antes, como faz `ehValorMensalValido`.
+- Conferir também os códigos de série de `indicesUsados` antes de `compararIndicesUsados`: um código desconhecido deixa o nome da série indefinido na frase.
+- `seriesEmbutidas` devolve uma cópia rasa dos JSON importados (mesmos objetos e listas): nenhum consumidor deve alterar `valores` no lugar.
+
+**Fase 6**
+
+- A frase de fontes do relatório usa `resultado.consultaIndices.em` com `formatarDataHoraBrasilia` e o sufixo "(horário de Brasília)".
+- A SELIC parcial é o `IndiceUsado` da série 4390 cuja `competenciaDe(obtidoEm)` é igual à competência. Sai impressa com a data de obtenção do próprio valor, e não com `consultaIndices.em`, que pode ser de outra série.
+- A memória do reajuste não aplicado diz "não disponível" mesmo quando os meses que faltam estão só "ainda sem divulgação", e a janela mista usa palavras diferentes no aviso e no resumo. O relatório pode mostrar palavras diferentes para o mesmo mês: padronizar o texto ou ajustar o motor.
+
+**Fase 7**
+
+- Seguir a lista "Rotina de índices e monitoramento" da seção "Insumos que dependem do responsável" do roteiro: verificação no Healthchecks.io com o segredo `HC_URL`; aviso por e-mail de publicação com falha no Cloudflare Pages; `main` sem exigência de pull request; primeira execução manual com conferência do resumo, do commit do robô e da publicação; deploy hook (`CF_DEPLOY_HOOK`) só se o commit não publicar; revisão dos relatórios de `docs/monitoramento/` depois de um e de três meses.
+- Conferir se os executores do GitHub alcançam o BCB (na primeira execução manual) e repetir o teste da rede institucional com o site publicado.
+- Na primeira execução agendada, conferir que a chave `timezone` é aceita (horário de Brasília) e que `github.event.schedule` traz só a expressão cron. Uma execução manual fora da `main` aparece como "skipped" na lista de execuções.
+- Conferir o `display_title` das primeiras execuções contra o `cron` de `RODADAS`, a conclusão de execução pulada e de estouro de tempo, o efeito de `[CF-Pages-Skip]` e o filtro `created` do `gh api`.
+- Avaliar fixar `actions/checkout@v6` e `actions/setup-node@v6` por SHA, com Dependabot: hoje estão por tag móvel num job com `contents: write`.
+- `src/indices/embutidos.test.ts` exige que o salário mínimo real termine em dezembro. Se o BCB publicar o ano novo aos poucos, o `npm run verificar` da rotina falha e nenhuma série é gravada até alguém ajustar o teste (a saída é trocar a exigência por mês fechado). Candidato a ajuste antes da fase 7.
+
+**Sem fase (melhorias menores)**
+
+- As fixtures `src/motor/testes/*.ts` continuam com `obtidoEm` fixo em 12:00Z.
+- Falta um aviso do motor para o mês parcial da SELIC que não é o mês final do lançamento (hoje só o design registra esse limite).
+- Os padrões de `buscarSerie` (20 s, duas tentativas, 3 s) vêm do plano anterior e não são usados: a rotina passa `BUSCA_DO_SCRIPT` (30 s, três tentativas, 2 s).
+- O motor deduz o mês parcial da SELIC pelo texto de `obtidoEm`, e a rotina, pelo mês em Brasília. Só diferem num arquivo em UTC gravado na última noite do mês, o que não ocorre depois da fase 4.
+- Diagnóstico das falhas: o motivo de uma falha de rede guarda só o nome do erro ("sem resposta do BCB: TypeError"), sem a causa (`ENOTFOUND`, `ECONNRESET`…); e o motivo vindo do BCB (`detail` do SGS) entra sem limite de tamanho nem normalização de quebras de linha na saída, no resumo, no commit e no relatório mensal. Candidatos a ajuste.
+- As opções numéricas de `buscarSerie` não são validadas por completo (`tentativas` infinito; `tempoLimiteMs` NaN, negativo ou fracionário faz `AbortSignal.timeout` lançar). A única chamadora passa constantes.
+- `textoDecimalValido`, com o predicado `texto is TextoDecimal`, estreita para `never` um argumento já `string` no ramo falso; nenhum chamador usa esse ramo. A saída é um tipo nominal ou uma sobrecarga.
+- `FORMATO_VALOR` (`cliente-bcb.ts`) duplica `FORMATO_TEXTO_DECIMAL` (`decimal.ts`): unificar com `textoDecimalValido`.
+- Relógio: a reserva sem `longOffset` escreve "-03:00" com a hora do fuso real (errado só com horário de verão e `Intl` sem `longOffset`; o Node 22 tem `longOffset` e Brasília não tem horário de verão desde 2019). `compararInstantes` não confere `dataValida` (o V8 aceita "2026-02-30T…Z") e, com texto sem fuso misturado a instantes, a comparação textual não é uma ordem total. `horarioAgendado` (`relatorio.ts`) fixa "-03:00" e `relatorio.ts` repete o leitor de data-hora ISO de `relogio.ts`. Só importam com `obtidoEm` malformado, arquivo editado à mão ou horário de verão de volta.
+- `new Date()` só deve aparecer em `src/indices/relogio.ts`, mas nenhuma regra do ESLint impõe isso fora do motor. Conferido por busca ao fim da fase (12/10/2026): fora dos testes, só `relogio.ts` o usa.
+- `SERIES_EM_ORDEM_NUMERICA` e `esperadoAte` (`calendario.ts`) repetem as seis séries à mão; a nota "Novas séries" manda atualizar as duas.
+- `lerArquivoSerie` não confere que `nome` e `origem` são texto antes do cast (ninguém lê esses campos), e a mensagem de item inválido usa a competência vazia como veio ("… inválido em .").
+- `montarTabela` (`congelar.ts`) e `tabelaEmbutida` (`embutidos.ts`) são duas montagens da tabela com regras um pouco diferentes (`tabelaEmbutida` só tem uso em testes). `montarTabela` e `OpcoesCongelamento.embutidas` são tipadas como `Record` completo, embora aceitem série ausente.
+- Com `anterior.consultadoEm` vazio ou inválido, as frases ao reabrir saem truncadas ("… de ."); só ocorre com a cópia publicada sem arquivos.
+- No relatório mensal, uma execução manual fora da `main` ("skipped") aparece em inglês e soma cerca de um minuto à estimativa; e toda conclusão "cancelled" de execução agendada cai em "Canceladas pela fila", embora também venha de cancelamento manual ou de estouro do tempo-limite.
+- Lacunas de teste e de organização: a regra "mês presente posterior a `esperadoAte` não vira aviso" só tem teste para o salário mínimo; o teste da espera padrão (`setTimeout`) não verifica o valor passado; no último `describe` de `cliente-bcb.test.ts`, "html" e "json" sombreiam auxiliares de mesmo nome; há um nome de teste impreciso em `arquivo-serie.test.ts` e um caso de `lerArquivoSerie` ainda em `embutidos.test.ts`; a importação de `divulgacao.ts` fica fora do agrupamento nos três arquivos do motor; a variável `marco` de `base.test.ts` tem base de novembro.
+- Linhas de comentário longas em `scripts/atualizar-indices.ts` e no workflow `atualizar-indices.yml` (o Prettier não quebra comentários).
+
+**Decisões tomadas na execução**
+
+- O trailer de coautoria de cada commit nomeia o modelo que de fato o executou: Claude Sonnet 5.5 nas dez tarefas.
+- As contagens de testes do plano conferiram ao fim de cada tarefa: 385, 410, 442, 479, 502, 537, 576, 634 e 673 passando, sempre com 9 pulados; 23 arquivos ao fim.
+- Os achados menores acima foram mantidos como estavam no plano, porque nenhum muda o resultado de um cálculo. Os marcados como candidatos a ajuste, e a exigência do salário mínimo em dezembro (que pode travar a rotina), podem entrar na correção da revisão final da fase.
+- Na Task 8, o script de índices rodou contra o BCB real em 12/10/2026 (feriado): as seis séries vieram "sem mudança", com código de saída 0, e nenhum commit de dados foi feito.
+- Os relatórios dos subagentes foram gravados em `.txt`, por heredoc no shell, porque o gancho de gravação pode recusar o caminho com acento ("PÚBLICA").
+- A Task 10 vai até o commit dos documentos; a integração na `main` fica para depois, com a decisão do responsável.
+
 
 ## Auto-revisão do plano
 
