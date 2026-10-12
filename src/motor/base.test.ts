@@ -82,6 +82,16 @@ describe("base em percentual do salário mínimo (§6.3)", () => {
         2,
       ).memoria,
     ).toBe("48,23% do salário mínimo de mar/2024 (R$ 1.412,00) = R$ 681,01");
+    // o próprio Decimal sai arredondado a 2 casas (681,0076 → 681,01); toFixed(2) arredondaria
+    // de novo e esconderia a falha, por isso aqui vai toFixed() sem argumento
+    expect(
+      apurarValorBase(
+        prestacao("2024-03-10"),
+        { tipo: "percentualSalarioMinimo", percentual: "48.23" },
+        tabelaRegimeNovo(),
+        2,
+      ).valor?.toFixed(),
+    ).toBe("681.01");
   });
 });
 
@@ -126,6 +136,15 @@ describe("base em percentual dos rendimentos (§6.3)", () => {
         2,
       ).valor?.toFixed(2),
     ).toBe("500.00");
+    // o próprio Decimal sai arredondado (499,995 → 500): toFixed() não arredonda de novo
+    expect(
+      apurarValorBase(
+        prestacao("2024-03-10"),
+        { ...base, percentual: "33.333" },
+        tabela,
+        2,
+      ).valor?.toFixed(),
+    ).toBe("500");
     const invalido = apurarValorBase(
       prestacao("2024-03-10", { rendimento: "abc" }),
       base,
@@ -178,6 +197,15 @@ describe("base em valor fixo (§6.3)", () => {
         tabelaIgpm(),
         2,
       ).valor?.toFixed(2),
+    ).toBe("500.01");
+    // o próprio Decimal sai arredondado (500,005 → 500,01): toFixed() não arredonda de novo
+    expect(
+      apurarValorBase(
+        prestacao("2018-02-10"),
+        { ...base, valor: "500.005" },
+        tabelaIgpm(),
+        2,
+      ).valor?.toFixed(),
     ).toBe("500.01");
   });
 
@@ -238,6 +266,8 @@ describe("base em valor fixo (§6.3)", () => {
       ]);
       const em2018 = apurarValorBase(prestacao("2018-01-10"), base, tabela2017, 2);
       expect(em2018.valor?.toFixed(2)).toBe("460.11");
+      // o próprio Decimal sai arredondado (460,1090… → 460,11): toFixed() não arredonda de novo
+      expect(em2018.valor?.toFixed()).toBe("460.11");
       expect(em2018.memoria).toBe(
         "R$ 451,91 fixados em 10/01/2017 × salário mínimo de jan/2018 (R$ 954,00) ÷ salário mínimo de jan/2017 (R$ 937,00) = R$ 460,11",
       );
