@@ -142,7 +142,7 @@ export interface Lancamento {
   data: DataISO;
   competencia?: Competencia;
   descricao?: string;
-  /** amortizações sempre; prestações só se editadas à mão ou avulsas */
+  /** amortizações sempre; prestações só quando o valor foi informado à mão (as demais são apuradas pela base, §6.3) */
   valorInformado?: TextoDecimal;
   rendimento?: TextoDecimal;
   encargos?: EncargosProprios;
@@ -190,6 +190,14 @@ export interface DetalheJuros {
   percentual: TextoDecimal;
 }
 
+/**
+ * Como o lançamento entrou no cálculo (§6.7): "atualizado" (correção e juros até a data de
+ * elaboração); "vincenda" (prestação posterior à data de elaboração, pelo valor nominal, sem
+ * encargos); "ignorado" (fora dos totais: pagamento posterior à data de elaboração, valor zero ou
+ * negativo, valor inválido ou base sem como apurar).
+ */
+export type SituacaoLancamento = "atualizado" | "vincenda" | "ignorado";
+
 export interface LancamentoCalculado {
   id: string;
   tipo: Lancamento["tipo"];
@@ -198,6 +206,9 @@ export interface LancamentoCalculado {
   descricao?: string;
   valorBase: TextoDecimal;
   memoriaBase: string;
+  /** prestação cujo valor foi informado à mão, em vez de apurado pela base dos alimentos (§6.3) */
+  editado: boolean;
+  situacao: SituacaoLancamento;
   correcao: { fator: TextoDecimal; indices: IndiceAplicado[]; pisoAplicado: boolean };
   corrigido: TextoDecimal;
   juros: { percentual: TextoDecimal; detalhe: DetalheJuros[] };
@@ -246,6 +257,12 @@ export interface LancamentoEsperado {
   atualizado: TextoDecimal;
   fator?: TextoDecimal;
   jurosPercentual?: TextoDecimal;
+  valorBase?: TextoDecimal;
+  memoriaBase?: string;
+  situacao?: SituacaoLancamento;
+  editado?: boolean;
+  /** avisos do lançamento, comparados por inteiro quando informados */
+  avisos?: string[];
 }
 
 export interface CasoDeReferencia {
@@ -255,5 +272,6 @@ export interface CasoDeReferencia {
   observacoes?: string;
   calculo: Calculo;
   indices: TabelaIndices;
-  esperado: { lancamentos: LancamentoEsperado[]; totais: Totais };
+  /** `avisos` (do Resultado) são comparados por inteiro quando o caso os informa */
+  esperado: { lancamentos: LancamentoEsperado[]; totais: Totais; avisos?: string[] };
 }

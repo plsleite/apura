@@ -33,6 +33,14 @@ describe("casos de referência", () => {
         const opcionais: Array<[string, string | undefined, string]> = [
           ["fator", esperado.fator, obtido.correcao.fator],
           ["jurosPercentual", esperado.jurosPercentual, obtido.juros.percentual],
+          ["valorBase", esperado.valorBase, obtido.valorBase],
+          ["memoriaBase", esperado.memoriaBase, obtido.memoriaBase],
+          ["situacao", esperado.situacao, obtido.situacao],
+          [
+            "editado",
+            esperado.editado === undefined ? undefined : String(esperado.editado),
+            String(obtido.editado),
+          ],
         ];
         const esperados: Record<string, string | undefined> = {};
         const obtidos: Record<string, string> = {};
@@ -51,6 +59,7 @@ describe("casos de referência", () => {
           }
         }
         expect(obtidos).toEqual(esperados);
+        if (esperado.avisos !== undefined) expect(obtido.avisos).toEqual(esperado.avisos);
       },
     );
 
@@ -65,6 +74,11 @@ describe("casos de referência", () => {
 
     it("totais batem", () => {
       expect(resultado.totais).toEqual(caso.esperado.totais);
+    });
+
+    it("avisos do resultado batem (quando o caso os informa)", () => {
+      if (caso.esperado.avisos !== undefined)
+        expect(resultado.avisos).toEqual(caso.esperado.avisos);
     });
 
     it("o fator e o percentual impressos reproduzem o centavo, com tolerância proporcional ao valor", () => {

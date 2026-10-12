@@ -11,7 +11,7 @@
     "atualizadoEm": "2026-10-11T00:00:00.000Z",
     "dataElaboracao": "2026-10-11",
     "cabecalho": {"defensor": "", "orgao": "", "processo": "", "exequente": "", "executado": ""},
-    "base": {"tipo": "valorFixo", "valor": "1000.00", "dataFixacao": "2026-10-11", "indiceReajuste": "nenhum", "mesReajuste": 1},
+    "base": {"tipo": "valorFixo", "valor": "10000.00", "dataFixacao": "2026-10-11", "indiceReajuste": "nenhum", "mesReajuste": 1},
     "lotes": {},
     "lancamentos": [
       {"id": "p-2024-03-10", "tipo": "prestacao", "data": "2024-03-10", "competencia": "2024-03", "valorInformado": "10000.00", "origem": "avulso", "editado": true},
