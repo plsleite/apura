@@ -81,7 +81,7 @@ Um "Relatório de Cálculo Processual – Sintético" do TJMS, emitido em 25/05/
 - Encargos com dois regimes e transição automática em 30/08/2024 (Lei 14.905/2024), pré-carregados e ajustáveis; alternativas INPC, IPCA e SELIC única para o período antigo.
 - Encargos próprios por lançamento: termos iniciais separados para correção e juros, e índices próprios.
 - Multa e honorários do art. 523, §1º, do CPC como percentuais opcionais sobre o total devido.
-- Índices oficiais do BCB/SGS com cópia embutida, atualização silenciosa e congelamento por cálculo.
+- Índices oficiais do BCB/SGS publicados com o site e atualizados por uma rotina central diária no repositório, com congelamento por cálculo.
 - Relatório em tela e PDF (impressão do navegador) com a identidade da DPE-MS.
 - Salvar e abrir o cálculo como arquivo; cinco cálculos recentes e preferências (defensor e órgão) guardados no navegador.
 - Tema claro e escuro na tela; impressão sempre clara.
@@ -113,14 +113,14 @@ Alternativas consideradas: (1) site estático em TypeScript; (2) servidor em Pyt
 
 Ferramentas: Vite (empacotador), React (interface), TypeScript estrito, Vitest (testes), decimal.js (aritmética decimal), ESLint e Prettier. Node 22 e git já disponíveis na máquina de desenvolvimento.
 
-Verificação feita em 10/10/2026: a API SGS do BCB responde a chamadas feitas pelo navegador (CORS liberado para GET simples, sem cabeçalhos personalizados), o que dispensa servidor intermediário para buscar índices.
+Verificação feita em 10/10/2026: a API SGS do BCB responde a chamadas feitas pelo navegador (CORS liberado para GET simples, sem cabeçalhos personalizados), o que dispensa servidor intermediário para buscar índices. Desde a fase 4 (decisão de 12/10/2026), o app não chama o BCB: uma rotina central no repositório baixa os índices e o site é republicado.
 
 ### 4.2 Módulos (pastas de `src/`)
 
 | Módulo | Responsabilidade | Depende de |
 |---|---|---|
 | `motor/` | Funções puras: gerar lançamentos em lote, apurar valor-base, atualizar cada lançamento, totais, avisos. Recebe Cálculo + tabela de índices, devolve Resultado. Sem rede, relógio ou tela. | `compartilhado/` |
-| `indices/` | Cópia embutida das séries, cliente da API do BCB, cache no navegador, congelamento por cálculo, calendário de divulgação. Entrega uma tabela de índices ao motor. | `compartilhado/` |
+| `indices/` | Cópia embutida das séries (publicada com o site), congelamento por cálculo e calendário de divulgação, que entregam uma tabela de índices ao motor; fora do app, a rotina central (cliente da API do BCB, script e workflow) e o relatório mensal da rotina. | `compartilhado/` |
 | `metodologias/` | Metodologias de encargos em JSON versionado (padrão "TJMS/SAJ v1"). | — |
 | `ui/` | Tela única em duas colunas; edita o Cálculo; chama o motor a cada alteração; recentes e preferências. | `motor/`, `indices/`, `metodologias/`, `relatorio/` |
 | `relatorio/` | Componente do relatório (tela e impressão), texto de metodologia gerado, matriz de índices, marca e CSS de impressão. | `motor/` (tipos) |
@@ -128,7 +128,7 @@ Verificação feita em 10/10/2026: a API SGS do BCB responde a chamadas feitas p
 
 ### 4.3 Fluxo de dados
 
-1. Ao abrir o app ou iniciar um novo cálculo, `indices/` atualiza silenciosamente as séries (§8) e congela uma tabela de índices para o cálculo.
+1. Ao abrir o app ou iniciar um novo cálculo, `indices/` congela a tabela de índices da cópia publicada com o site (§8), sem nenhuma consulta externa.
 2. O usuário edita o Cálculo pela interface (lotes, lançamentos, encargos, cabeçalho).
 3. A cada alteração, `ui/` chama `motor.calcular(calculo, indices)` e recebe o Resultado.
 4. `relatorio/` renderiza Cálculo + Resultado na tela e, por impressão, em PDF.
@@ -149,7 +149,7 @@ Verificação feita em 10/10/2026: a API SGS do BCB responde a chamadas feitas p
 
 - Valores monetários, percentuais e índices são guardados como texto decimal (ex.: `"451.91"`, `"0.64"`), nunca como número de ponto flutuante. No motor, são `Decimal` (decimal.js).
 - Datas como `"AAAA-MM-DD"`; competências como `"AAAA-MM"`. O motor não usa objetos `Date` nem o relógio; a data de elaboração vem no Cálculo.
-- O arquivo salvo contém `calculo` (entradas) e `resultado` (derivado, para auditoria). Ao reabrir, o Apura recalcula com os índices atuais e avisa se algum índice usado mudou.
+- O arquivo salvo contém `calculo` (entradas) e `resultado` (derivado, para auditoria). Ao reabrir, o Apura recalcula com os índices atuais e avisa, por série e mês, qual índice usado mudou, qual passou a entrar e qual deixou de constar, comparando `resultado.indicesUsados` do arquivo com o do recálculo (decisão de 11/10/2026, fase 4); o arquivo não guarda a tabela inteira.
 - Todo arquivo traz `formato: "apura/calculo@1"` para permitir migrações futuras.
 
 ### 5.2 Cálculo (entradas)
@@ -238,11 +238,15 @@ Resultado {
 }
 ```
 
+Desde a fase 4, `consultaIndices.em` é a data de obtenção mais recente entre os arquivos da cópia
+publicada, comparada pelo instante (no horário de Brasília nas gravações da rotina; os arquivos
+anteriores à fase 4 trazem UTC), e o `fonte` de cada item de `indicesUsados` é sempre `"embutida"`
+(o valor `"aoVivo"` fica reservado no tipo).
+
 ### 5.5 Armazenamento no navegador
 
 - **Preferências**: defensor e órgão, com "Lembrar neste navegador" (ligado por padrão) e "Esquecer".
 - **Cálculos recentes**: os cinco últimos, salvos a cada alteração, listados em "Abrir…" por data, processo e partes; "Remover" por item e "Limpar recentes"; opção "Guardar cálculos recentes neste navegador" em "1 · Processo", ligada por padrão, para desligar em computador compartilhado; "Esquecer" apaga preferências e recentes.
-- **Cache de índices** (§8).
 - Nada mais é gravado; nada é transmitido.
 
 ---
@@ -267,10 +271,10 @@ Todas as regras abaixo nascem com teste e exemplo numérico (§11). O motor nunc
 ### 6.3 Valor-base de cada prestação
 
 - A base usa sempre o mês da data do vencimento da prestação (a competência é o rótulo da linha e, no lote, é igual ao mês do vencimento). Toda prestação sem valor informado, de lote ou avulsa, é apurada pela base (decisões de 11/10/2026, fase 3).
-- Valor fixo com reajuste por índice (IGP-M, INPC ou IPCA): no mês do reajuste (padrão: mês da fixação; editável), o valor vigente é multiplicado pelo índice acumulado dos 12 meses anteriores ao mês do reajuste; a partir daí, a cada 12 meses. O primeiro reajuste cai 12 meses após a fixação quando o mês do reajuste é o próprio mês da fixação (fixado em 15/03/2024, reajuste em março: mar/2025, com o acumulado de mar/2024 a fev/2025); com outro mês escolhido, cai na primeira ocorrência dele depois do mês da fixação, com o acumulado desde o mês da fixação até o mês anterior ao reajuste (pode ter menos de 12 meses). O acumulado (produto dos fatores mensais) multiplica com precisão integral e aparece na memória com 4 casas; o valor reajustado é arredondado a 2 casas a cada reajuste, e o seguinte parte dele. Acumulado negativo ou zero não reduz o valor: o valor vigente é mantido e a memória registra. Se faltar na tabela algum mês do acumulado, o reajuste não é aplicado, o valor vigente anterior é mantido e o aviso diz até que mês o índice está disponível.
+- Valor fixo com reajuste por índice (IGP-M, INPC ou IPCA): no mês do reajuste (padrão: mês da fixação; editável), o valor vigente é multiplicado pelo índice acumulado dos 12 meses anteriores ao mês do reajuste; a partir daí, a cada 12 meses. O primeiro reajuste cai 12 meses após a fixação quando o mês do reajuste é o próprio mês da fixação (fixado em 15/03/2024, reajuste em março: mar/2025, com o acumulado de mar/2024 a fev/2025); com outro mês escolhido, cai na primeira ocorrência dele depois do mês da fixação, com o acumulado desde o mês da fixação até o mês anterior ao reajuste (pode ter menos de 12 meses). O acumulado (produto dos fatores mensais) multiplica com precisão integral e aparece na memória com 4 casas; o valor reajustado é arredondado a 2 casas a cada reajuste, e o seguinte parte dele. Acumulado negativo ou zero não reduz o valor: o valor vigente é mantido e a memória registra. Se faltar na tabela algum mês do acumulado, o reajuste não é aplicado, o valor vigente anterior é mantido e o aviso diz até que mês o índice está disponível. Com o calendário na tabela (fase 4), quando todos os meses que faltam ainda não saíram, o aviso diz que estão "ainda sem divulgação na data da consulta", com a previsão ("previsão: …" quando falta um mês; "previsão para <último mês>: …" quando falta mais de um), e não o último mês disponível.
 - Reajuste "pelo salário mínimo": valor × (salário mínimo do mês do vencimento ÷ salário mínimo do mês da fixação), sem usar o mês de reajuste (o valor acompanha o salário mínimo no mês em que ele muda). "Nenhum": valor constante.
 - Prestação anterior ao mês da fixação: entra com o valor fixado, sem reajuste, com aviso.
-- Percentual do salário mínimo: percentual × salário mínimo do mês do vencimento (série 1619). Mês ainda sem salário mínimo publicado: usa-se o último publicado, que vigora até o novo decreto, com aviso; a proveniência registra o mês realmente usado.
+- Percentual do salário mínimo: percentual × salário mínimo do mês do vencimento (série 1619). Mês ainda sem salário mínimo publicado: usa-se o último publicado, que vigora até o novo decreto, com aviso; a proveniência registra o mês realmente usado. Com o calendário na tabela (fase 4), o mês posterior ao esperado sai como "ainda não publicado na data da consulta", com a previsão, e o mês já esperado que falta (buraco de dados) sai como "não consta na tabela de índices", com o último anterior disponível.
 - Percentual dos rendimentos: percentual × rendimento do mês (o do lançamento, se informado; senão o padrão). Não há reajuste automático: quando o rendimento muda, o usuário informa o novo rendimento nos meses afetados ou altera o padrão.
 - Valor informado à mão prevalece: a linha do resultado traz `editado = true`, aviso no lançamento e resumo no resultado; o relatório menciona esses valores. Amortizações têm o valor sempre informado e não recebem a marca.
 - Valor-base arredondado a 2 casas. `memoriaBase` explica a conta em uma frase (ex.: "30% do salário mínimo de mar/2024 (R$ 1.412,00) = R$ 423,60"; "R$ 500,00 fixados em 15/03/2024, reajustados em mar/2025 (IPCA de mar/2024 a fev/2025: 5,0576%) = R$ 525,29").
@@ -368,21 +372,23 @@ Confirmar com colegas ou com a contadoria do TJMS antes de implementar a regra c
 
 Fora do MVP: SELIC diária (11), IPCA-15 (7478), fatores auxiliares da taxa legal (29541, 29542).
 
-Fatos verificados em 10/10/2026: resposta JSON `[{"data":"dd/mm/aaaa","valor":"0.82"}]` com valor em texto e ponto decimal; séries mensais datadas no dia 01; a 4390 vem em ordem decrescente no endpoint `ultimos/N` (sempre ordenar por data); séries mensais aceitam o histórico completo numa chamada; erros 400/404/406 em JSON; série inexistente devolve HTML com status 200 (validar o tipo de conteúdo); cache do BCB de 15 minutos; sem limite de taxa observado; lentidão ocasional (tempo-limite de 30 s e nova tentativa com espera crescente).
+Fatos verificados em 10/10/2026: resposta JSON `[{"data":"dd/mm/aaaa","valor":"0.82"}]` com valor em texto e ponto decimal; séries mensais datadas no dia 01; a 4390 vem em ordem decrescente no endpoint `ultimos/N` (sempre ordenar por data); séries mensais aceitam o histórico completo numa chamada; erros 400/404/406 em JSON; série inexistente devolve HTML com status 200 (decidir pelo corpo da resposta, não pelo tipo de conteúdo); cache do BCB de 15 minutos; sem limite de taxa observado; lentidão ocasional (na rotina: 30 s, até três tentativas, 2 s de espera). Reverificados em 11 e 12/10/2026: intervalo sem dados devolve `{"erro":{"statusCode":404,"detail":"…Value(s) not found"}}` (não lista vazia), às vezes com status 200; data inválida devolve 400 em JSON; o 406 não se reproduziu e é tratado como qualquer objeto de erro do SGS; série inexistente e bloqueio devolvem HTML com status 200; houve um 502 em HTML e uma resposta de 9,8 s; a API não informa quando carregou cada valor. O cliente decide pelo corpo da resposta, nunca pelo cabeçalho `content-type` nem só pelo status.
 
-### 8.2 Três camadas, sem botão e sem inserção manual
+### 8.2 Rotina central, sem botão para o usuário e sem inserção manual
 
-1. **Cópia embutida**: um arquivo JSON por série em `dados/indices/`, gerado pelo script `scripts/atualizar-indices.ts`, com `obtidoEm` e endereço de origem. Atualizada mensalmente por rotina do GitHub (por volta do dia 12, após a divulgação do IPCA), que grava no repositório e republica o site; também pode ser executada à mão.
-2. **Busca ao vivo, silenciosa**: ao abrir o app e ao iniciar um novo cálculo, o navegador pede ao BCB apenas os meses posteriores aos que já tem (GET simples, sem cabeçalhos personalizados), valida e ordena a resposta e guarda no cache do navegador com a data de obtenção. Falhas são silenciosas: o app segue com o que tem.
-3. **Congelamento por cálculo**: a tabela de índices usada por um cálculo é fixada quando ele começa. Os números não mudam enquanto o usuário digita, e a data de consulta impressa no relatório é verdadeira. Cálculo novo pega o mais recente; cálculo reaberto é recalculado com os índices atuais, com aviso se algum mudou.
+1. **Cópia publicada com o site**: um arquivo JSON por série em `dados/indices/`, com `obtidoEm` (horário de Brasília) e endereço de origem, gravado pela rotina central: o workflow `atualizar-indices.yml` roda de segunda a sexta às 10h47, 14h17 e 22h47 de Brasília (e pelo botão "Run workflow"), baixa o histórico de cada série pelo script `scripts/atualizar-indices.ts`, confere, grava só as séries que mudaram (uma série com problema não trava as outras), roda as conferências automáticas, faz commit descritivo na `main`, e o site é republicado. O próprio repositório é o registro histórico das atualizações.
+2. **O app não consulta o BCB**: lê só a cópia publicada, sem rede e sem armazenamento no navegador (decisão de 12/10/2026, que substituiu a busca ao vivo e o cache no navegador previstos antes).
+3. **Congelamento por cálculo**: a tabela de índices usada por um cálculo é fixada quando ele começa: é a cópia publicada lida nesse momento, com o calendário do dia. Os números não mudam enquanto o usuário digita, e a data-hora impressa no relatório é a da obtenção dos índices, no horário de Brasília. Cálculo novo pega a cópia mais recente; cálculo reaberto é recalculado com os índices atuais, com aviso se algum mudou.
 
 Não há inserção manual de índices no MVP (§3.2).
 
 ### 8.3 Proveniência e sinalização
 
-- Cada valor carrega série, competência, valor, fonte (cópia embutida ou ao vivo) e data de obtenção; o Resultado lista os efetivamente usados.
-- Único sinal na tela, no rodapé, sem botão: "Índices oficiais BCB/SGS · IPCA até set/2026 · consultados em 10/10/2026 14:02"; em falha: "usando índices de 12/09/2026".
-- Calendário de divulgação conhecido pelo app, para avisos em português claro: IPCA e INPC por volta do dia 10 do mês seguinte; IGP-M no fim do próprio mês; taxa legal no 1º dia útil do mês de referência; salário mínimo com antecedência.
+- Cada valor carrega série, competência, valor, fonte (cópia publicada) e data de obtenção; o Resultado lista os efetivamente usados.
+- Único sinal na tela, no rodapé, sem botão: "Índices oficiais BCB/SGS · IPCA até set/2026 · atualizados em 09/10/2026 14:17 (horário de Brasília)", com a data da obtenção mais recente da cópia publicada. A caixa de avisos recebe os avisos do calendário, por exemplo em 16/11/2026, com a cópia ainda de 09/10/2026: "IPCA de out/2026, divulgado por volta de 10/11/2026, ainda não chegou ao Apura: o cálculo usa os índices disponíveis em 09/10/2026."
+- Calendário de divulgação conhecido pelo app, para avisos em português claro e só para avisos: IPCA e INPC esperados a partir do dia 15 do mês seguinte (divulgação por volta do dia 10); IGP-M a partir do dia 5 do mês seguinte (divulgação no fim do próprio mês); taxa legal e SELIC parcial a partir do dia 5 do próprio mês; salário mínimo do ano inteiro a partir de fevereiro. A tabela congelada leva ao motor o último mês esperado de cada série (`esperadoAte`), e os avisos distinguem o mês posterior ao esperado, "ainda sem divulgação na data da consulta", com a previsão (no salário mínimo, "ainda não publicado na data da consulta"), do mês já esperado que falta, "não disponível na tabela de índices" (no salário mínimo, "não consta na tabela de índices"), que indica buraco de dados ou cópia desatualizada.
+
+**Decisões registradas em 11 e 12/10/2026 (fase 4).** Rotina central no lugar da busca no navegador (12/10/2026), seguindo a prática dos tribunais e da Justiça do Trabalho e Federal, que mantêm os índices de forma central: o app só lê a cópia publicada; a rotina roda de segunda a sexta às 10h47, 14h17 e 22h47 de Brasília (minutos "quebrados", porque o início de cada hora é o pico em que o GitHub atrasa ou descarta execuções), alinhada à publicação do IGP-M (8h), do IPCA e INPC (9h), da taxa legal (entre 8h30 e o início da tarde do 1º dia útil) e da SELIC (até 19h). Gravação série por série, conferências automáticas antes de gravar, commit descritivo como registro histórico, série sem mudança não regravada. Na SELIC, a mudança do mês corrente ou do seu fechamento é informativa; só a mudança de mês fechado é revisão ("Atenção"). Monitoramento gratuito: resumo de cada execução, alarme de silêncio no Healthchecks.io (e-mail se um dia útil passar sem rodada bem-sucedida), relatório mensal em `docs/monitoramento/`; ajustes de horário ou de agendador só com o responsável, após revisão com os relatórios. Revogadas: o cache no navegador e a busca ao vivo (D1, D2 e D8 de 11/10/2026, na tabela de decisões do plano da fase 4). Mantidas: horário de Brasília para datas de obtenção e consulta (texto com "-03:00", exibido como "(horário de Brasília)"); tabela congelada na memória e arquivo guardando o `Resultado`; aviso de índice mudado por série e mês, com o salário mínimo nomeado; calendário com dia aproximado, só para avisos. Mudanças no motor: o mês parcial da SELIC é o mês de `obtidoEm` do próprio valor, e os avisos dizem "ainda sem divulgação na data da consulta (previsão: …)" quando a tabela traz `esperadoAte`. Limites aceitos: a SELIC parcial continua entrando inteira (ou rateada, se o lançamento começou no mesmo mês) quando um termo final próprio cai antes do dia da consulta no mesmo mês; o mês corrente da SELIC é tratado como parcial até a primeira atualização gravada no mês seguinte (os dois só alcançam metodologias personalizadas com SELIC única até o mês corrente); os dias do calendário são aproximados; o agendador do GitHub pode atrasar horas, e por isso é medido.
 
 ---
 
@@ -458,7 +464,7 @@ Gerado a partir do que foi aplicado, nunca de parâmetros do sistema: não cita 
 - **Multa e honorários.** Quando houver: percentuais, base e não cumulação.
 - **Deflação.** Só quando o piso atuar: "índices negativos computados; o valor corrigido não fica inferior ao original".
 - **Observações.** Texto livre do usuário.
-- **Fontes e arredondamento.** "Índices consultados em dd/mm/aaaa no Sistema Gerenciador de Séries Temporais do Banco Central (séries …). Arredondamento comercial: fator e percentual de juros com 6 casas, valores com 2 casas por lançamento." Meses sem índice listados.
+- **Fontes e arredondamento.** "Índices do Sistema Gerenciador de Séries Temporais do Banco Central (séries …), atualizados em dd/mm/aaaa hh:mm (horário de Brasília). Arredondamento comercial: fator e percentual de juros com 6 casas, valores com 2 casas por lançamento." Meses sem índice listados.
 
 ---
 
@@ -468,7 +474,7 @@ Gerado a partir do que foi aplicado, nunca de parâmetros do sistema: não cita 
 - **Casos de referência** em `src/motor/casos/*.json`: Cálculo de entrada, índices congelados (valores da época) e saída esperada linha a linha, com fonte. Primeiro caso: SAJ TJMS 25/05/2018 (Anexo A). Seguintes: regime novo conferido na Calculadora do Cidadão do BCB; transição em 30/08/2024; um por tipo de base; deflação com piso; encargos próprios; multa e honorários; gabaritos da contadoria quando chegarem.
 - **Unitários**: datas (dias entre datas, dias do mês, rateio por mês-calendário), arredondamento comercial, fator de correção (pro rata geométrico, meses inteiros, mês final, meses faltantes, piso), juros por regime, taxa legal, SELIC única, metodologia com três ou mais períodos e taxas distintas, termos finais anteriores à data de elaboração, geração em lote (cumulativa, sem duplicar, dia 31), valor-base, multa e honorários, serialização.
 - **Propriedades**: ordem dos lançamentos não altera totais; salvar e reabrir devolve o mesmo Resultado com os mesmos índices; refeita a conta com o fator e o percentual impressos, o valor difere do calculado em no máximo R$ 0,01 (§6.8).
-- **Índices**: parser e cliente testados com respostas gravadas do BCB (ordem invertida, mês corrente parcial, HTML em vez de JSON, erros 400/404/406), sem rede.
+- **Índices**: cliente, rotina central e relatório mensal testados sem rede, com respostas gravadas do BCB (ordem invertida, mês corrente parcial, HTML em vez de JSON, página 502, erros 400 e 404 em JSON; o 406, que não se reproduziu em 2026, com corpo sintético) e uma lista sintética de execuções no formato da API do GitHub; propriedade: a mesma tabela não gera aviso de índice mudado.
 - **Interface**: testes de componente (Testing Library) para lote cumulativo, edição e recálculo, recentes e preferências. Impressão: roteiro de conferência manual.
 - **Integração contínua**: GitHub Actions roda lint, tipos e testes a cada envio; publicação só com testes verdes.
 
@@ -490,17 +496,18 @@ Gerado a partir do que foi aplicado, nunca de parâmetros do sistema: não cita 
 ```
 apura/
   CLAUDE.md  README.md  package.json  vite.config.ts  tsconfig.json  .gitignore
-  .github/workflows/        testes.yml · publicar.yml · atualizar-indices.yml
+  .github/workflows/        testes.yml · publicar.yml · atualizar-indices.yml · relatorio-indices.yml
   dados/indices/            433.json · 188.json · 189.json · 1619.json · 29543.json · 4390.json
   docs/identidade-visual/   manual e logos
   docs/referencia/          relatório de exemplo (HTML e PDF), casos de referência transcritos
   docs/superpowers/specs/   este documento
   docs/superpowers/plans/   planos de implementação
+  docs/monitoramento/       relatórios mensais da rotina de índices
   public/                   fontes (woff2), logos otimizados
-  scripts/                  atualizar-indices.ts
-  src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts
+  scripts/                  atualizar-indices.ts · relatorio-indices.ts
+  src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
   src/motor/                lote.ts · base.ts · correcao.ts · juros.ts · calcular.ts · casos/
-  src/indices/              series.ts · cliente-bcb.ts · cache.ts · congelar.ts · calendario.ts
+  src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
   src/metodologias/         tjms-saj.v1.json
   src/ui/                   App.tsx · secoes/ · tabelas/ · estado/ · recentes.ts · preferencias.ts
   src/relatorio/            Relatorio.tsx · metodologia.ts · matriz-indices.tsx · impressao.css
@@ -508,7 +515,7 @@ apura/
 
 ### 12.3 CLAUDE.md
 
-Conteúdo: o que é o Apura e o estado do MVP; comandos (`npm install`, `npm run dev`, `npm test`, `npm run lint`, `npm run indices:atualizar`); mapa de pastas; regras obrigatórias (TDD, decimal, português no domínio, motor puro, nenhum índice inventado, relatório sem parâmetros de sistema); apontadores para este design, para os planos e para a lista de pontos de validação jurídica; como registrar um novo caso de referência.
+Conteúdo: o que é o Apura e o estado do MVP; comandos (`npm install`, `npm run dev`, `npm test`, `npm run lint`, `npm run indices:atualizar`, `npm run indices:relatorio`); mapa de pastas; regras obrigatórias (TDD, decimal, português no domínio, motor puro, nenhum índice inventado, relatório sem parâmetros de sistema); apontadores para este design, para os planos e para a lista de pontos de validação jurídica; como registrar um novo caso de referência.
 
 ---
 
@@ -516,7 +523,7 @@ Conteúdo: o que é o Apura e o estado do MVP; comandos (`npm install`, `npm run
 
 - Repositório privado no GitHub (conta do responsável ou organização da Defensoria, a definir na criação). `.superpowers/` e `node_modules/` ignorados.
 - Cloudflare Pages (ou Netlify) conectado ao repositório: a branch principal publica o endereço dos testadores; cada branch de trabalho ganha pré-visualização.
-- Rotina mensal de índices (GitHub Actions): executa o script, abre commit com os JSON atualizados e dispara a publicação.
+- Rotina central de índices (GitHub Actions), de segunda a sexta às 10h47, 14h17 e 22h47 de Brasília: executa o script, grava na `main` as séries que mudaram (depois das conferências automáticas), e o site é republicado. Monitoramento gratuito: resumo de cada execução; alarme de silêncio no Healthchecks.io (e-mail se um dia útil passar sem rodada bem-sucedida); relatório mensal em `docs/monitoramento/` (workflow `relatorio-indices.yml`, dia 2); ajustes de horário ou de agendador só com o responsável.
 - Versão semântica a partir de 0.1.0, exibida no rodapé da tela e do relatório; `CHANGELOG.md`.
 - Local: `npm install`, `npm run dev`, `npm test`.
 
@@ -526,7 +533,7 @@ Conteúdo: o que é o Apura e o estado do MVP; comandos (`npm install`, `npm run
 
 - Dados de partes e processo são pessoais: existem só na memória do navegador, no arquivo salvo pelo usuário e nos cinco recentes do navegador (desligáveis). Nunca são enviados a servidor algum; o app não tem telemetria.
 - Preferências (defensor e órgão) são dados funcionais do próprio usuário.
-- Única comunicação de rede: GET à API pública do BCB, sem dados do cálculo na requisição.
+- O app não faz nenhuma comunicação de rede além de carregar o próprio site; quem consulta a API pública do BCB é a rotina central no repositório (decisão de 12/10/2026). A rotina também envia um sinal sem conteúdo ao Healthchecks.io e, se configurado, aciona o deploy hook do Cloudflare; os endereços ficam em segredos do repositório e só entram nos passos que os usam.
 - Sem dependências de execução além das listadas; versões fixadas; auditoria de dependências na integração contínua.
 
 ---
@@ -535,8 +542,9 @@ Conteúdo: o que é o Apura e o estado do MVP; comandos (`npm install`, `npm run
 
 | Risco | Mitigação |
 |---|---|
-| API do BCB lenta, fora do ar ou bloqueada na rede institucional | cópia embutida atualizada mensalmente; cache no navegador; falha silenciosa |
-| BCB mudar o formato ou o CORS da API | parser tolerante e validado por testes com respostas gravadas; cópia embutida garante operação; script de atualização isola a mudança |
+| API do BCB lenta, fora do ar ou inacessível para o GitHub | três rodadas por dia útil; gravação série por série; o app segue com a cópia publicada; alarme de silêncio; script executável à mão |
+| BCB mudar o formato da API | decisão pelo corpo da resposta, validada por testes com respostas gravadas; a cópia publicada garante a operação; o script isola a mudança |
+| Agendador do GitHub atrasado ou que descarta execuções | minutos "quebrados", três rodadas, alarme de silêncio e relatório mensal; se preciso, disparo por outro agendador (decisão com o responsável) |
 | Convenções do SAJ no regime novo desconhecidas | seguir a metodologia oficial do BCB; obter relatório SAJ pós-2024 (gabarito) e ajustar a metodologia como dado, sem mudar código |
 | Divergência jurídica sobre alguma convenção | pontos de validação (§7) explícitos; metodologia parametrizada e versionada; relatório descreve o que foi aplicado |
 | Limitações do PDF por impressão (sem numeração de páginas) | aceita no MVP; geração no servidor prevista |
@@ -549,7 +557,7 @@ Conteúdo: o que é o Apura e o estado do MVP; comandos (`npm install`, `npm run
 1. **Fundação e motor do regime antigo**: repositório, projeto Vite/React/TS, Vitest, ESLint/Prettier, CLAUDE.md, `.gitignore`; primitivas (`Decimal`, datas, arredondamento, rateio); transcrição do caso SAJ 2018; correção pro rata e juros por mês-calendário; cálculo de lançamentos e totais reproduzindo o caso centavo a centavo; cópia embutida do IGP-M e script de atualização.
 2. **Regime novo e transição**: taxa legal, IPCA, transição em 30/08/2024, SELIC única, deflação com piso, encargos próprios, multa e honorários; casos conferidos na Calculadora do Cidadão.
 3. **Bases e lotes**: valor fixo com reajuste, % do salário mínimo, % dos rendimentos; lotes cumulativos de prestações e amortizações; casos-limite.
-4. **Índices ao vivo**: cliente BCB, cache, congelamento por cálculo, calendário, rotina mensal.
+4. **Índices: rotina central e monitoramento**: rotina central diária no repositório, congelamento por cálculo, calendário de divulgação, monitoramento.
 5. **Interface**: layout, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas.
 6. **Relatório e PDF**: componente, metodologia gerada, matriz, marca, fontes, impressão.
 7. **Publicação**: GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores.

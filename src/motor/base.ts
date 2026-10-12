@@ -30,6 +30,7 @@ import type {
   NomeIndice,
   TabelaIndices,
 } from "../compartilhado/tipos.ts";
+import { aindaNaoDivulgado, divulgacaoPrevista } from "../compartilhado/divulgacao.ts";
 
 export interface MesSemIndice {
   serie: CodigoSerie;
@@ -95,6 +96,39 @@ function salarioMinimoVigente(
   return usado === null ? null : { usado, publicado: false };
 }
 
+/**
+ * Como descrever o salário mínimo que falta no mês do vencimento, quando entra o último anterior
+ * (`usado`): "ainda não publicado" quando a tabela não diz até que mês a série deveria ir (casos
+ * antigos, calendário sem a série 1619) ou quando o mês é posterior ao esperado pelo calendário;
+ * "não consta" quando o calendário diz que o mês já deveria estar na tabela (buraco de dados). A
+ * `nota` entra na memória da conta e o `aviso`, nos avisos do lançamento.
+ */
+function descreverSalarioAnterior(
+  tabela: TabelaIndices,
+  competencia: Competencia,
+  usado: IndiceUsado,
+): { nota: string; aviso: string } {
+  const mes = formatarCompetencia(competencia);
+  const anterior = formatarCompetencia(usado.competencia);
+  const valor = formatarMoeda(decimal(usado.valor));
+  if (aindaNaoDivulgado(tabela, SALARIO_MINIMO, competencia)) {
+    return {
+      nota: `último publicado: ${anterior}`,
+      aviso: `Salário mínimo de ${mes} ainda não publicado na data da consulta (previsão: ${divulgacaoPrevista(SALARIO_MINIMO, competencia)}): usado o de ${anterior} (${valor}), vigente até a publicação do novo.`,
+    };
+  }
+  if (tabela.esperadoAte?.[SALARIO_MINIMO] === undefined) {
+    return {
+      nota: `último publicado: ${anterior}`,
+      aviso: `Salário mínimo de ${mes} ainda não publicado na tabela de índices: usado o de ${anterior} (${valor}), vigente até a publicação do novo.`,
+    };
+  }
+  return {
+    nota: `último anterior disponível: ${anterior}`,
+    aviso: `Salário mínimo de ${mes} não consta na tabela de índices: usado o de ${anterior} (${valor}), o último anterior disponível.`,
+  };
+}
+
 function porSalarioMinimo(
   percentualTexto: string,
   competencia: Competencia,
@@ -129,15 +163,13 @@ function porSalarioMinimo(
       avisos: [],
     };
   }
-  const publicadoEm = formatarCompetencia(salario.usado.competencia);
+  const anterior = descreverSalarioAnterior(tabela, competencia, salario.usado);
   return {
     valor,
-    memoria: `${pct} do salário mínimo vigente em ${mes} (${formatarMoeda(salarioValor)}, último publicado: ${publicadoEm}) = ${formatarMoeda(valor)}`,
+    memoria: `${pct} do salário mínimo vigente em ${mes} (${formatarMoeda(salarioValor)}, ${anterior.nota}) = ${formatarMoeda(valor)}`,
     indicesUsados: [salario.usado],
     mesesSemIndice: [{ serie: SALARIO_MINIMO, competencia }],
-    avisos: [
-      `Salário mínimo de ${mes} ainda não publicado na tabela de índices: usado o de ${publicadoEm} (${formatarMoeda(salarioValor)}), vigente até a publicação do novo.`,
-    ],
+    avisos: [anterior.aviso],
   };
 }
 
@@ -204,11 +236,15 @@ function porSalarioMinimoProporcional(
   const valor = arredondar(valorFixado.times(salarioVencimento).div(salarioFixacao), valorCasas);
   const indicesUsados =
     noVencimento.usado.competencia === mesFixacao ? [naFixacao] : [naFixacao, noVencimento.usado];
-  const descricaoVencimento = noVencimento.publicado
-    ? `salário mínimo de ${mes} (${formatarMoeda(salarioVencimento)})`
-    : `salário mínimo vigente em ${mes} (${formatarMoeda(salarioVencimento)}, último publicado: ${formatarCompetencia(noVencimento.usado.competencia)})`;
+  const anterior = noVencimento.publicado
+    ? null
+    : descreverSalarioAnterior(tabela, competencia, noVencimento.usado);
+  const descricaoVencimento =
+    anterior === null
+      ? `salário mínimo de ${mes} (${formatarMoeda(salarioVencimento)})`
+      : `salário mínimo vigente em ${mes} (${formatarMoeda(salarioVencimento)}, ${anterior.nota})`;
   const memoria = `${formatarMoeda(valorFixado)} fixados em ${formatarData(dataFixacao)} × ${descricaoVencimento} ÷ salário mínimo de ${formatarCompetencia(mesFixacao)} (${formatarMoeda(salarioFixacao)}) = ${formatarMoeda(valor)}`;
-  if (noVencimento.publicado) {
+  if (anterior === null) {
     return { valor, memoria, indicesUsados, mesesSemIndice: [], avisos: [] };
   }
   return {
@@ -216,9 +252,7 @@ function porSalarioMinimoProporcional(
     memoria,
     indicesUsados,
     mesesSemIndice: [{ serie: SALARIO_MINIMO, competencia }],
-    avisos: [
-      `Salário mínimo de ${mes} ainda não publicado na tabela de índices: usado o de ${formatarCompetencia(noVencimento.usado.competencia)} (${formatarMoeda(salarioVencimento)}), vigente até a publicação do novo.`,
-    ],
+    avisos: [anterior.aviso],
   };
 }
 
@@ -263,15 +297,29 @@ function porIndiceAcumulado(
     const meses = competenciasEntre(inicioJanela, fimJanela);
     const faltantes = meses.filter((m) => registro(tabela, serie, m) === null);
     if (faltantes.length > 0) {
-      const ultimo = Object.keys(tabela.series[serie] ?? {})
-        .sort()
-        .at(-1);
-      const disponivel =
-        ultimo === undefined ? "" : ` (último mês disponível: ${formatarCompetencia(ultimo)})`;
       const lista = faltantes.map(formatarCompetencia).join(", ");
-      avisos.push(
-        `${nome} de ${lista} não disponível na tabela de índices${disponivel}: o reajuste de ${formatarCompetencia(reajuste)} não foi aplicado; a prestação mantém ${formatarMoeda(vigente)}.`,
-      );
+      const efeito = `o reajuste de ${formatarCompetencia(reajuste)} não foi aplicado; a prestação mantém ${formatarMoeda(vigente)}.`;
+      if (faltantes.every((m) => aindaNaoDivulgado(tabela, serie, m))) {
+        // Todos os meses que faltam ainda não saíram, pelo calendário da tabela: não é buraco de dados.
+        const ultimoFaltante = faltantes.at(-1) ?? fimJanela;
+        const previsao = divulgacaoPrevista(serie, ultimoFaltante);
+        const quando =
+          faltantes.length === 1
+            ? `previsão: ${previsao}`
+            : `previsão para ${formatarCompetencia(ultimoFaltante)}: ${previsao}`;
+        avisos.push(
+          `${nome} de ${lista} ainda sem divulgação na data da consulta (${quando}): ${efeito}`,
+        );
+      } else {
+        const ultimo = Object.keys(tabela.series[serie] ?? {})
+          .sort()
+          .at(-1);
+        const disponivel =
+          ultimo === undefined ? "" : ` (último mês disponível: ${formatarCompetencia(ultimo)})`;
+        avisos.push(
+          `${nome} de ${lista} não disponível na tabela de índices${disponivel}: ${efeito}`,
+        );
+      }
       mesesSemIndice.push(...faltantes.map((m) => ({ serie, competencia: m })));
       naoAplicado = `reajuste de ${formatarCompetencia(reajuste)} não aplicado: ${nome} de ${lista} não disponível`;
       break;

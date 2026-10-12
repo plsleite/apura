@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { competenciasEntre } from "../compartilhado/datas.ts";
-import type { Base, Calculo, Lancamento } from "../compartilhado/tipos.ts";
+import type {
+  Base,
+  Calculo,
+  CodigoSerie,
+  Competencia,
+  Lancamento,
+  TabelaIndices,
+} from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
 import { calcular } from "./calcular.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
@@ -728,5 +735,267 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
     expect(r2.avisos).toContain(
       "Meses sem índice na tabela para o valor-base das prestações (ver o aviso de cada uma): IPCA de out/2026.",
     );
+  });
+});
+
+describe("calcular (fase 4: meses ainda não divulgados na data da consulta)", () => {
+  const hoje = "2026-10-11";
+  const ESPERADO_ATE: TabelaIndices["esperadoAte"] = {
+    "188": "2026-09",
+    "189": "2026-09",
+    "433": "2026-09",
+    "1619": "2026-12",
+    "29543": "2026-10",
+    "4390": "2026-10",
+  };
+  const comCalendario = (
+    limites: Partial<Record<CodigoSerie, Competencia>> = {},
+  ): TabelaIndices => ({ ...tabelaRegimeNovo(limites), esperadoAte: ESPERADO_ATE });
+  const informada = (id: string, data: string, valorInformado: string): Lancamento => ({
+    id,
+    tipo: "prestacao",
+    data,
+    competencia: data.slice(0, 7),
+    valorInformado,
+    origem: "avulso",
+    editado: true,
+  });
+  const pelaBase = (id: string, data: string): Lancamento => ({
+    id,
+    tipo: "prestacao",
+    data,
+    competencia: data.slice(0, 7),
+    origem: "lote",
+    editado: false,
+  });
+  const comBase = (base: Base, lancamentos: Lancamento[], dataElaboracao = hoje): Calculo => ({
+    ...calculoCom(lancamentos, dataElaboracao),
+    base,
+  });
+
+  it("IPCA do mês da consulta ainda não divulgado: aviso próprio no lançamento e resumo próprio, sem o genérico; valores inalterados", () => {
+    const r = calcular(
+      calculoCom([informada("p", "2024-09-30", "1000.00")], hoje),
+      comCalendario(),
+    );
+    expect(r.lancamentos[0]).toMatchObject({
+      correcao: { fator: "1.099852" },
+      corrigido: "1099.85",
+      juros: { percentual: "17.247591" },
+      jurosValor: "189.70",
+      atualizado: "1289.55",
+    });
+    expect(r.lancamentos[0]?.avisos).toEqual([
+      "Valor informado à mão (R$ 1.000,00), não apurado pela base dos alimentos.",
+      "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o mês entrou sem correção (fator 1,000000).",
+    ]);
+    expect(r.avisos).toEqual([
+      "Meses ainda sem divulgação na data da consulta (entraram sem correção): IPCA de out/2026.",
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: set/2024.",
+    ]);
+  });
+
+  it("buraco na tabela e mês ainda não divulgado no mesmo lançamento: cada um com o seu texto e o seu resumo", () => {
+    const tabela = comCalendario();
+    delete tabela.series["433"]?.["2025-05"];
+    const r = calcular(calculoCom([informada("p", "2024-09-30", "1000.00")], hoje), tabela);
+    expect(r.lancamentos[0]?.avisos).toEqual([
+      "Valor informado à mão (R$ 1.000,00), não apurado pela base dos alimentos.",
+      "IPCA de mai/2025 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
+      "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o mês entrou sem correção (fator 1,000000).",
+    ]);
+    expect(r.avisos).toEqual([
+      "Meses ainda sem divulgação na data da consulta (entraram sem correção): IPCA de out/2026.",
+      "Meses sem índice na tabela (entraram sem correção): IPCA de mai/2025.",
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: set/2024.",
+    ]);
+  });
+
+  it("o resumo dos não divulgados agrupa por série em ordem numérica, meses crescentes, sem repetição", () => {
+    const selic: Lancamento = {
+      ...informada("s", "2026-09-30", "1000.00"),
+      encargos: { metodologia: metodologiaSelicUnica() },
+    };
+    const r = calcular(
+      calculoCom(
+        [informada("p1", "2026-08-30", "1000.00"), informada("p2", "2026-09-30", "1000.00"), selic],
+        "2026-11-11",
+      ),
+      comCalendario(),
+    );
+    expect(r.avisos).toContain(
+      "Meses ainda sem divulgação na data da consulta (entraram sem correção): IPCA de out/2026, nov/2026; SELIC de nov/2026.",
+    );
+    expect(r.avisos).not.toContainEqual(
+      expect.stringContaining("Meses sem índice na tabela (entraram sem correção)"),
+    );
+    expect(r.lancamentos[2]?.avisos).toContain(
+      "SELIC de nov/2026 ainda sem divulgação na data da consulta (previsão: ao longo de nov/2026, como acumulado parcial fechado no início de dez/2026): o mês entrou sem correção (fator 1,000000).",
+    );
+  });
+
+  it("taxa legal ainda não divulgada: aviso próprio no lançamento e resumo próprio, sem o genérico", () => {
+    const r = calcular(
+      calculoCom([informada("p", "2026-10-30", "1000.00")], "2026-11-11"),
+      comCalendario(),
+    );
+    expect(r.lancamentos[0]?.avisos).toEqual([
+      "Valor informado à mão (R$ 1.000,00), não apurado pela base dos alimentos.",
+      "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o mês entrou sem correção (fator 1,000000).",
+      "IPCA de nov/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/12/2026): o mês entrou sem correção (fator 1,000000).",
+      "Taxa legal de nov/2026 ainda sem divulgação na data da consulta (previsão: no 1º dia útil de nov/2026): os dias de 01/11/2026 a 10/11/2026 ficaram sem juros.",
+    ]);
+    expect(r.avisos).toEqual([
+      "Meses ainda sem divulgação na data da consulta (entraram sem correção): IPCA de out/2026, nov/2026.",
+      "Meses de taxa legal ainda sem divulgação (os dias desses meses ficaram sem juros): nov/2026.",
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: out/2026.",
+    ]);
+    // a taxa legal de out/2026 (30 e 31/10) foi aplicada normalmente
+    expect(r.lancamentos[0]?.juros.detalhe).toEqual([
+      {
+        regime: "taxaLegal",
+        de: "2026-10-30",
+        ate: "2026-10-31",
+        dias: 2,
+        diasDoMes: 31,
+        taxa: "0.379020",
+        percentual: "0.024453",
+      },
+    ]);
+  });
+
+  it("taxa legal: buraco num mês já esperado e mês ainda não divulgado, cada um no seu resumo", () => {
+    const tabela = comCalendario();
+    delete tabela.series["29543"]?.["2026-09"];
+    const r = calcular(calculoCom([informada("p", "2026-08-30", "1000.00")], "2026-11-11"), tabela);
+    expect(r.lancamentos[0]?.avisos).toContain(
+      "Taxa legal de set/2026 não disponível na tabela de índices: os dias de 01/09/2026 a 30/09/2026 ficaram sem juros.",
+    );
+    expect(r.lancamentos[0]?.avisos).toContain(
+      "Taxa legal de nov/2026 ainda sem divulgação na data da consulta (previsão: no 1º dia útil de nov/2026): os dias de 01/11/2026 a 10/11/2026 ficaram sem juros.",
+    );
+    expect(r.avisos).toContain(
+      "Meses de taxa legal ainda sem divulgação (os dias desses meses ficaram sem juros): nov/2026.",
+    );
+    expect(r.avisos).toContain(
+      "Meses sem taxa legal na tabela (os dias desses meses ficaram sem juros): set/2026.",
+    );
+  });
+
+  it("esperadoAte parcial (só o IPCA): taxa legal e salário mínimo seguem com os textos genéricos", () => {
+    const tabela: TabelaIndices = {
+      ...tabelaRegimeNovo({ "29543": "2026-09" }),
+      esperadoAte: { "433": "2026-09" },
+    };
+    const r = calcular(calculoCom([informada("p", "2026-09-30", "1000.00")], hoje), tabela);
+    expect(r.lancamentos[0]?.avisos).toEqual([
+      "Valor informado à mão (R$ 1.000,00), não apurado pela base dos alimentos.",
+      "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o mês entrou sem correção (fator 1,000000).",
+      "Taxa legal de out/2026 não disponível na tabela de índices: os dias de 01/10/2026 a 10/10/2026 ficaram sem juros.",
+    ]);
+    expect(r.avisos).toEqual([
+      "Meses ainda sem divulgação na data da consulta (entraram sem correção): IPCA de out/2026.",
+      "Meses sem taxa legal na tabela (os dias desses meses ficaram sem juros): out/2026.",
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: set/2026.",
+    ]);
+    const salario = calcular(
+      comBase({ tipo: "percentualSalarioMinimo", percentual: "30" }, [pelaBase("p", "2027-01-10")]),
+      tabela,
+    );
+    expect(salario.lancamentos[0]?.avisos[0]).toBe(
+      "Salário mínimo de jan/2027 ainda não publicado na tabela de índices: usado o de dez/2026 (R$ 1.621,00), vigente até a publicação do novo.",
+    );
+    expect(salario.avisos).toEqual([
+      "Meses sem índice na tabela para o valor-base das prestações (ver o aviso de cada uma): salário mínimo de jan/2027.",
+      "Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: jan/2027.",
+    ]);
+  });
+
+  it("salário mínimo ainda não publicado para o valor-base: resumo próprio, sem o genérico", () => {
+    const r = calcular(
+      comBase({ tipo: "percentualSalarioMinimo", percentual: "30" }, [pelaBase("p", "2027-01-10")]),
+      comCalendario(),
+    );
+    expect(r.lancamentos[0]).toMatchObject({
+      situacao: "vincenda",
+      valorBase: "486.30",
+      memoriaBase:
+        "30% do salário mínimo vigente em jan/2027 (R$ 1.621,00, último publicado: dez/2026) = R$ 486,30",
+    });
+    expect(r.lancamentos[0]?.avisos[0]).toBe(
+      "Salário mínimo de jan/2027 ainda não publicado na data da consulta (previsão: no início de 2027, com o decreto do salário mínimo): usado o de dez/2026 (R$ 1.621,00), vigente até a publicação do novo.",
+    );
+    expect(r.avisos).toEqual([
+      "Meses ainda sem divulgação para o valor-base das prestações (ver o aviso de cada uma): salário mínimo de jan/2027.",
+      "Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: jan/2027.",
+    ]);
+  });
+
+  it("buraco no salário mínimo num mês já esperado: 'não consta', memória 'último anterior disponível' e resumo genérico", () => {
+    const tabela = comCalendario();
+    delete tabela.series["1619"]?.["2026-06"];
+    const r = calcular(
+      comBase({ tipo: "percentualSalarioMinimo", percentual: "30" }, [pelaBase("p", "2026-06-10")]),
+      tabela,
+    );
+    expect(r.lancamentos[0]).toMatchObject({
+      situacao: "atualizado",
+      valorBase: "486.30",
+      memoriaBase:
+        "30% do salário mínimo vigente em jun/2026 (R$ 1.621,00, último anterior disponível: mai/2026) = R$ 486,30",
+    });
+    expect(r.lancamentos[0]?.avisos).toEqual([
+      "Salário mínimo de jun/2026 não consta na tabela de índices: usado o de mai/2026 (R$ 1.621,00), o último anterior disponível.",
+      "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o mês entrou sem correção (fator 1,000000).",
+    ]);
+    expect(r.avisos).toEqual([
+      "Meses ainda sem divulgação na data da consulta (entraram sem correção): IPCA de out/2026.",
+      "Meses sem índice na tabela para o valor-base das prestações (ver o aviso de cada uma): salário mínimo de jun/2026.",
+    ]);
+  });
+
+  it("reajuste pelo IPCA ainda não divulgado: aviso próprio no lançamento e resumo próprio da base", () => {
+    const base: Base = {
+      tipo: "valorFixo",
+      valor: "500.00",
+      dataFixacao: "2025-11-15",
+      indiceReajuste: "IPCA",
+      mesReajuste: 11,
+    };
+    const r = calcular(comBase(base, [pelaBase("p", "2026-11-15")]), comCalendario());
+    expect(r.lancamentos[0]?.avisos[0]).toBe(
+      "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 500,00.",
+    );
+    expect(r.avisos).toEqual([
+      "Meses ainda sem divulgação para o valor-base das prestações (ver o aviso de cada uma): IPCA de out/2026.",
+      "Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: nov/2026.",
+    ]);
+    // buraco e mês não divulgado na mesma janela: texto genérico no lançamento; o resumo separa os meses
+    const tabela = comCalendario();
+    delete tabela.series["433"]?.["2026-05"];
+    const r2 = calcular(comBase(base, [pelaBase("p", "2026-11-15")]), tabela);
+    expect(r2.lancamentos[0]?.avisos[0]).toBe(
+      "IPCA de mai/2026, out/2026 não disponível na tabela de índices (último mês disponível: set/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 500,00.",
+    );
+    expect(r2.avisos.slice(0, 2)).toEqual([
+      "Meses ainda sem divulgação para o valor-base das prestações (ver o aviso de cada uma): IPCA de out/2026.",
+      "Meses sem índice na tabela para o valor-base das prestações (ver o aviso de cada uma): IPCA de mai/2026.",
+    ]);
+  });
+
+  it("tabela sem esperadoAte: todos os textos genéricos continuam como antes", () => {
+    const r = calcular(
+      calculoCom([informada("p", "2026-09-30", "1000.00")], hoje),
+      tabelaRegimeNovo({ "29543": "2026-09" }),
+    );
+    expect(r.lancamentos[0]?.avisos.slice(1)).toEqual([
+      "IPCA de out/2026 não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).",
+      "Taxa legal de out/2026 não disponível na tabela de índices: os dias de 01/10/2026 a 10/10/2026 ficaram sem juros.",
+    ]);
+    expect(r.avisos).toEqual([
+      "Meses sem índice na tabela (entraram sem correção): IPCA de out/2026.",
+      "Meses sem taxa legal na tabela (os dias desses meses ficaram sem juros): out/2026.",
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: set/2026.",
+    ]);
   });
 });

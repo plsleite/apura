@@ -20,7 +20,12 @@ npm test               # roda os testes
 npm run verificar      # formatação, lint, tipos e testes
 npm run build          # gera o site estático em dist/
 npm run indices:atualizar -- 189   # atualiza a cópia embutida de uma série do BCB
+npm run indices:relatorio -- 2026-09 execucoes.json   # relatório mensal da rotina de um mês já encerrado (normalmente feito pelo workflow; o script não recusa o mês corrente, o workflow sim)
 ```
+
+Os índices do BCB são atualizados por uma rotina do GitHub Actions
+(`.github/workflows/atualizar-indices.yml`); o app não consulta o BCB. Depois da fase 7, a `main`
+recebe commits dessa rotina quase todo dia útil.
 
 ## Documentação
 

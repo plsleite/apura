@@ -27,14 +27,18 @@ de decidir, uma pergunta por vez, em múltipla escolha com a opção recomendada
 
 ## Estado
 
-Fase 3 (bases e lotes) concluída em 2026-10-11: valor-base pelas três bases (valor fixo com
-reajuste anual por índice ou pelo salário mínimo, % do salário mínimo, % dos rendimentos), lotes
-cumulativos de prestações e pagamentos, situação dos lançamentos (vincenda e ignorado), valores
-informados à mão, texto decimal inválido tratado, juros sobre o corrigido sem arredondar (SAJ),
-séries 188 e 1619 embutidas e quatro casos de referência novos (dois do SAJ de 11/10/2026: valor
-informado 0,30 × R$ 1.500,00 e INPC com lotes; 2018 pela base; reajuste pelo IPCA conferido na
-Calculadora). Próxima: fase 4 (índices ao vivo), com plano a escrever. A tabela de fases do
-roteiro é a referência; atualize-a e esta seção ao concluir cada fase.
+Fase 4 (índices: rotina central e monitoramento) concluída em 2026-10-12: o app não consulta o BCB e
+lê só a cópia publicada com o site; uma rotina do GitHub Actions, ativa a partir da fase 7 (de
+segunda a sexta, 10h47, 14h17 e 22h47 de Brasília), baixa as seis séries, grava série por série só o
+que mudou, confere tudo com `npm run verificar` e faz commit descritivo na `main`; congelamento por
+cálculo (`congelarIndices`, síncrono), com a data real dos índices no horário de Brasília, rodapé e
+avisos do calendário ("ainda não chegou ao Apura"); aviso ao reabrir com os índices que mudaram
+(`compararIndicesUsados`); avisos do motor "ainda sem divulgação na data da consulta", com a
+previsão, quando a tabela traz `esperadoAte`; mês parcial da SELIC deduzido do `obtidoEm` do próprio
+valor; monitoramento gratuito (resumo de cada execução, alarme de silêncio no Healthchecks.io,
+relatório mensal em `docs/monitoramento/`); respostas reais do SGS gravadas para os testes. Os dois
+workflows só são testados na fase 7. Próxima: fase 5 (interface), com plano a escrever. A tabela de
+fases do roteiro é a referência; atualize-a e esta seção ao concluir cada fase.
 
 ## Comandos
 
@@ -49,22 +53,30 @@ roteiro é a referência; atualize-a e esta seção ao concluir cada fase.
 | `npm run format` | formata o código com Prettier (`format:check` só confere) |
 | `npm run verificar` | Prettier (conferência) + ESLint + tipos + testes; deve passar antes de cada commit |
 | `npm run build` | gera o site estático em `dist/` |
-| `npm run indices:atualizar` | baixa as séries do BCB para `dados/indices/`; `-- 189 433` limita às séries indicadas |
+| `npm run indices:atualizar` | baixa as séries do BCB para `dados/indices/` (é o que a rotina diária roda); grava série por série só o que mudou; `-- 189 433` limita às séries indicadas |
+| `npm run indices:relatorio -- AAAA-MM <execucoes.json>` | monta o relatório mensal da rotina de um mês já encerrado (o script não recusa o mês corrente, o workflow sim) em `docs/monitoramento/` (é o que o workflow mensal roda) |
+
+Depois da fase 7, a `main` do GitHub recebe commits do robô quase todo dia útil (`dados/indices/`)
+e, no dia 2 de cada mês, o relatório da rotina (`docs/monitoramento/`): traga essas atualizações
+para a `main` local antes de integrar uma branch, e não rode `npm run indices:atualizar` em
+branches de trabalho.
 
 ## Mapa de pastas
 
 ```
+.github/workflows/        atualizar-indices.yml (rotina de índices, seg–sex) · relatorio-indices.yml (relatório mensal)
 dados/indices/            cópia embutida das séries do BCB (JSON gerado pelo script)
 docs/identidade-visual/   manual e logos da DPE-MS
 docs/referencia/          briefing original, relatório de exemplo
 docs/superpowers/specs/   design e visão
 docs/superpowers/plans/   planos de implementação (um por fase)
-scripts/                  atualizar-indices.ts
-src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts
+docs/monitoramento/       relatórios mensais da rotina de índices (gerados pelo workflow)
+scripts/                  atualizar-indices.ts · relatorio-indices.ts (com o teste dele)
+src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
 src/motor/                periodos.ts · correcao.ts · juros.ts · lote.ts · base.ts · calcular.ts · casos/ (casos de referência)
 src/motor/testes/         dados de teste: IGP-M e salário mínimo de 2017–2018 e as seis séries de 2024–2026 usadas pelos testes unitários
-src/indices/              series.ts · cliente-bcb.ts · embutidos.ts (cache, congelamento e calendário: fase 4)
-src/indices/testes/       dados de teste: resposta gravada do SGS
+src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
+src/indices/testes/       respostas reais do SGS gravadas em 10 e 11/10/2026 e execuções sintéticas da rotina
 src/metodologias/         tjms-saj.v1.json · padrao.ts
 src/ui/                   interface (fase 5)
 src/relatorio/            relatório e impressão (fase 6)
@@ -86,12 +98,19 @@ src/relatorio/            relatório e impressão (fase 6)
    `src/compartilhado/datas.ts`. Nada de `Date` no motor.
 4. **Motor puro.** `src/motor/` não usa `Date.now()`, `fetch`, DOM ou armazenamento; recebe o
    `Calculo` e a `TabelaIndices` e devolve o `Resultado`. Nunca lança erro por dado do usuário:
-   devolve avisos em frases completas.
+   devolve avisos em frases completas. O app também não acessa a rede: lê só a cópia publicada dos
+   índices. Em `src/indices/`, a rede e o relógio entram por parâmetro com valor padrão (`fetch`,
+   `agora` e `dormir` na rotina; `hoje` no congelamento), o disco da rotina entra como objeto
+   passado pelo script, e o relatório mensal é puro (recebe o mês, as execuções e o texto do
+   `git log` já lidos), para que nenhum teste use a rede; disco, git e argumentos ficam nos scripts
+   de `scripts/`, os únicos com os tipos do Node; `new Date()` só em `src/indices/relogio.ts`.
 5. **Português no domínio** (`prestacao`, `amortizacao`, `fatorCorrecao`, `metodologia`);
    infraestrutura técnica com os nomes usuais em inglês. Commits e documentação em português,
    mensagens no formato "módulo: o que muda".
-6. **Nenhum índice inventado.** Só séries do BCB/SGS; cada valor carrega série, competência, fonte e
-   data de obtenção.
+6. **Nenhum índice inventado.** Só séries do BCB/SGS, baixadas pelo script de índices (normalmente
+   pela rotina central); cada valor carrega série, competência, fonte e data de obtenção (no horário
+   de Brasília nas gravações a partir da fase 4; os arquivos anteriores trazem UTC, e as datas são
+   sempre comparadas pelo instante, com `compararInstantes`); não há inserção manual no MVP.
 7. **Relatório sem parâmetros de sistema.** O texto de metodologia descreve o que foi aplicado,
    nunca nomes de perfis, versões ou "personalização".
 8. **Imports relativos com a extensão `.ts`** e `import type` para tipos (o script de índices roda
@@ -117,7 +136,16 @@ Um caso é um arquivo JSON em `src/motor/casos/AAAA-MM-DD-<origem>-<tema>.json` 
   a apuração pela base);
 - `indices`: a `TabelaIndices` congelada **como estava na data do cálculo** (só os meses que a
   fonte usou; incluir um mês posterior muda o resultado); quando a fonte usa um valor diferente do
-  BCB (ex.: IGP-M de dez/2025 no SAJ), o caso congela o valor da fonte e explica em `observacoes`;
+  BCB (ex.: IGP-M de dez/2025 no SAJ), o caso congela o valor da fonte e explica em `observacoes`.
+  Num caso com SELIC no mês da consulta, o `obtidoEm` do valor desse mês deve cair nesse mês (é ele
+  que marca o mês parcial). `esperadoAte` é opcional. Sem ele, o mês que falta sai com o aviso
+  genérico ("não disponível na tabela de índices"; no salário mínimo, "ainda não publicado na tabela
+  de índices"). Com ele, o mês posterior ao esperado sai como "ainda sem divulgação na data da
+  consulta (previsão: …)" (no reajuste com mais de um mês faltando, "(previsão para <último mês>:
+  …)"; no salário mínimo, "ainda não publicado na data da consulta (previsão: …)"), e o mês já
+  esperado que falta continua "não disponível na tabela de índices" (no salário mínimo, "não consta
+  na tabela de índices", com o último anterior disponível). A previsão sai só nos avisos de cada
+  lançamento: os resumos dos `avisos` do resultado não a trazem.
 - `esperado`: por lançamento, `corrigido`, `jurosValor` e `atualizado` (e, quando a fonte os der,
   `fator` e `jurosPercentual`); opcionalmente `valorBase`, `memoriaBase`, `situacao`, `editado` e
   `avisos` do lançamento; os `totais`; e, opcionalmente, os `avisos` do resultado. Os campos

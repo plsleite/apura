@@ -1,0 +1,168 @@
+# Rotina central de índices (fase 4, decisão de 12/10/2026).
+#
+# O que faz: baixa as seis séries do BCB com o mesmo script usado à mão (npm run
+# indices:atualizar), grava série por série as que vieram boas e mudaram (uma série com problema não
+# impede as outras), confere formatação, lint, tipos e testes e, se algum arquivo de dados/ mudou,
+# grava na main com um commit que traz a rodada, a saída do script e o endereço desta execução. O
+# app não consulta o BCB: lê só a cópia publicada em dados/indices/.
+#
+# Quando roda: de segunda a sexta às 10h47, 14h17 e 22h47 de Brasília (três agendamentos, cada um
+# com o fuso America/Sao_Paulo) e à mão, em "Actions" (workflow_dispatch). O título de cada
+# execução diz a rodada; o relatório mensal (relatorio-indices.yml) conta as execuções por ele.
+# Ao mudar um horário, mude também o case do passo Baixar e RODADAS em src/indices/relatorio.ts
+# (scripts/relatorio-indices.test.ts confere).
+#
+# Monitoramento: cada execução deixa um resumo com a saída do script; problema numa série faz a
+# execução terminar com falha (vermelha no GitHub); nas execuções agendadas sem problema, um sinal de vida vai
+# ao Healthchecks.io (só se o segredo HC_URL existir), que avisa quando os sinais param. Uma falha
+# nas conferências ou na gravação também suprime o sinal; a do deploy hook, que vem depois, não.
+#
+# Só grava a partir da main: disparado à mão em outro ramo, o job não roda. O checkout pega sempre
+# a ponta da main, para que uma reexecução ou uma execução que esperou na fila não parta de um
+# commit antigo (o rebase entraria em conflito com a gravação anterior).
+#
+# Só pode ser executado e testado quando o repositório estiver no GitHub (fase 7): até lá, é apenas
+# conferido por leitura e pelo Prettier.
+#
+# Atenção: o commit feito com o GITHUB_TOKEN não dispara outros workflows; a publicação do site
+# reage pela integração Git do Cloudflare Pages ou pelo deploy hook (só se o segredo CF_DEPLOY_HOOK
+# existir). E a main recebe commits deste robô quase todo dia útil: atualize a sua cópia (git pull)
+# antes de enviar alterações.
+name: Atualizar índices do BCB
+run-name: "Atualizar índices · ${{ github.event_name == 'schedule' && github.event.schedule || 'manual' }}"
+
+on:
+  schedule:
+    - cron: "47 10 * * 1-5"
+      timezone: "America/Sao_Paulo"
+    - cron: "17 14 * * 1-5"
+      timezone: "America/Sao_Paulo"
+    - cron: "47 22 * * 1-5"
+      timezone: "America/Sao_Paulo"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar-indices
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Os segredos só entram nos passos que os usam; aqui ficam apenas os indicadores de que existem.
+    env:
+      TEM_HC: ${{ secrets.HC_URL != '' }}
+      TEM_CF: ${{ secrets.CF_DEPLOY_HOOK != '' }}
+      AGENDAMENTO: ${{ github.event.schedule }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Com "shell: bash", o GitHub usa "set -eo pipefail": o código de saída do script atravessa o
+      # tee. "continue-on-error" deixa a execução seguir para gravar as séries boas; o último passo
+      # devolve a falha.
+      - name: Baixar as séries do BCB
+        id: baixar
+        continue-on-error: true
+        shell: bash
+        run: |
+          case "$AGENDAMENTO" in
+            "47 10 * * 1-5") RODADA="10h47" ;;
+            "17 14 * * 1-5") RODADA="14h17" ;;
+            "47 22 * * 1-5") RODADA="22h47" ;;
+            "") RODADA="manual" ;;
+            *) RODADA="$AGENDAMENTO" ;;
+          esac
+          echo "RODADA=$RODADA" >> "$GITHUB_ENV"
+          npm run --silent indices:atualizar 2>&1 | tee "$RUNNER_TEMP/saida.txt"
+
+      - name: Resumo da execução
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Atualização dos índices do BCB · rodada ${RODADA:-não identificada}"
+            echo
+            if [ -f "$RUNNER_TEMP/saida.txt" ]; then
+              echo '```'
+              cat "$RUNNER_TEMP/saida.txt"
+              echo '```'
+            else
+              echo "O script não chegou a rodar; veja os passos anteriores."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ver se algum arquivo mudou
+        id: mudancas
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain -- dados)" ]; then
+            echo "houve=false" >> "$GITHUB_OUTPUT"
+            echo "Nenhum arquivo de dados/ mudou; nada a gravar."
+          else
+            echo "houve=true" >> "$GITHUB_OUTPUT"
+            git status --short -- dados
+          fi
+
+      - name: Conferir formatação, lint, tipos e testes
+        if: steps.mudancas.outputs.houve == 'true'
+        run: npm run verificar
+
+      # TZ: a data do commit (e a da reaplicação pelo rebase) fica no horário de Brasília.
+      - name: Gravar na main
+        id: gravar
+        if: steps.mudancas.outputs.houve == 'true'
+        shell: bash
+        env:
+          TZ: America/Sao_Paulo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          MENSAGEM="$RUNNER_TEMP/mensagem.txt"
+          {
+            echo "indices: séries do BCB em $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (rodada $RODADA)"
+            echo
+            cat "$RUNNER_TEMP/saida.txt"
+            echo
+            echo "Execução: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > "$MENSAGEM"
+          git add dados
+          git commit -F "$MENSAGEM"
+          # Outro envio pode entrar entre o pull e o push: tenta de novo, até três vezes.
+          for tentativa in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((tentativa * 10))
+          done
+          echo "::error::Não foi possível gravar na main depois de 3 tentativas."
+          exit 1
+
+      - name: Sinal de vida ao Healthchecks
+        if: steps.baixar.outcome == 'success' && github.event_name == 'schedule' && env.TEM_HC == 'true'
+        env:
+          HC_URL: ${{ secrets.HC_URL }}
+        run: curl -fsS -m 10 --retry 5 "$HC_URL" || true
+
+      - name: Publicar pelo deploy hook
+        if: steps.gravar.outcome == 'success' && env.TEM_CF == 'true'
+        env:
+          CF_DEPLOY_HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
+        run: curl -fsS -m 30 --retry 3 --retry-all-errors -X POST "$CF_DEPLOY_HOOK"
+
+      - name: Sinalizar problema nas séries
+        if: steps.baixar.outcome == 'failure'
+        run: |
+          echo "::error::Alguma série do BCB não foi atualizada (veja o resumo da execução e a saída do passo \"Baixar as séries do BCB\"); as demais, se mudaram, foram gravadas."
+          exit 1

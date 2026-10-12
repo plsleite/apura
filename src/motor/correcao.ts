@@ -25,7 +25,10 @@ export interface IndiceMensal {
   serie: CodigoSerie | null;
   /** nulo quando a tabela não tem o mês (ainda não divulgado ou faltante) */
   valor: TextoDecimal | null;
-  /** SELIC do mês da consulta: valor acumulado só até o último dia útil publicado (§6.4) */
+  /**
+   * SELIC do mês em que o próprio valor foi obtido (`obtidoEm`): acumulado parcial, só até o
+   * último dia útil publicado (§6.4)
+   */
   parcial?: boolean;
 }
 
@@ -40,7 +43,6 @@ export function resolverIndicesMensais(
   de: Competencia,
   ate: Competencia,
 ): IndiceMensal[] {
-  const mesDaConsulta = competenciaDe(tabela.consultadoEm);
   return competenciasEntre(de, ate).map((competencia) => {
     const periodo = periodoVigenteEm(metodologia, primeiroDiaDoMes(competencia));
     if (periodo === undefined) return { competencia, serie: null, valor: null };
@@ -49,11 +51,15 @@ export function resolverIndicesMensais(
     else if (periodo.correcao.indice === "nenhum") serie = null;
     else serie = CODIGO_DA_SERIE[periodo.correcao.indice];
     if (serie === null) return { competencia, serie: null, valor: null };
-    const valor = tabela.series[serie]?.[competencia]?.valor ?? null;
-    if (serie === CODIGO_DA_SERIE.SELIC && valor !== null && competencia === mesDaConsulta) {
-      return { competencia, serie, valor, parcial: true };
+    const registro = tabela.series[serie]?.[competencia];
+    if (registro === undefined) return { competencia, serie, valor: null };
+    // O mês parcial da SELIC é o mês em que o próprio valor foi obtido, e não o da consulta da
+    // tabela: a rotina grava série por série, a SELIC pode ficar para trás enquanto o IPCA atualiza,
+    // e a data da tabela deixaria de dizer qual mês da SELIC é o parcial (fase 4).
+    if (serie === CODIGO_DA_SERIE.SELIC && competenciaDe(registro.obtidoEm) === competencia) {
+      return { competencia, serie, valor: registro.valor, parcial: true };
     }
-    return { competencia, serie, valor };
+    return { competencia, serie, valor: registro.valor };
   });
 }
 
@@ -79,7 +85,7 @@ export interface ResultadoCorrecao {
  * Fator de correção (§6.4): pro rata geométrico no mês do termo inicial, meses inteiros,
  * pro rata no mês do termo final quando o índice dele existe, meses sem índice com fator 1
  * (listados em `mesesSemIndice` só quando a fração deles é maior que zero), mês corrente parcial
- * da SELIC inteiro (exceção: quando o lançamento começa e termina no mês da consulta, o valor
+ * da SELIC inteiro (exceção: quando o lançamento começa e termina no mês parcial, o valor
  * parcial é rateado pelos dias decorridos, (dia final − dia inicial) ÷ dia final), deflação
  * conforme a opção. Fator 1 quando o termo final é anterior ao inicial.
  */
@@ -109,7 +115,7 @@ export function fatorCorrecao(p: ParametrosCorrecao): ResultadoCorrecao {
     else if (ehFinal) numerador = fim.dia;
     else numerador = dias;
     let denominador = dias;
-    // O valor parcial do mês corrente da SELIC é "até a consulta": quando o lançamento cai nesse mês,
+    // O valor parcial do mês corrente da SELIC é "até a obtenção": quando o lançamento cai nesse mês,
     // é rateado pelos dias do dia 1 ao termo final; quando o mês entra inteiro, entra inteiro. Com
     // lançamento no mês e termo final em outro mês, vale o pro rata normal do mês inicial.
     if (mes.parcial === true && numerador > 0) {

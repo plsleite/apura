@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Base, Lancamento, TabelaIndices } from "../compartilhado/tipos.ts";
+import type { Base, Competencia, Lancamento, TabelaIndices } from "../compartilhado/tipos.ts";
 import { apurarValorBase } from "./base.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
 import { tabelaRegimeNovo } from "./testes/regime-novo.ts";
@@ -463,5 +463,227 @@ describe("base de tipo desconhecido", () => {
     expect(r.avisos).toEqual([
       "Tipo de base não reconhecido: a prestação ficou sem valor; informe o valor à mão.",
     ]);
+  });
+});
+
+describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
+  const ESPERADO_ATE: TabelaIndices["esperadoAte"] = {
+    "188": "2026-09",
+    "189": "2026-09",
+    "433": "2026-09",
+    "1619": "2026-12",
+    "29543": "2026-10",
+    "4390": "2026-10",
+  };
+  const comCalendario = (): TabelaIndices => ({ ...tabelaRegimeNovo(), esperadoAte: ESPERADO_ATE });
+
+  describe("percentual do salário mínimo", () => {
+    const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+
+    it("mês posterior ao esperado: 'ainda não publicado', o último publicado vale até o novo decreto", () => {
+      const r = apurarValorBase(prestacao("2027-01-05"), base, comCalendario(), 2);
+      expect(r.valor?.toFixed(2)).toBe("486.30");
+      expect(r.memoria).toBe(
+        "30% do salário mínimo vigente em jan/2027 (R$ 1.621,00, último publicado: dez/2026) = R$ 486,30",
+      );
+      expect(r.avisos).toEqual([
+        "Salário mínimo de jan/2027 ainda não publicado na data da consulta (previsão: no início de 2027, com o decreto do salário mínimo): usado o de dez/2026 (R$ 1.621,00), vigente até a publicação do novo.",
+      ]);
+      expect(r.mesesSemIndice).toEqual([{ serie: "1619", competencia: "2027-01" }]);
+    });
+
+    it("buraco num mês já esperado: 'não consta na tabela', usado o último anterior disponível", () => {
+      const tabela = comCalendario();
+      delete tabela.series["1619"]?.["2026-06"];
+      const r = apurarValorBase(prestacao("2026-06-10"), base, tabela, 2);
+      expect(r.valor?.toFixed(2)).toBe("486.30");
+      expect(r.memoria).toBe(
+        "30% do salário mínimo vigente em jun/2026 (R$ 1.621,00, último anterior disponível: mai/2026) = R$ 486,30",
+      );
+      expect(r.avisos).toEqual([
+        "Salário mínimo de jun/2026 não consta na tabela de índices: usado o de mai/2026 (R$ 1.621,00), o último anterior disponível.",
+      ]);
+      expect(r.mesesSemIndice).toEqual([{ serie: "1619", competencia: "2026-06" }]);
+      expect(r.indicesUsados.map((i) => i.competencia)).toEqual(["2026-05"]);
+    });
+
+    it("buraco no próprio mês esperado (dez/2026) é 'não consta'; o mês seguinte é 'ainda não publicado'", () => {
+      const tabela = comCalendario();
+      delete tabela.series["1619"]?.["2026-12"];
+      expect(apurarValorBase(prestacao("2026-12-10"), base, tabela, 2).avisos).toEqual([
+        "Salário mínimo de dez/2026 não consta na tabela de índices: usado o de nov/2026 (R$ 1.621,00), o último anterior disponível.",
+      ]);
+      expect(apurarValorBase(prestacao("2027-01-10"), base, tabela, 2).avisos).toEqual([
+        "Salário mínimo de jan/2027 ainda não publicado na data da consulta (previsão: no início de 2027, com o decreto do salário mínimo): usado o de nov/2026 (R$ 1.621,00), vigente até a publicação do novo.",
+      ]);
+    });
+
+    it("sem esperadoAte do salário mínimo (tabela antiga ou calendário parcial), o buraco recebe o texto antigo", () => {
+      const semCalendario = tabelaRegimeNovo();
+      delete semCalendario.series["1619"]?.["2026-06"];
+      const antigo =
+        "Salário mínimo de jun/2026 ainda não publicado na tabela de índices: usado o de mai/2026 (R$ 1.621,00), vigente até a publicação do novo.";
+      expect(apurarValorBase(prestacao("2026-06-10"), base, semCalendario, 2).avisos).toEqual([
+        antigo,
+      ]);
+      const parcial: TabelaIndices = { ...semCalendario, esperadoAte: { "433": "2026-09" } };
+      const r = apurarValorBase(prestacao("2026-06-10"), base, parcial, 2);
+      expect(r.avisos).toEqual([antigo]);
+      expect(r.memoria).toContain("último publicado: mai/2026");
+    });
+
+    it("sem nenhum salário mínimo anterior, o aviso de 'sem valor' não muda", () => {
+      const r = apurarValorBase(prestacao("2023-06-10"), base, comCalendario(), 2);
+      expect(r.valor).toBeNull();
+      expect(r.avisos).toEqual([
+        "Salário mínimo de jun/2023 não disponível na tabela de índices: a prestação ficou sem valor; informe o valor à mão.",
+      ]);
+    });
+  });
+
+  describe("valor fixo reajustado pelo salário mínimo", () => {
+    const base: Base = {
+      tipo: "valorFixo",
+      valor: "451.91",
+      dataFixacao: "2017-01-10",
+      indiceReajuste: "SM",
+      mesReajuste: 1,
+    };
+    const tabela2017 = (esperadoAte: Competencia): TabelaIndices => ({
+      ...tabelaIgpm("2018-04", [], true),
+      esperadoAte: { "1619": esperadoAte },
+    });
+
+    it("mês posterior ao esperado: 'ainda não publicado' e memória com 'último publicado'", () => {
+      const r = apurarValorBase(prestacao("2018-03-10"), base, tabela2017("2018-02"), 2);
+      expect(r.valor?.toFixed(2)).toBe("460.11");
+      expect(r.avisos).toEqual([
+        "Salário mínimo de mar/2018 ainda não publicado na data da consulta (previsão: no início de 2018, com o decreto do salário mínimo): usado o de fev/2018 (R$ 954,00), vigente até a publicação do novo.",
+      ]);
+      expect(r.memoria).toBe(
+        "R$ 451,91 fixados em 10/01/2017 × salário mínimo vigente em mar/2018 (R$ 954,00, último publicado: fev/2018) ÷ salário mínimo de jan/2017 (R$ 937,00) = R$ 460,11",
+      );
+      expect(r.mesesSemIndice).toEqual([{ serie: "1619", competencia: "2018-03" }]);
+    });
+
+    it("mês já esperado mas ausente: 'não consta' e memória com 'último anterior disponível'", () => {
+      const r = apurarValorBase(prestacao("2018-03-10"), base, tabela2017("2018-12"), 2);
+      expect(r.valor?.toFixed(2)).toBe("460.11");
+      expect(r.avisos).toEqual([
+        "Salário mínimo de mar/2018 não consta na tabela de índices: usado o de fev/2018 (R$ 954,00), o último anterior disponível.",
+      ]);
+      expect(r.memoria).toBe(
+        "R$ 451,91 fixados em 10/01/2017 × salário mínimo vigente em mar/2018 (R$ 954,00, último anterior disponível: fev/2018) ÷ salário mínimo de jan/2017 (R$ 937,00) = R$ 460,11",
+      );
+      expect(r.mesesSemIndice).toEqual([{ serie: "1619", competencia: "2018-03" }]);
+      expect(r.indicesUsados.map((i) => i.competencia)).toEqual(["2017-01", "2018-02"]);
+    });
+
+    it("mês presente na tabela: sem aviso, com ou sem calendário", () => {
+      expect(
+        apurarValorBase(prestacao("2018-01-10"), base, tabela2017("2018-02"), 2).avisos,
+      ).toEqual([]);
+      expect(
+        apurarValorBase(prestacao("2018-01-10"), base, tabela2017("2017-12"), 2).avisos,
+      ).toEqual([]);
+    });
+  });
+
+  describe("valor fixo reajustado por índice", () => {
+    const base: Base = {
+      tipo: "valorFixo",
+      valor: "500.00",
+      dataFixacao: "2025-11-15",
+      indiceReajuste: "IPCA",
+      mesReajuste: 11,
+    };
+
+    it("todos os meses faltantes da janela ainda não divulgados: aviso próprio, sem 'último mês disponível'", () => {
+      const r = apurarValorBase(prestacao("2026-11-15"), base, comCalendario(), 2);
+      expect(r.valor?.toFixed(2)).toBe("500.00");
+      expect(r.avisos).toEqual([
+        "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 500,00.",
+      ]);
+      expect(r.memoria).toBe(
+        "Valor fixado em 15/11/2025: R$ 500,00 (reajuste de nov/2026 não aplicado: IPCA de out/2026 não disponível)",
+      );
+      expect(r.mesesSemIndice).toEqual([{ serie: "433", competencia: "2026-10" }]);
+      expect(r.indicesUsados).toEqual([]);
+    });
+
+    it("dois meses ainda não divulgados saem listados na mesma frase", () => {
+      const dezembro: Base = { ...base, dataFixacao: "2025-12-15", mesReajuste: 12 };
+      const r = apurarValorBase(prestacao("2026-12-15"), dezembro, comCalendario(), 2);
+      expect(r.avisos).toEqual([
+        "IPCA de out/2026, nov/2026 ainda sem divulgação na data da consulta (previsão para nov/2026: por volta de 10/12/2026): o reajuste de dez/2026 não foi aplicado; a prestação mantém R$ 500,00.",
+      ]);
+      expect(r.mesesSemIndice).toEqual([
+        { serie: "433", competencia: "2026-10" },
+        { serie: "433", competencia: "2026-11" },
+      ]);
+    });
+
+    it("segundo reajuste com meses ainda não divulgados: a frase mantém o valor já reajustado", () => {
+      const marco: Base = { ...base, dataFixacao: "2024-11-15", mesReajuste: 11 };
+      const r = apurarValorBase(prestacao("2026-11-15"), marco, comCalendario(), 2);
+      expect(r.avisos).toEqual([
+        "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 523,40.",
+      ]);
+      expect(r.valor?.toFixed(2)).toBe("523.40");
+      expect(r.memoria).toContain("reajustados em nov/2025 (IPCA de nov/2024 a out/2025: 4,6808%)");
+    });
+
+    it("buraco e mês ainda não divulgado na mesma janela: vale o texto genérico", () => {
+      const tabela = comCalendario();
+      delete tabela.series["433"]?.["2026-05"];
+      const r = apurarValorBase(prestacao("2026-11-15"), base, tabela, 2);
+      expect(r.avisos).toEqual([
+        "IPCA de mai/2026, out/2026 não disponível na tabela de índices (último mês disponível: set/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 500,00.",
+      ]);
+      expect(r.mesesSemIndice).toEqual([
+        { serie: "433", competencia: "2026-05" },
+        { serie: "433", competencia: "2026-10" },
+      ]);
+    });
+
+    it("buraco só, num mês já esperado: texto genérico", () => {
+      const tabela = comCalendario();
+      delete tabela.series["433"]?.["2025-05"];
+      const marco: Base = { ...base, dataFixacao: "2024-03-15", mesReajuste: 3 };
+      const r = apurarValorBase(prestacao("2026-09-15"), marco, tabela, 2);
+      expect(r.avisos).toEqual([
+        "IPCA de mai/2025 não disponível na tabela de índices (último mês disponível: set/2026): o reajuste de mar/2026 não foi aplicado; a prestação mantém R$ 525,29.",
+      ]);
+    });
+
+    it("esperadoAte parcial sem o IPCA: texto genérico", () => {
+      const tabela: TabelaIndices = { ...tabelaRegimeNovo(), esperadoAte: { "1619": "2026-12" } };
+      const r = apurarValorBase(prestacao("2026-11-15"), base, tabela, 2);
+      expect(r.avisos).toEqual([
+        "IPCA de out/2026 não disponível na tabela de índices (último mês disponível: set/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 500,00.",
+      ]);
+    });
+
+    it("INPC e IGP-M seguem a mesma regra pelas séries 188 e 189", () => {
+      const inpc = apurarValorBase(
+        prestacao("2026-11-15"),
+        { ...base, indiceReajuste: "INPC" },
+        comCalendario(),
+        2,
+      );
+      expect(inpc.avisos).toEqual([
+        "INPC de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 500,00.",
+      ]);
+      expect(inpc.mesesSemIndice).toEqual([{ serie: "188", competencia: "2026-10" }]);
+      const igpm = apurarValorBase(
+        prestacao("2026-11-15"),
+        { ...base, indiceReajuste: "IGP-M" },
+        comCalendario(),
+        2,
+      );
+      expect(igpm.avisos).toEqual([
+        "IGP-M de out/2026 ainda sem divulgação na data da consulta (previsão: no fim de out/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 500,00.",
+      ]);
+    });
   });
 });

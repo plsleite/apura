@@ -75,4 +75,11 @@ describe("texto decimal válido", () => {
     }
     expect(decimalOuNulo(undefined)).toBeNull();
   });
+
+  it("recusa o que não é texto (número, nulo, objeto): dados de arquivo e de rede chegam como unknown", () => {
+    for (const naoTexto of [451.91, 0, null, undefined, {}, [], true]) {
+      expect(textoDecimalValido(naoTexto), String(naoTexto)).toBe(false);
+      expect(decimalOuNulo(naoTexto), String(naoTexto)).toBeNull();
+    }
+  });
 });

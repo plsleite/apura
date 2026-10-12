@@ -32,19 +32,37 @@ export const NOME_DA_SERIE: Record<CodigoSerie, string> = {
   "4390": "SELIC",
 };
 
-/** Um valor de índice com proveniência (§8.3). */
+/**
+ * Um valor de índice com proveniência (§8.3). `fonte` diz de onde o valor veio: desde a fase 4,
+ * sempre da cópia publicada com o site (`"embutida"`), que a rotina central baixa do BCB; `"aoVivo"`
+ * fica reservado (decisão de 12/10/2026).
+ */
 export interface ValorIndice {
   valor: TextoDecimal;
   fonte: "embutida" | "aoVivo";
-  /** data-hora ISO em que o valor foi obtido do BCB (ou gravado na cópia embutida) */
+  /**
+   * Data-hora ISO em que o valor foi obtido do BCB, no horário de Brasília
+   * ("2026-10-11T14:02:00-03:00"; os arquivos anteriores à fase 4 trazem UTC, "…Z"). Na SELIC
+   * (série 4390), o mês igual ao mês de `obtidoEm` é o acumulado parcial do mês corrente (§6.4).
+   */
   obtidoEm: string;
 }
 
 /** Tabela de índices congelada para um cálculo: por código de série, por competência. */
 export interface TabelaIndices {
-  /** data-hora ISO da consulta que originou a tabela */
+  /**
+   * data-hora ISO da obtenção mais recente entre as séries da tabela (horário de Brasília nas
+   * gravações da rotina central; UTC nos arquivos anteriores à fase 4)
+   */
   consultadoEm: string;
   series: Partial<Record<CodigoSerie, Record<Competencia, ValorIndice>>>;
+  /**
+   * Último mês que cada série deveria ter na data da consulta, pelo calendário de divulgação
+   * (§8.3; `src/indices/calendario.ts`). Com ele, o motor distingue o mês "ainda não divulgado"
+   * (posterior a este) do mês faltante na tabela. Ausente nos casos de referência antigos: o motor
+   * então usa só o aviso genérico.
+   */
+  esperadoAte?: Partial<Record<CodigoSerie, Competencia>>;
 }
 
 /** Arquivo `dados/indices/<codigo>.json`, gerado por `scripts/atualizar-indices.ts`. */
@@ -53,6 +71,7 @@ export interface ArquivoSerie {
   codigo: CodigoSerie;
   nome: string;
   origem: string;
+  /** data-hora ISO da obtenção no BCB, no horário de Brasília desde a fase 4 */
   obtidoEm: string;
   valores: Array<{ competencia: Competencia; valor: TextoDecimal }>;
 }

@@ -1,68 +1,64 @@
-// Atualiza a cópia embutida das séries do BCB em dados/indices/.
+// Atualiza a cópia publicada das séries do BCB em dados/indices/ (a rotina central de índices:
+// .github/workflows/atualizar-indices.yml roda este script nos dias úteis; também serve à mão).
 //   npm run indices:atualizar             → todas as séries do catálogo
 //   npm run indices:atualizar -- 189 433  → só as indicadas
-// Roda no Node 22.18+ sem compilação; por isso os imports relativos têm a extensão .ts.
-import { mkdirSync, writeFileSync } from "node:fs";
+// Roda no Node 22.18+ sem compilação (sintaxe apagável); por isso os imports relativos têm a
+// extensão .ts. A orquestração (baixar tudo → conferir cada série contra o arquivo atual → gravar
+// as boas que mudaram) está em src/indices/atualizacao.ts, testada sem rede; aqui ficam só os
+// argumentos, o disco e o console.
+// Saída: uma linha por série, depois os avisos (revisões e SELIC parcial) e os meses atrasados pelo
+// calendário, tudo na saída padrão; por fim os problemas, na saída de erros. Uma série com problema
+// fica como estava e não impede as outras de serem gravadas, mas o código de saída é 1 (a
+// execução da rotina fica marcada como falha); também é 1 quando um código pedido é desconhecido (aí nada é baixado). Sem
+// problemas, 0, mesmo com avisos.
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { CodigoSerie } from "../src/compartilhado/tipos.ts";
-import { interpretarRespostaSgs, montarArquivoSerie } from "../src/indices/cliente-bcb.ts";
-import { SERIES, urlDaSerie } from "../src/indices/series.ts";
+import { atualizarSeries, seriesPedidas } from "../src/indices/atualizacao.ts";
+import type { ArquivosDeSeries } from "../src/indices/atualizacao.ts";
 
 const PASTA = join(import.meta.dirname, "..", "dados", "indices");
-const TEMPO_LIMITE_MS = 30_000;
-const TENTATIVAS = 3;
 
-function ehCodigo(texto: string): texto is CodigoSerie {
-  return Object.hasOwn(SERIES, texto);
-}
-
-async function baixar(url: string): Promise<string> {
-  let ultimoErro: unknown;
-  for (let tentativa = 1; tentativa <= TENTATIVAS; tentativa++) {
-    try {
-      const resposta = await fetch(url, { signal: AbortSignal.timeout(TEMPO_LIMITE_MS) });
-      if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
-      const tipo = resposta.headers.get("content-type") ?? "";
-      if (!tipo.includes("application/json")) throw new Error(`conteúdo inesperado (${tipo})`);
-      return await resposta.text();
-    } catch (erro) {
-      ultimoErro = erro;
-      if (tentativa < TENTATIVAS) {
-        await new Promise((resolver) => setTimeout(resolver, 2_000 * tentativa));
+/** A pasta dados/indices/ como o módulo de atualização a enxerga: um arquivo <codigo>.json por série. */
+function arquivosEmDisco(pasta: string): ArquivosDeSeries {
+  const caminho = (codigo: CodigoSerie): string => join(pasta, `${codigo}.json`);
+  return {
+    ler(codigo) {
+      try {
+        return readFileSync(caminho(codigo), "utf8");
+      } catch (erro) {
+        if ((erro as NodeJS.ErrnoException).code === "ENOENT") return null;
+        throw erro;
       }
-    }
-  }
-  throw new Error(`Falha ao baixar ${url}: ${String(ultimoErro)}`);
+    },
+    gravar(codigo, texto) {
+      mkdirSync(pasta, { recursive: true });
+      writeFileSync(caminho(codigo), texto);
+    },
+  };
 }
 
-async function main(): Promise<void> {
-  const pedidos = process.argv.slice(2);
-  const codigos =
-    pedidos.length === 0
-      ? (Object.keys(SERIES) as CodigoSerie[])
-      : pedidos.map((pedido) => {
-          if (!ehCodigo(pedido)) {
-            throw new Error(
-              `Série desconhecida: ${pedido}. Conhecidas: ${Object.keys(SERIES).join(", ")}.`,
-            );
-          }
-          return pedido;
-        });
-  mkdirSync(PASTA, { recursive: true });
-  for (const codigo of codigos) {
-    const url = urlDaSerie(codigo);
-    const valores = interpretarRespostaSgs(await baixar(url));
-    if (valores.length === 0) throw new Error(`A série ${codigo} veio vazia; nada foi gravado.`);
-    const arquivo = montarArquivoSerie(codigo, valores, new Date().toISOString());
-    writeFileSync(join(PASTA, `${codigo}.json`), `${JSON.stringify(arquivo, null, 2)}\n`);
-    const ultimo = valores.at(-1);
-    console.log(
-      `${codigo} (${SERIES[codigo].nome}): ${valores.length} meses, último ${ultimo?.competencia ?? "-"} = ${ultimo?.valor ?? "-"}`,
-    );
+/** Devolve o código de saída do processo; só o que for inesperado (disco, por exemplo) lança. */
+async function main(): Promise<number> {
+  const pedido = seriesPedidas(process.argv.slice(2));
+  if (!pedido.ok) {
+    console.error(pedido.mensagem);
+    return 1;
   }
+  const resultado = await atualizarSeries(pedido.codigos, arquivosEmDisco(PASTA));
+  for (const linha of resultado.linhas) console.log(linha);
+  for (const aviso of resultado.avisos) console.log(aviso);
+  for (const atrasado of resultado.atrasados) console.log(atrasado);
+  for (const problema of resultado.problemas) console.error(problema);
+  return resultado.problemas.length > 0 ? 1 : 0;
 }
 
-main().catch((erro: unknown) => {
-  console.error(String(erro));
-  process.exitCode = 1;
-});
+main().then(
+  (codigo) => {
+    process.exitCode = codigo;
+  },
+  (erro: unknown) => {
+    console.error(erro instanceof Error ? erro.message : String(erro));
+    process.exitCode = 1;
+  },
+);

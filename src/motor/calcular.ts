@@ -26,6 +26,7 @@ import type {
 } from "../compartilhado/tipos.ts";
 import { apurarValorBase, type MesSemIndice } from "./base.ts";
 import { fatorCorrecao, resolverIndicesMensais } from "./correcao.ts";
+import { aindaNaoDivulgado, divulgacaoPrevista } from "../compartilhado/divulgacao.ts";
 import { jurosSimples } from "./juros.ts";
 import { validarMetodologia } from "./periodos.ts";
 
@@ -267,11 +268,17 @@ function atualizarComRastro(
     incidenciaMesInicial: metodologia.incidenciaMesInicial,
     deflacao: metodologia.deflacao,
   });
+  // Mês sem índice: "ainda não divulgado" quando o calendário da tabela (`esperadoAte`) diz que o
+  // mês ainda não saiu na data da consulta; "não disponível" nos demais casos (buraco de dados ou
+  // tabela sem calendário, como nos casos de referência antigos).
   for (const competencia of correcao.mesesSemIndice) {
     const serie = correcao.indices.find((i) => i.competencia === competencia)?.serie ?? null;
     const nome = serie === null ? "Índice" : NOME_DA_SERIE[serie];
+    const mes = formatarCompetencia(competencia);
     avisos.push(
-      `${nome} de ${formatarCompetencia(competencia)} não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).`,
+      serie !== null && aindaNaoDivulgado(indices, serie, competencia)
+        ? `${nome} de ${mes} ainda sem divulgação na data da consulta (previsão: ${divulgacaoPrevista(serie, competencia)}): o mês entrou sem correção (fator 1,000000).`
+        : `${nome} de ${mes} não disponível na tabela de índices: o mês entrou sem correção (fator 1,000000).`,
     );
   }
   if (correcao.pisoAplicado) {
@@ -368,7 +375,10 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
   // Índices efetivamente usados (sem repetição) e resumo dos meses sem índice. Um mês de
   // fração zero não pesou no fator: não conta como índice usado nem como mês sem índice. A taxa
   // legal dos juros (série 29543) e os índices da base (salário mínimo, série 1619, e índice de
-  // reajuste) também são índices usados; os meses deles que faltam têm resumos próprios.
+  // reajuste) também são índices usados; os meses deles que faltam têm resumos próprios. Cada mês
+  // que faltou vai para um de dois grupos, cada um com o seu resumo: "ainda não divulgado" (posterior
+  // ao último mês que a série deveria ter na data da consulta, pelo calendário em `esperadoAte`) ou
+  // "sem índice na tabela" (buraco de dados, ou tabela sem calendário).
   const usados = new Map<string, IndiceUsado>();
   const registrar = (serie: CodigoSerie, competencia: Competencia): void => {
     const chave = `${serie}|${competencia}`;
@@ -383,13 +393,18 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
       });
     }
   };
-  const semIndice = new Map<CodigoSerie, Set<Competencia>>();
-  const semIndiceNaBase = new Map<CodigoSerie, Set<Competencia>>();
+  type Faltas = Map<CodigoSerie, Set<Competencia>>;
+  const naoDivulgado: Faltas = new Map();
+  const semIndice: Faltas = new Map();
+  const naoDivulgadoNaBase: Faltas = new Map();
+  const semIndiceNaBase: Faltas = new Map();
   const anotar = (
-    mapa: Map<CodigoSerie, Set<Competencia>>,
+    aindaNao: Faltas,
+    faltante: Faltas,
     serie: CodigoSerie,
     competencia: Competencia,
   ): void => {
+    const mapa = aindaNaoDivulgado(indices, serie, competencia) ? aindaNao : faltante;
     const meses = mapa.get(serie) ?? new Set<Competencia>();
     meses.add(competencia);
     mapa.set(serie, meses);
@@ -397,14 +412,16 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
   for (const r of rastros) {
     for (const i of r.lancamento.correcao.indices) {
       if (i.serie === null || i.fracao.startsWith("0/")) continue;
-      if (i.valor === null) anotar(semIndice, i.serie, i.competencia);
+      if (i.valor === null) anotar(naoDivulgado, semIndice, i.serie, i.competencia);
       else registrar(i.serie, i.competencia);
     }
     for (const d of r.lancamento.juros.detalhe) {
       if (d.regime === "taxaLegal") registrar(CODIGO_DA_SERIE.taxaLegal, competenciaDe(d.de));
     }
     for (const i of r.indicesDaBase) registrar(i.serie, i.competencia);
-    for (const m of r.mesesSemIndiceNaBase) anotar(semIndiceNaBase, m.serie, m.competencia);
+    for (const m of r.mesesSemIndiceNaBase) {
+      anotar(naoDivulgadoNaBase, semIndiceNaBase, m.serie, m.competencia);
+    }
   }
   const indicesUsados = [...usados.values()].sort(
     (a, b) =>
@@ -419,16 +436,39 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
           `${NOME_DA_SERIE[serie]} de ${[...meses].sort().map(formatarCompetencia).join(", ")}`,
       )
       .join("; ");
+  if (naoDivulgado.size > 0) {
+    avisos.push(
+      `Meses ainda sem divulgação na data da consulta (entraram sem correção): ${descreverFaltas(naoDivulgado)}.`,
+    );
+  }
   if (semIndice.size > 0) {
     avisos.push(
       `Meses sem índice na tabela (entraram sem correção): ${descreverFaltas(semIndice)}.`,
     );
   }
-  const semTaxaLegal = new Set<Competencia>(rastros.flatMap((r) => r.mesesSemTaxaLegal));
-  if (semTaxaLegal.size > 0) {
-    const lista = [...semTaxaLegal].sort().map(formatarCompetencia).join(", ");
+  const semTaxaLegal = [
+    ...new Set<Competencia>(rastros.flatMap((r) => r.mesesSemTaxaLegal)),
+  ].sort();
+  const taxaLegalNaoDivulgada = semTaxaLegal.filter((c) =>
+    aindaNaoDivulgado(indices, CODIGO_DA_SERIE.taxaLegal, c),
+  );
+  const taxaLegalFaltante = semTaxaLegal.filter(
+    (c) => !aindaNaoDivulgado(indices, CODIGO_DA_SERIE.taxaLegal, c),
+  );
+  const listarMeses = (meses: Competencia[]): string => meses.map(formatarCompetencia).join(", ");
+  if (taxaLegalNaoDivulgada.length > 0) {
     avisos.push(
-      `Meses sem taxa legal na tabela (os dias desses meses ficaram sem juros): ${lista}.`,
+      `Meses de taxa legal ainda sem divulgação (os dias desses meses ficaram sem juros): ${listarMeses(taxaLegalNaoDivulgada)}.`,
+    );
+  }
+  if (taxaLegalFaltante.length > 0) {
+    avisos.push(
+      `Meses sem taxa legal na tabela (os dias desses meses ficaram sem juros): ${listarMeses(taxaLegalFaltante)}.`,
+    );
+  }
+  if (naoDivulgadoNaBase.size > 0) {
+    avisos.push(
+      `Meses ainda sem divulgação para o valor-base das prestações (ver o aviso de cada uma): ${descreverFaltas(naoDivulgadoNaBase)}.`,
     );
   }
   if (semIndiceNaBase.size > 0) {
