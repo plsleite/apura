@@ -54,7 +54,7 @@ fases do roteiro é a referência; atualize-a e esta seção ao concluir cada fa
 | `npm run verificar` | Prettier (conferência) + ESLint + tipos + testes; deve passar antes de cada commit |
 | `npm run build` | gera o site estático em `dist/` |
 | `npm run indices:atualizar` | baixa as séries do BCB para `dados/indices/` (é o que a rotina diária roda); grava série por série só o que mudou; `-- 189 433` limita às séries indicadas |
-| `npm run indices:relatorio -- AAAA-MM <execucoes.json>` | monta o relatório mensal da rotina em `docs/monitoramento/` (é o que o workflow mensal roda) |
+| `npm run indices:relatorio -- AAAA-MM <execucoes.json>` | monta o relatório mensal da rotina de um mês já encerrado (o script não recusa o mês corrente, o workflow sim) em `docs/monitoramento/` (é o que o workflow mensal roda) |
 
 Depois da fase 7, a `main` do GitHub recebe commits do robô quase todo dia útil (`dados/indices/`)
 e, no dia 2 de cada mês, o relatório da rotina (`docs/monitoramento/`): traga essas atualizações
@@ -99,10 +99,11 @@ src/relatorio/            relatório e impressão (fase 6)
 4. **Motor puro.** `src/motor/` não usa `Date.now()`, `fetch`, DOM ou armazenamento; recebe o
    `Calculo` e a `TabelaIndices` e devolve o `Resultado`. Nunca lança erro por dado do usuário:
    devolve avisos em frases completas. O app também não acessa a rede: lê só a cópia publicada dos
-   índices. Em `src/indices/`, a rede e o relógio da rotina e do relatório entram por parâmetro com
-   valor padrão, e o disco entra como objeto passado pelo script, para que nenhum teste use a rede;
-   disco, git e argumentos ficam nos scripts de `scripts/`, os únicos com os tipos do Node;
-   `new Date()` só em `src/indices/relogio.ts`.
+   índices. Em `src/indices/`, a rede e o relógio entram por parâmetro com valor padrão (`fetch`,
+   `agora` e `dormir` na rotina; `hoje` no congelamento), o disco da rotina entra como objeto
+   passado pelo script, e o relatório mensal é puro (recebe o mês, as execuções e o texto do
+   `git log` já lidos), para que nenhum teste use a rede; disco, git e argumentos ficam nos scripts
+   de `scripts/`, os únicos com os tipos do Node; `new Date()` só em `src/indices/relogio.ts`.
 5. **Português no domínio** (`prestacao`, `amortizacao`, `fatorCorrecao`, `metodologia`);
    infraestrutura técnica com os nomes usuais em inglês. Commits e documentação em português,
    mensagens no formato "módulo: o que muda".
@@ -140,9 +141,11 @@ Um caso é um arquivo JSON em `src/motor/casos/AAAA-MM-DD-<origem>-<tema>.json` 
   que marca o mês parcial). `esperadoAte` é opcional. Sem ele, o mês que falta sai com o aviso
   genérico ("não disponível na tabela de índices"; no salário mínimo, "ainda não publicado na tabela
   de índices"). Com ele, o mês posterior ao esperado sai como "ainda sem divulgação na data da
-  consulta (previsão: …)" (no salário mínimo, "ainda não publicado na data da consulta (previsão:
-  …)"), e o mês já esperado que falta continua "não disponível na tabela de índices" (no salário
-  mínimo, "não consta na tabela de índices", com o último anterior disponível).
+  consulta (previsão: …)" (no reajuste com mais de um mês faltando, "(previsão para <último mês>:
+  …)"; no salário mínimo, "ainda não publicado na data da consulta (previsão: …)"), e o mês já
+  esperado que falta continua "não disponível na tabela de índices" (no salário mínimo, "não consta
+  na tabela de índices", com o último anterior disponível). A previsão sai só nos avisos de cada
+  lançamento: os resumos dos `avisos` do resultado não a trazem.
 - `esperado`: por lançamento, `corrigido`, `jurosValor` e `atualizado` (e, quando a fonte os der,
   `fator` e `jurosPercentual`); opcionalmente `valorBase`, `memoriaBase`, `situacao`, `editado` e
   `avisos` do lançamento; os `totais`; e, opcionalmente, os `avisos` do resultado. Os campos
