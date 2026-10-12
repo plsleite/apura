@@ -316,6 +316,22 @@ describe("buscarSerie · erros do SGS no corpo (não repetem)", () => {
     expect(esperas).toEqual([]);
   });
 
+  it("detalhe do SGS com várias linhas e longo: o motivo fica numa linha só, com até 300 caracteres e '…' ao cortar", async () => {
+    const detail = `java.lang.IllegalStateException: falha\n\tat br.gov.bcb.X(X.java:1)\n${"x".repeat(1000)}`;
+    const corpo = JSON.stringify({ erro: { statusCode: 400, detail } });
+    const { opcoes, chamadas } = preparar([json(corpo, 400)]);
+    const resposta = await buscarSerie("433", "2026-09-01", opcoes);
+    expect(resposta).toMatchObject({ ok: false, tentativas: 1 });
+    expect(chamadas).toHaveLength(1);
+    const motivo = resposta.ok ? "" : resposta.motivo;
+    expect(motivo).toMatch(
+      /^o BCB respondeu erro 400: java\.lang\.IllegalStateException: falha at br\.gov\.bcb\.X\(X\.java:1\) /,
+    );
+    expect(motivo).not.toContain("\n");
+    expect(motivo.length).toBeLessThanOrEqual(300);
+    expect(motivo.endsWith("…")).toBe(true);
+  });
+
   it("objeto de erro do SGS com status HTTP 5xx: repete uma vez (erro do servidor) e fica com o motivo do SGS", async () => {
     const { opcoes, chamadas, esperas } = preparar([
       json(sgsErro404SemValores, 500),
@@ -529,6 +545,35 @@ describe("buscarSerie · falhas que repetem (5xx e sem resposta)", () => {
       ok: false,
       motivo: "sem resposta do BCB: null",
       tentativas: 2,
+    });
+  });
+
+  it("falha de rede com causa (fetch do Node): o motivo traz o código da causa", async () => {
+    const causa = Object.assign(new Error("getaddrinfo ENOTFOUND api.bcb.gov.br"), {
+      code: "ENOTFOUND",
+    });
+    const { opcoes } = preparar([{ lancar: new TypeError("fetch failed", { cause: causa }) }], {
+      tentativas: 1,
+    });
+    const resposta = await buscarSerie("433", "2026-09-01", opcoes);
+    expect(resposta).toEqual({
+      ok: false,
+      motivo: "sem resposta do BCB: TypeError (ENOTFOUND)",
+      url: URL_433_DESDE_SET,
+      tentativas: 1,
+    });
+  });
+
+  it("falha de rede com causa sem código: o motivo traz a mensagem da causa", async () => {
+    const { opcoes } = preparar(
+      [{ lancar: new TypeError("fetch failed", { cause: new Error("bad port") }) }],
+      { tentativas: 1 },
+    );
+    const resposta = await buscarSerie("433", "2026-09-01", opcoes);
+    expect(resposta).toMatchObject({
+      ok: false,
+      motivo: "sem resposta do BCB: TypeError (bad port)",
+      tentativas: 1,
     });
   });
 });

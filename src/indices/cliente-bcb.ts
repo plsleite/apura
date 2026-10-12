@@ -171,6 +171,26 @@ function nomeDoErro(erro: unknown): string {
   return String(erro);
 }
 
+/** " (ECONNRESET)": código (ou, sem ele, a mensagem) da causa que o fetch do Node anexa ao TypeError "fetch failed"; vazio sem causa. */
+function causaDoErro(erro: unknown): string {
+  if (typeof erro !== "object" || erro === null || !("cause" in erro)) return "";
+  const { cause } = erro as { cause?: unknown };
+  if (typeof cause !== "object" || cause === null) return "";
+  const { code, message } = cause as { code?: unknown; message?: unknown };
+  if (typeof code === "string" && code !== "") return ` (${code})`;
+  if (typeof message === "string" && message !== "") return ` (${message})`;
+  return "";
+}
+
+/** Limite do motivo de falha, que vai para a saída, o resumo, o commit e o relatório mensal. */
+const LIMITE_DO_MOTIVO = 300;
+
+/** Uma linha só (espaços e quebras viram um espaço), com no máximo LIMITE_DO_MOTIVO caracteres e "…" ao cortar. */
+function motivoEmUmaLinha(texto: string): string {
+  const linha = texto.replace(/\s+/g, " ").trim();
+  return linha.length <= LIMITE_DO_MOTIVO ? linha : `${linha.slice(0, LIMITE_DO_MOTIVO - 1)}…`;
+}
+
 /**
  * Decide pelo corpo, na ordem: lista JSON válida → ok (mesmo com status diferente de 200); objeto de
  * erro do SGS (404 sem valores, 400 data inválida) → falha definitiva, mesmo que o status seja 200,
@@ -220,7 +240,11 @@ async function pedirUmaVez(
     texto = await resposta.text();
   } catch (erro) {
     // Falha de rede (TypeError), tempo esgotado (TimeoutError) ou pedido cancelado (AbortError).
-    return { ok: false, motivo: `sem resposta do BCB: ${nomeDoErro(erro)}`, repetir: true };
+    return {
+      ok: false,
+      motivo: `sem resposta do BCB: ${nomeDoErro(erro)}${causaDoErro(erro)}`,
+      repetir: true,
+    };
   }
   return decidirPeloCorpo(status, texto);
 }
@@ -249,7 +273,7 @@ export async function buscarSerie(
       return { ok: true, valores: resultado.valores, url, tentativas: tentativa };
     }
     if (!resultado.repetir || tentativa >= maximo) {
-      return { ok: false, motivo: resultado.motivo, url, tentativas: tentativa };
+      return { ok: false, motivo: motivoEmUmaLinha(resultado.motivo), url, tentativas: tentativa };
     }
     try {
       await dormir(esperaMs);
