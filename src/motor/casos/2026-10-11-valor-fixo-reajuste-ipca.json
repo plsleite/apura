@@ -24,17 +24,15 @@
       "indiceReajuste": "IPCA",
       "mesReajuste": 3
     },
-    "lotes": {
-
-    },
+    "lotes": {},
     "lancamentos": [
       {"id": "p-2024-01", "tipo": "prestacao", "data": "2024-01-15", "competencia": "2024-01", "descricao": "Anterior à fixação", "origem": "avulso", "editado": false},
-      {"id": "p-2024-03", "tipo": "prestacao", "data": "2024-03-15", "competencia": "2024-03", "origem": "lote", "editado": false},
-      {"id": "p-2025-02", "tipo": "prestacao", "data": "2025-02-15", "competencia": "2025-02", "origem": "lote", "editado": false},
-      {"id": "p-2025-03", "tipo": "prestacao", "data": "2025-03-15", "competencia": "2025-03", "descricao": "Primeiro reajuste", "origem": "lote", "editado": false},
-      {"id": "p-2026-02", "tipo": "prestacao", "data": "2026-02-15", "competencia": "2026-02", "origem": "lote", "editado": false},
-      {"id": "p-2026-03", "tipo": "prestacao", "data": "2026-03-15", "competencia": "2026-03", "descricao": "Segundo reajuste", "origem": "lote", "editado": false},
-      {"id": "p-2026-09", "tipo": "prestacao", "data": "2026-09-15", "competencia": "2026-09", "origem": "lote", "editado": false},
+      {"id": "p-2024-03", "tipo": "prestacao", "data": "2024-03-15", "competencia": "2024-03", "origem": "avulso", "editado": false},
+      {"id": "p-2025-02", "tipo": "prestacao", "data": "2025-02-15", "competencia": "2025-02", "origem": "avulso", "editado": false},
+      {"id": "p-2025-03", "tipo": "prestacao", "data": "2025-03-15", "competencia": "2025-03", "descricao": "Primeiro reajuste", "origem": "avulso", "editado": false},
+      {"id": "p-2026-02", "tipo": "prestacao", "data": "2026-02-15", "competencia": "2026-02", "origem": "avulso", "editado": false},
+      {"id": "p-2026-03", "tipo": "prestacao", "data": "2026-03-15", "competencia": "2026-03", "descricao": "Segundo reajuste", "origem": "avulso", "editado": false},
+      {"id": "p-2026-09", "tipo": "prestacao", "data": "2026-09-15", "competencia": "2026-09", "origem": "avulso", "editado": false},
       {"id": "p-2026-11", "tipo": "prestacao", "data": "2026-11-15", "competencia": "2026-11", "descricao": "Vincenda", "origem": "avulso", "editado": false},
       {"id": "a-2026-09-01", "tipo": "amortizacao", "data": "2026-09-01", "descricao": "Pagamento parcial", "valorInformado": "200.00", "origem": "avulso", "editado": false},
       {"id": "a-2026-10-20", "tipo": "amortizacao", "data": "2026-10-20", "descricao": "Pagamento posterior ao cálculo", "valorInformado": "100.00", "origem": "avulso", "editado": false}

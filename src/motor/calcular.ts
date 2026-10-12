@@ -34,10 +34,15 @@ function compararSeries(a: CodigoSerie, b: CodigoSerie): number {
   return Number(a) - Number(b);
 }
 
+/** "jan/2017" pela competência ou, sem ela, a data: "10/01/2017". */
+function rotuloDaCompetencia(l: Lancamento): string {
+  return l.competencia === undefined ? formatarData(l.data) : formatarCompetencia(l.competencia);
+}
+
 /** "prestação de jan/2017" ou "pagamento de 10/01/2017", para os avisos. */
 function rotulo(l: Lancamento): string {
   if (l.tipo === "amortizacao") return `pagamento de ${formatarData(l.data)}`;
-  return `prestação de ${l.competencia === undefined ? formatarData(l.data) : formatarCompetencia(l.competencia)}`;
+  return `prestação de ${rotuloDaCompetencia(l)}`;
 }
 
 /**
@@ -172,6 +177,9 @@ function decidirSituacao(
  * ou pelos termos próprios e metodologia própria quando informados (§6.4 e §6.5). O fator e o
  * percentual multiplicam com precisão integral e só são arredondados para exibição (convenção
  * do SAJ); os juros incidem sobre o corrigido sem arredondar; corrigido e juros têm 2 casas.
+ * Prestações posteriores à data de elaboração saem como vincendas, pelo valor nominal;
+ * lançamentos sem valor utilizável, com valor zero ou negativo, e pagamentos posteriores saem como
+ * ignorados. Vincendas e ignorados não têm correção nem juros (§6.7).
  */
 export function atualizarLancamento(
   lancamento: Lancamento,
@@ -435,13 +443,13 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
   const vincendas = porSituacao("vincenda");
   if (vincendas.length > 0) {
     avisos.push(
-      `Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: ${vincendas.map((l) => (l.competencia === undefined ? formatarData(l.data) : formatarCompetencia(l.competencia))).join(", ")}.`,
+      `Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: ${vincendas.map(rotuloDaCompetencia).join(", ")}.`,
     );
   }
   const informadas = calculo.lancamentos.filter((_, i) => lancamentos[i]?.editado === true);
   if (informadas.length > 0) {
     avisos.push(
-      `Prestações com valor informado à mão, não apurado pela base dos alimentos: ${informadas.map((l) => (l.competencia === undefined ? formatarData(l.data) : formatarCompetencia(l.competencia))).join(", ")}.`,
+      `Prestações com valor informado à mão, não apurado pela base dos alimentos: ${informadas.map(rotuloDaCompetencia).join(", ")}.`,
     );
   }
   const ignorados = porSituacao("ignorado");

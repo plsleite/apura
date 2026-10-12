@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { competenciasEntre } from "../compartilhado/datas.ts";
-import type { Calculo, Lancamento } from "../compartilhado/tipos.ts";
+import type { Base, Calculo, Lancamento } from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
 import { calcular } from "./calcular.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
 import { metodologiaSelicUnica, tabelaRegimeNovo } from "./testes/regime-novo.ts";
-import type { Base } from "../compartilhado/tipos.ts";
 
 function calculoCom(lancamentos: Lancamento[], dataElaboracao = "2018-05-25"): Calculo {
   return {
@@ -572,6 +571,33 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
     expect(r2.totais.prestacoes).toBe("0.00");
   });
 
+  it("pagamento sem valor informado fica fora dos totais, com aviso e resumo", () => {
+    const semValor: Lancamento = {
+      id: "a-sem-valor",
+      tipo: "amortizacao",
+      data: "2017-01-10",
+      origem: "avulso",
+      editado: false,
+    };
+    const r = calcular(calculoCom([prestacao, semValor]), tabelaIgpm());
+    expect(r.lancamentos[1]).toMatchObject({
+      situacao: "ignorado",
+      editado: false,
+      valorBase: "0.00",
+      memoriaBase: "Valor não informado",
+      atualizado: "0.00",
+    });
+    expect(r.lancamentos[1]?.avisos).toEqual([
+      "Pagamento sem valor informado: não computado nos totais.",
+    ]);
+    expect(r.totais).toMatchObject({
+      prestacoes: "533.40",
+      amortizacoes: "0.00",
+      totalDevido: "533.40",
+    });
+    expect(r.avisos).toContain("Lançamentos não computados nos totais: pagamento de 10/01/2017.");
+  });
+
   it("marca 'editado' só nas prestações com valor informado, com aviso no lançamento e resumo no resultado", () => {
     const r = calcular(
       calculoCom([prestacao, amortizacao, semValorInformado("p-lote", "2017-02-10")]),
@@ -586,6 +612,23 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
     ]);
     expect(r.avisos).toContain(
       "Prestações com valor informado à mão, não apurado pela base dos alimentos: jan/2017.",
+    );
+  });
+
+  it("prestação sem competência é identificada pela data nos avisos e resumos", () => {
+    const semCompetencia: Lancamento = {
+      ...prestacao,
+      id: "p-sem-competencia",
+      competencia: undefined,
+      data: "2018-06-10",
+    };
+    const r = calcular(calculoCom([semCompetencia]), tabelaIgpm());
+    expect(r.lancamentos[0]?.situacao).toBe("vincenda");
+    expect(r.avisos).toContain(
+      "Prestações vincendas, incluídas pelo valor nominal, sem correção e sem juros: 10/06/2018.",
+    );
+    expect(r.avisos).toContain(
+      "Prestações com valor informado à mão, não apurado pela base dos alimentos: 10/06/2018.",
     );
   });
 

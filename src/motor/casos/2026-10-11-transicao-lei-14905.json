@@ -19,7 +19,7 @@
       {"id": "p-2024-08-29", "tipo": "prestacao", "data": "2024-08-29", "competencia": "2024-08", "descricao": "Último dia do regime antigo", "valorInformado": "10000.00", "origem": "avulso", "editado": true},
       {"id": "p-2024-08-30", "tipo": "prestacao", "data": "2024-08-30", "competencia": "2024-08", "descricao": "Primeiro dia do regime novo", "valorInformado": "10000.00", "origem": "avulso", "editado": true},
       {"id": "p-2024-08-31", "tipo": "prestacao", "data": "2024-08-31", "competencia": "2024-08", "valorInformado": "10000.00", "origem": "avulso", "editado": true},
-      {"id": "a-2024-05-10", "tipo": "amortizacao", "data": "2024-05-10", "descricao": "Pagamento parcial", "valorInformado": "5000.00", "origem": "avulso", "editado": true}
+      {"id": "a-2024-05-10", "tipo": "amortizacao", "data": "2024-05-10", "descricao": "Pagamento parcial", "valorInformado": "5000.00", "origem": "avulso", "editado": false}
     ],
     "metodologia": {
       "id": "tjms-saj",

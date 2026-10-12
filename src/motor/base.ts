@@ -369,7 +369,8 @@ function porValorFixo(
  * Valor-base de uma prestação sem valor informado (§6.3), pelo mês do vencimento: percentual do
  * salário mínimo (série 1619), percentual dos rendimentos (o do lançamento ou o padrão) ou valor
  * fixo, sem reajuste, reajustado pela proporção do salário mínimo ou pelo índice acumulado a cada
- * 12 meses. Nunca lança erro: dado inválido ou faltante devolve `valor` nulo e aviso.
+ * 12 meses. Nunca lança erro: dado inválido ou faltante devolve `valor` nulo e aviso. Datas chegam
+ * validadas pela tela (§6.7): `dataFixacao` com competência malformada não é tratada aqui.
  */
 export function apurarValorBase(
   lancamento: Lancamento,
@@ -385,5 +386,10 @@ export function apurarValorBase(
       return porRendimentos(base, lancamento, competencia, valorCasas);
     case "valorFixo":
       return porValorFixo(base, competencia, tabela, valorCasas);
+    default:
+      return semValor(
+        "Base desconhecida",
+        "Tipo de base não reconhecido: a prestação ficou sem valor; informe o valor à mão.",
+      );
   }
 }

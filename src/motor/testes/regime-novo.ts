@@ -241,7 +241,6 @@ export function tabelaRegimeNovo(
   for (const [codigo, valores] of Object.entries(REGIME_NOVO) as Array<
     [CodigoSerie, Record<Competencia, string>]
   >) {
-    if (Object.keys(valores).length === 0) continue;
     const limite = limites[codigo];
     const tabela: Record<Competencia, ValorIndice> = {};
     for (const [competencia, valor] of Object.entries(valores)) {

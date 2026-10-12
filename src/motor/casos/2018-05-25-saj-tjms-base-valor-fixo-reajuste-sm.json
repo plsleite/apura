@@ -107,20 +107,20 @@
         "2018-04": {"valor": "0.57", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"}
       },
       "1619": {
-        "2017-01": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-02": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-03": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-04": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-05": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-06": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-07": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-08": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-09": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-10": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-11": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2017-12": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2018-01": {"valor": "954.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"},
-        "2018-02": {"valor": "954.00", "fonte": "embutida", "obtidoEm": "2018-05-25T00:00:00.000Z"}
+        "2017-01": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-02": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-03": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-04": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-05": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-06": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-07": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-08": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-09": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-10": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-11": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2017-12": {"valor": "937.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2018-01": {"valor": "954.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"},
+        "2018-02": {"valor": "954.00", "fonte": "embutida", "obtidoEm": "2026-10-10T00:00:00.000Z"}
       }
     }
   },

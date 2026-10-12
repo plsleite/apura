@@ -20,7 +20,7 @@
       {"id": "p-2026-08-31", "tipo": "prestacao", "data": "2026-08-31", "competencia": "2026-08", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
       {"id": "p-2026-10-01", "tipo": "prestacao", "data": "2026-10-01", "competencia": "2026-10", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
       {"id": "p-2026-10-11", "tipo": "prestacao", "data": "2026-10-11", "competencia": "2026-10", "descricao": "Vencida no dia do cálculo", "valorInformado": "1000.00", "origem": "avulso", "editado": true},
-      {"id": "a-2025-06-30", "tipo": "amortizacao", "data": "2025-06-30", "descricao": "Pagamento parcial", "valorInformado": "500.00", "origem": "avulso", "editado": true}
+      {"id": "a-2025-06-30", "tipo": "amortizacao", "data": "2025-06-30", "descricao": "Pagamento parcial", "valorInformado": "500.00", "origem": "avulso", "editado": false}
     ],
     "metodologia": {
       "id": "tjms-saj",

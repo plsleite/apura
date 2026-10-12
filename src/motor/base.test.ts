@@ -39,6 +39,17 @@ describe("base em percentual do salário mínimo (§6.3)", () => {
     );
   });
 
+  it("usa o mês do vencimento, não a competência, para escolher o salário mínimo", () => {
+    const r = apurarValorBase(
+      prestacao("2026-01-10", { competencia: "2025-12" }),
+      base,
+      tabelaRegimeNovo(),
+      2,
+    );
+    expect(r.valor?.toFixed()).toBe("486.3");
+    expect(r.memoria).toBe("30% do salário mínimo de jan/2026 (R$ 1.621,00) = R$ 486,30");
+  });
+
   it("mês ainda sem salário mínimo publicado: usa o último anterior (vigente até o novo decreto), com aviso e mês sinalizado", () => {
     const r = apurarValorBase(prestacao("2027-01-05"), base, tabelaRegimeNovo(), 2);
     expect(r.valor?.toFixed(2)).toBe("486.30");
@@ -441,5 +452,16 @@ describe("base em valor fixo (§6.3)", () => {
       expect(r.indicesUsados).toHaveLength(12);
       expect(r.memoria).toContain("INPC de mar/2024 a fev/2025");
     });
+  });
+});
+
+describe("base de tipo desconhecido", () => {
+  it("tipo de base desconhecido (arquivo editado à mão) fica sem valor, com aviso, sem erro", () => {
+    const estranha = { tipo: "desconhecida" } as unknown as Base;
+    const r = apurarValorBase(prestacao("2024-03-10"), estranha, tabelaRegimeNovo(), 2);
+    expect(r.valor).toBeNull();
+    expect(r.avisos).toEqual([
+      "Tipo de base não reconhecido: a prestação ficou sem valor; informe o valor à mão.",
+    ]);
   });
 });

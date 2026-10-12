@@ -76,9 +76,8 @@ describe("casos de referência", () => {
       expect(resultado.totais).toEqual(caso.esperado.totais);
     });
 
-    it("avisos do resultado batem (quando o caso os informa)", () => {
-      if (caso.esperado.avisos !== undefined)
-        expect(resultado.avisos).toEqual(caso.esperado.avisos);
+    it.runIf(caso.esperado.avisos !== undefined)("avisos do resultado batem", () => {
+      expect(resultado.avisos).toEqual(caso.esperado.avisos);
     });
 
     it("o fator e o percentual impressos reproduzem o centavo, com tolerância proporcional ao valor", () => {

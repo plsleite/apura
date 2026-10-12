@@ -182,7 +182,7 @@ Lancamento {
   rendimento?: string                      // base em % dos rendimentos: rendimento daquele mês
   encargos?: EncargosProprios              // §6.5
   origem: "lote" | "avulso"
-  editado: boolean
+  editado: boolean                         // marca da tela (lápis; não sobrescrever ao relançar lote); o motor não o lê
 }
 
 EncargosProprios {
@@ -341,7 +341,7 @@ Confirmar com colegas ou com a contadoria do TJMS antes de implementar a regra c
 5. SELIC única (Tema 1.368): rateio mensal e tratamento do mês corrente parcial (decidido em 11/10/2026; ver nota abaixo).
 6. Reajuste anual do valor fixo: momento do primeiro reajuste e janela de 12 meses; reajuste pelo salário mínimo como proporção (decidido em 11/10/2026; ver nota da fase 3).
 7. Método de amortização do SAJ (lançamentos negativos atualizados até a data do cálculo) como padrão único do MVP (decidido em 11/10/2026; ver nota da fase 3).
-8. Multa e honorários: base (total devido) e não cumulação; só no rito da penhora (decidido em 11/10/2026; ver nota abaixo).
+8. Multa e honorários: base (total devido) e não cumulação; só no rito da penhora (decidido em 11/10/2026; ver notas abaixo).
 9. Arredondamento: fator e percentual impressos com 6 casas e multiplicados com precisão integral, juros sobre o corrigido sem arredondar, valores com 2 casas por lançamento, confrontados com os gabaritos do SAJ (decidido em 11/10/2026; ver notas abaixo).
 10. IGP-M como índice padrão do período antigo em MS, com INPC, IPCA e SELIC única como alternativas (decidido em 11/10/2026; ver nota da fase 3).
 11. 13º e férias quando a base é percentual dos rendimentos (decidido em 11/10/2026; ver nota da fase 3).
@@ -610,7 +610,7 @@ Fonte: "Relatório de Cálculo Processual – Sintético", TJMS/SAJ, emitido em 
 
 - fator de correção = (1 + i_mês/100)^((diasDoMes − dia) ÷ diasDoMes) para o mês do lançamento × Π(1 + i/100) dos meses seguintes até abril/2018; ex.: 10/01/2017 → 1,013020 → 451,91 × 1,013020 = 457,79;
 - juros = Σ por mês-calendário de 1% × dias ÷ diasDoMes, contando o dia do lançamento e o dia 25/05/2018; ex.: 10/01/2017 → 22/31 + 15 meses + 25/31 = 16,516129% → 457,79 × 16,516129% = 75,61;
-- juros sobre o valor corrigido; corrigido e juros arredondados a 2 casas.
+- juros sobre o valor corrigido sem arredondar (§6.4; nas linhas verificadas as duas formas coincidem); corrigido e juros arredondados a 2 casas.
 
 Base confirmada na fase 3 (11/10/2026): valor fixo de R$ 451,91 fixado em 10/01/2017 e reajustado pela proporção do salário mínimo (937,00 em 2017; 954,00 em 2018): 451,91 × 954 ÷ 937 = 460,109… = R$ 460,11, exatamente o valor de 2018. A hipótese de 48,23% do salário mínimo não confere (937 × 48,23% = 451,9151 → 451,92). O caso de referência original usa os valores nominais como informados; o caso `2018-05-25-saj-tjms-base-valor-fixo-reajuste-sm.json` recalcula as mesmas 28 linhas pela base.
 
