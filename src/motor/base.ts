@@ -387,6 +387,8 @@ export function apurarValorBase(
     case "valorFixo":
       return porValorFixo(base, competencia, tabela, valorCasas);
     default:
+      // Checagem de exaustividade: uma forma nova de Base esquecida aqui falha na compilação.
+      base satisfies never;
       return semValor(
         "Base desconhecida",
         "Tipo de base não reconhecido: a prestação ficou sem valor; informe o valor à mão.",
