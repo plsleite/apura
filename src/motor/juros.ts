@@ -9,6 +9,7 @@ import type {
   Metodologia,
   TabelaIndices,
 } from "../compartilhado/tipos.ts";
+import { aindaNaoDivulgado, divulgacaoPrevista } from "../compartilhado/divulgacao.ts";
 import { dividirPorPeriodos } from "./periodos.ts";
 
 export interface ParametrosJuros {
@@ -41,7 +42,9 @@ export interface ResultadoJuros {
  * - `taxaLegal` (regime novo, Lei 14.905/2024): taxa do mês (série 29543) × dias ÷ dias corridos
  *   do mês, contando o primeiro dia do trecho e não contando o dia do termo final, como a
  *   Calculadora do Cidadão do BCB (30/08/2024 a 31/08/2024 = 1 dia). Na transição, o trecho da
- *   taxa legal começa em 30/08/2024 e esse dia conta;
+ *   taxa legal começa em 30/08/2024 e esse dia conta. Mês sem taxa na tabela fica sem juros, com
+ *   aviso: "ainda não divulgada" quando o calendário da tabela (`esperadoAte`) diz que o mês ainda
+ *   não saiu; "não disponível" nos demais casos;
  * - `selicUnica`: sem juros separados, porque a SELIC entra capitalizada na correção.
  */
 export function jurosSimples(p: ParametrosJuros): ResultadoJuros {
@@ -74,8 +77,11 @@ export function jurosSimples(p: ParametrosJuros): ResultadoJuros {
         const taxa = p.indices.series[CODIGO_DA_SERIE.taxaLegal]?.[mes.competencia]?.valor;
         if (taxa === undefined) {
           if (!mesesSemTaxaLegal.includes(mes.competencia)) mesesSemTaxaLegal.push(mes.competencia);
+          const dias = `os dias de ${formatarData(mes.de)} a ${formatarData(mes.ate)} ficaram sem juros`;
           avisos.push(
-            `Taxa legal de ${formatarCompetencia(mes.competencia)} não disponível na tabela de índices: os dias de ${formatarData(mes.de)} a ${formatarData(mes.ate)} ficaram sem juros.`,
+            aindaNaoDivulgado(p.indices, CODIGO_DA_SERIE.taxaLegal, mes.competencia)
+              ? `Taxa legal de ${formatarCompetencia(mes.competencia)} ainda sem divulgação na data da consulta (previsão: ${divulgacaoPrevista(CODIGO_DA_SERIE.taxaLegal, mes.competencia)}): ${dias}.`
+              : `Taxa legal de ${formatarCompetencia(mes.competencia)} não disponível na tabela de índices: ${dias}.`,
           );
           continue;
         }

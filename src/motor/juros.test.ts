@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { paraTexto } from "../compartilhado/decimal.ts";
-import type { Metodologia } from "../compartilhado/tipos.ts";
+import type { Metodologia, TabelaIndices } from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
 import { jurosSimples } from "./juros.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
@@ -278,5 +278,135 @@ describe("jurosSimples (regime novo: taxa legal da Lei 14.905/2024 e transição
   it("devolve o percentual com precisão integral (arredondado só para exibir)", () => {
     const r = jurosSimples({ ...novo, termoInicial: "2024-09-30", termoFinal: "2026-10-11" });
     expect(r.percentual.decimalPlaces()).toBeGreaterThan(6);
+  });
+});
+
+describe("jurosSimples (fase 4: taxa legal ainda sem divulgação na data da consulta)", () => {
+  const padrao = metodologiaPadrao();
+  const ESPERADO_ATE: TabelaIndices["esperadoAte"] = {
+    "188": "2026-09",
+    "189": "2026-09",
+    "433": "2026-09",
+    "1619": "2026-12",
+    "29543": "2026-10",
+    "4390": "2026-10",
+  };
+  const comCalendario = (limites: Parameters<typeof tabelaRegimeNovo>[0] = {}): TabelaIndices => ({
+    ...tabelaRegimeNovo(limites),
+    esperadoAte: ESPERADO_ATE,
+  });
+
+  it("mês posterior ao esperado pelo calendário: aviso de 'ainda não divulgada', dias sem juros", () => {
+    const r = jurosSimples({
+      metodologia: padrao,
+      indices: comCalendario(),
+      casas: 6,
+      termoInicial: "2026-10-01",
+      termoFinal: "2026-11-11",
+    });
+    expect(r.detalhe).toEqual([
+      {
+        regime: "taxaLegal",
+        de: "2026-10-01",
+        ate: "2026-10-31",
+        dias: 31,
+        diasDoMes: 31,
+        taxa: "0.379020",
+        percentual: "0.379020",
+      },
+    ]);
+    expect(paraTexto(r.percentual, 6)).toBe("0.379020");
+    expect(r.avisos).toEqual([
+      "Taxa legal de nov/2026 ainda sem divulgação na data da consulta (previsão: no 1º dia útil de nov/2026): os dias de 01/11/2026 a 10/11/2026 ficaram sem juros.",
+    ]);
+    expect(r.mesesSemTaxaLegal).toEqual(["2026-11"]);
+  });
+
+  it("buraco na tabela num mês já esperado pelo calendário: aviso genérico de 'não disponível'", () => {
+    const tabela = comCalendario();
+    delete tabela.series["29543"]?.["2026-09"];
+    const r = jurosSimples({
+      metodologia: padrao,
+      indices: tabela,
+      casas: 6,
+      termoInicial: "2026-09-01",
+      termoFinal: "2026-09-30",
+    });
+    expect(r.avisos).toEqual([
+      "Taxa legal de set/2026 não disponível na tabela de índices: os dias de 01/09/2026 a 29/09/2026 ficaram sem juros.",
+    ]);
+    expect(r.mesesSemTaxaLegal).toEqual(["2026-09"]);
+    expect(r.detalhe).toEqual([]);
+  });
+
+  it("buraco e mês ainda não divulgado no mesmo trecho: um aviso de cada tipo, na ordem dos meses", () => {
+    const tabela = comCalendario();
+    delete tabela.series["29543"]?.["2026-09"];
+    const r = jurosSimples({
+      metodologia: padrao,
+      indices: tabela,
+      casas: 6,
+      termoInicial: "2026-09-15",
+      termoFinal: "2026-11-11",
+    });
+    expect(r.avisos).toEqual([
+      "Taxa legal de set/2026 não disponível na tabela de índices: os dias de 15/09/2026 a 30/09/2026 ficaram sem juros.",
+      "Taxa legal de nov/2026 ainda sem divulgação na data da consulta (previsão: no 1º dia útil de nov/2026): os dias de 01/11/2026 a 10/11/2026 ficaram sem juros.",
+    ]);
+    expect(r.mesesSemTaxaLegal).toEqual(["2026-09", "2026-11"]);
+    expect(r.detalhe.map((d) => d.de)).toEqual(["2026-10-01"]);
+  });
+
+  it("mês esperado pelo calendário mas ausente da tabela é 'não disponível'; o seguinte, 'ainda não divulgada'", () => {
+    const r = jurosSimples({
+      metodologia: padrao,
+      indices: comCalendario({ "29543": "2026-09" }),
+      casas: 6,
+      termoInicial: "2026-10-01",
+      termoFinal: "2026-11-11",
+    });
+    expect(r.avisos).toEqual([
+      "Taxa legal de out/2026 não disponível na tabela de índices: os dias de 01/10/2026 a 31/10/2026 ficaram sem juros.",
+      "Taxa legal de nov/2026 ainda sem divulgação na data da consulta (previsão: no 1º dia útil de nov/2026): os dias de 01/11/2026 a 10/11/2026 ficaram sem juros.",
+    ]);
+    expect(r.mesesSemTaxaLegal).toEqual(["2026-10", "2026-11"]);
+  });
+
+  it("esperadoAte parcial sem a taxa legal (só o IPCA): o aviso continua o genérico", () => {
+    const tabela: TabelaIndices = {
+      ...tabelaRegimeNovo({ "29543": "2026-09" }),
+      esperadoAte: { "433": "2026-09" },
+    };
+    const r = jurosSimples({
+      metodologia: padrao,
+      indices: tabela,
+      casas: 6,
+      termoInicial: "2026-10-01",
+      termoFinal: "2026-10-11",
+    });
+    expect(r.avisos).toEqual([
+      "Taxa legal de out/2026 não disponível na tabela de índices: os dias de 01/10/2026 a 10/10/2026 ficaram sem juros.",
+    ]);
+  });
+
+  it("o calendário não interfere no regime antigo nem na SELIC única", () => {
+    const antigo = jurosSimples({
+      metodologia: padrao,
+      indices: comCalendario(),
+      casas: 6,
+      termoInicial: "2024-03-10",
+      termoFinal: "2024-08-29",
+    });
+    expect(antigo.avisos).toEqual([]);
+    expect(paraTexto(antigo.percentual, 6)).toBe("5.645161");
+    const selic = jurosSimples({
+      metodologia: metodologiaSelicUnica(),
+      indices: comCalendario(),
+      casas: 6,
+      termoInicial: "2026-10-01",
+      termoFinal: "2026-11-11",
+    });
+    expect(selic.avisos).toEqual([]);
+    expect(selic.mesesSemTaxaLegal).toEqual([]);
   });
 });

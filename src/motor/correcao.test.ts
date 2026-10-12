@@ -436,3 +436,64 @@ describe("regime novo e SELIC única", () => {
     expect(mesSeguinte.indices[0]?.fracao).toBe("0/31");
   });
 });
+
+describe("mês parcial da SELIC pelo obtidoEm do próprio valor (fase 4)", () => {
+  const consultadaEmNovembro = (): TabelaIndices => ({
+    ...tabelaRegimeNovo(),
+    consultadoEm: "2026-11-05T10:00:00-03:00",
+  });
+
+  it("SELIC de out/2026 obtida em out/2026 é parcial mesmo com a tabela consultada em nov/2026", () => {
+    const tabela = consultadaEmNovembro();
+    tabela.series["4390"]!["2026-10"] = {
+      valor: "0.36",
+      fonte: "embutida",
+      obtidoEm: "2026-10-11T20:11:55-03:00",
+    };
+    expect(resolverIndicesMensais(metodologiaSelicUnica(), tabela, "2026-09", "2026-10")).toEqual([
+      { competencia: "2026-09", serie: "4390", valor: "1.08" },
+      { competencia: "2026-10", serie: "4390", valor: "0.36", parcial: true },
+    ]);
+  });
+
+  it("SELIC de out/2026 obtida em nov/2026 é o mês fechado, não parcial; o parcial passa a ser nov/2026", () => {
+    const tabela = consultadaEmNovembro();
+    tabela.series["4390"]!["2026-10"] = {
+      valor: "1.15",
+      fonte: "embutida",
+      obtidoEm: "2026-11-05T10:00:00-03:00",
+    };
+    tabela.series["4390"]!["2026-11"] = {
+      valor: "0.14",
+      fonte: "embutida",
+      obtidoEm: "2026-11-05T10:00:00-03:00",
+    };
+    expect(resolverIndicesMensais(metodologiaSelicUnica(), tabela, "2026-10", "2026-11")).toEqual([
+      { competencia: "2026-10", serie: "4390", valor: "1.15" },
+      { competencia: "2026-11", serie: "4390", valor: "0.14", parcial: true },
+    ]);
+  });
+
+  it("só a SELIC tem mês parcial: o IPCA obtido no mês da própria competência não é marcado", () => {
+    const tabela = tabelaRegimeNovo();
+    tabela.series["433"]!["2026-09"] = {
+      valor: "0.82",
+      fonte: "embutida",
+      obtidoEm: "2026-09-30T10:00:00-03:00",
+    };
+    expect(resolverIndicesMensais(metodologiaPadrao(), tabela, "2026-09", "2026-09")).toEqual([
+      { competencia: "2026-09", serie: "433", valor: "0.82" },
+    ]);
+  });
+
+  it("SELIC sem valor no mês da obtenção fica sem valor e sem a marca de parcial", () => {
+    expect(
+      resolverIndicesMensais(
+        metodologiaSelicUnica(),
+        tabelaRegimeNovo({ "4390": "2026-08" }),
+        "2026-10",
+        "2026-10",
+      ),
+    ).toEqual([{ competencia: "2026-10", serie: "4390", valor: null }]);
+  });
+});
