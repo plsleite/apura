@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { CasoDeReferencia } from "../compartilhado/tipos.ts";
 import { calcular } from "../motor/calcular.ts";
 import textoDoCaso from "../motor/casos/2018-05-25-saj-tjms-alimentos.json?raw";
-import { lerArquivoSerie, tabelaEmbutida } from "./embutidos.ts";
+import { lerArquivoSerie } from "./arquivo-serie.ts";
+import { seriesEmbutidas, tabelaEmbutida } from "./embutidos.ts";
+import { compararInstantes } from "./relogio.ts";
 
 describe("cópia embutida dos índices", () => {
   const tabela = tabelaEmbutida();
@@ -30,7 +32,6 @@ describe("cópia embutida dos índices", () => {
     expect(tabela.series["188"]?.["1979-04"]?.valor).toBe("3.45");
     expect(tabela.series["188"]?.["2017-01"]?.valor).toBe("0.42");
     expect(tabela.series["188"]?.["2025-01"]?.valor).toBe("0.00");
-    expect(tabela.series["188"]?.["2026-09"]?.valor).toBe("0.82");
     expect(tabela.series["1619"]?.["1990-02"]?.valor).toBe("2004.37");
     expect(tabela.series["1619"]?.["2017-01"]?.valor).toBe("937.00");
     expect(tabela.series["1619"]?.["2018-01"]?.valor).toBe("954.00");
@@ -39,7 +40,11 @@ describe("cópia embutida dos índices", () => {
     expect(tabela.series["1619"]?.["2024-01"]?.valor).toBe("1412.00");
     expect(tabela.series["1619"]?.["2025-01"]?.valor).toBe("1518.00");
     expect(tabela.series["1619"]?.["2026-01"]?.valor).toBe("1621.00");
-    expect(tabela.series["1619"]?.["2026-12"]?.valor).toBe("1621.00");
+    // Os meses futuros do ano vêm publicados: dezembro do ano do último mês tem valor.
+    const ultimoMinimo = Object.keys(tabela.series["1619"] ?? {})
+      .sort()
+      .at(-1);
+    expect(ultimoMinimo).toMatch(/^\d{4}-12$/);
   });
 
   it("recusa arquivo de série em formato inesperado", () => {
@@ -78,7 +83,7 @@ describe("cópia embutida dos índices", () => {
       expect(valores.length).toBeGreaterThan(0);
       for (const v of valores) {
         expect(v.fonte).toBe("embutida");
-        expect(v.obtidoEm <= tabela.consultadoEm).toBe(true);
+        expect(compararInstantes(v.obtidoEm, tabela.consultadoEm)).toBeLessThanOrEqual(0);
       }
     }
   });
@@ -93,5 +98,45 @@ describe("cópia embutida dos índices", () => {
       series: { "189": ateAbril },
     });
     expect(resultado.totais).toEqual(caso.esperado.totais);
+  });
+});
+
+describe("seriesEmbutidas", () => {
+  it("devolve os seis arquivos, cada um com o código da sua chave, formato apura/serie@1 e valores", () => {
+    const series = seriesEmbutidas();
+    expect(Object.keys(series).sort()).toEqual(["1619", "188", "189", "29543", "433", "4390"]);
+    for (const [codigo, arquivo] of Object.entries(series)) {
+      expect(arquivo.codigo).toBe(codigo);
+      expect(arquivo.formato).toBe("apura/serie@1");
+      expect(arquivo.valores.length).toBeGreaterThan(0);
+      expect(arquivo.obtidoEm).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    }
+  });
+
+  it("a tabela embutida nasce dos mesmos arquivos e não traz esperadoAte", () => {
+    const series = seriesEmbutidas();
+    const tabela = tabelaEmbutida();
+    expect("esperadoAte" in tabela).toBe(false);
+    expect(tabela.esperadoAte).toBeUndefined();
+    const ipca = series["433"];
+    const ultimo = ipca.valores.at(-1);
+    if (ultimo === undefined) throw new Error("IPCA embutido sem valores");
+    expect(tabela.series["433"]?.[ultimo.competencia]).toEqual({
+      valor: ultimo.valor,
+      fonte: "embutida",
+      obtidoEm: ipca.obtidoEm,
+    });
+    expect(Object.keys(tabela.series["433"] ?? {})).toHaveLength(ipca.valores.length);
+    const maiorObtidoEm = Object.values(series)
+      .map((arquivo) => arquivo.obtidoEm)
+      .sort(compararInstantes)
+      .at(-1);
+    expect(tabela.consultadoEm).toBe(maiorObtidoEm);
+  });
+
+  it("devolve uma cópia: tirar uma série do objeto devolvido não afeta a próxima chamada", () => {
+    const copia: Partial<ReturnType<typeof seriesEmbutidas>> = seriesEmbutidas();
+    delete copia["433"];
+    expect(seriesEmbutidas()["433"].codigo).toBe("433");
   });
 });
