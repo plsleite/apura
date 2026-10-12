@@ -397,4 +397,46 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
       fracao: "21/31",
     });
   });
+
+  it("juros incidem sobre o corrigido sem arredondar, como o SAJ (R$ 450,00 de 01/02/2025: 93,47 e não 93,48)", () => {
+    const tabela = tabelaRegimeNovo();
+    tabela.series["189"]!["2025-12"] = {
+      valor: "-0.02",
+      fonte: "embutida",
+      obtidoEm: "2026-10-11T12:00:00.000Z",
+    };
+    const calculo = calculoCom(
+      [
+        {
+          ...prestacao,
+          id: "p-2025-02",
+          data: "2025-02-01",
+          competencia: "2025-02",
+          valorInformado: "450.00",
+        },
+      ],
+      hoje,
+    );
+    calculo.metodologia = {
+      ...metodologiaPadrao(),
+      ajustada: true,
+      deflacao: "aplicarSemPiso",
+      periodos: [
+        {
+          de: null,
+          ate: null,
+          correcao: { indice: "IGP-M" },
+          juros: { tipo: "percentualMensal", taxaMensal: "1" },
+        },
+      ],
+    };
+    const r = calcular(calculo, tabela);
+    expect(r.lancamentos[0]).toMatchObject({
+      correcao: { fator: "1.020504" },
+      corrigido: "459.23",
+      juros: { percentual: "20.354839" },
+      jurosValor: "93.47",
+      atualizado: "552.70",
+    });
+  });
 });

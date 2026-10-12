@@ -141,7 +141,11 @@ function atualizarComRastro(
     casas: percentualCasas,
   });
   avisos.push(...juros.avisos);
-  const jurosValor = arredondar(corrigido.times(juros.percentual).div(CEM), valorCasas);
+  // Juros sobre o corrigido sem arredondar, como o SAJ (decisão de 11/10/2026, ponto 9).
+  const jurosValor = arredondar(
+    valorBase.times(correcao.fator).times(juros.percentual).div(CEM),
+    valorCasas,
+  );
   const atualizado = corrigido.plus(jurosValor);
 
   return {

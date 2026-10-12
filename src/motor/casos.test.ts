@@ -67,22 +67,23 @@ describe("casos de referência", () => {
       expect(resultado.totais).toEqual(caso.esperado.totais);
     });
 
-    it("o fator e o percentual impressos reproduzem o centavo, com tolerância de R$ 0,01", () => {
+    it("o fator e o percentual impressos reproduzem o centavo, com tolerância proporcional ao valor", () => {
       // O motor multiplica com precisão integral e imprime 6 casas (como o SAJ): a conta refeita
-      // com os números impressos pode diferir em um centavo.
-      const umCentavo = decimal("0.01");
+      // com os números impressos pode diferir em um centavo, mais o erro do fator impresso
+      // (até 0,0000005 × valor), relevante acima de R$ 10.000,00.
       expect(resultado.lancamentos.length).toBeGreaterThan(0);
       for (const l of resultado.lancamentos) {
+        const tolerancia = decimal(l.valorBase).abs().times("0.0000005").plus("0.01");
         const corrigido = arredondar(
           decimal(l.valorBase).times(decimal(l.correcao.fator)),
           valorCasas,
         );
-        expect(corrigido.minus(decimal(l.corrigido)).abs().lte(umCentavo)).toBe(true);
+        expect(corrigido.minus(decimal(l.corrigido)).abs().lte(tolerancia)).toBe(true);
         const juros = arredondar(
           decimal(l.corrigido).times(decimal(l.juros.percentual)).div(CEM),
           valorCasas,
         );
-        expect(juros.minus(decimal(l.jurosValor)).abs().lte(umCentavo)).toBe(true);
+        expect(juros.minus(decimal(l.jurosValor)).abs().lte(tolerancia)).toBe(true);
       }
     });
 
