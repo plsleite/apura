@@ -9,6 +9,8 @@
 # Quando roda: de segunda a sexta às 10h47, 14h17 e 22h47 de Brasília (três agendamentos, cada um
 # com o fuso America/Sao_Paulo) e à mão, em "Actions" (workflow_dispatch). O título de cada
 # execução diz a rodada; o relatório mensal (relatorio-indices.yml) conta as execuções por ele.
+# Ao mudar um horário, mude também o case do passo Baixar e RODADAS em src/indices/relatorio.ts
+# (scripts/relatorio-indices.test.ts confere).
 #
 # Monitoramento: cada execução deixa um resumo com a saída do script; problema numa série faz a
 # execução terminar com falha (vermelha no GitHub); nas execuções agendadas sem problema, um sinal de vida vai

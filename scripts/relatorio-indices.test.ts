@@ -13,6 +13,7 @@ import {
   lerAtualizacoes,
   lerExecucoes,
   montarRelatorio,
+  RODADAS,
 } from "../src/indices/relatorio.ts";
 import type { AtualizacaoRegistrada } from "../src/indices/relatorio.ts";
 
@@ -246,5 +247,19 @@ describe("scripts/relatorio-indices.ts", () => {
     expect(stdout).toBe("");
     expect(stderr).toBe("Não foi possível ler o histórico do git em dados/indices.\n");
     expect(existsSync(join(raiz, "docs"))).toBe(false);
+  });
+});
+
+describe("agendamentos do workflow da rotina", () => {
+  it("as linhas de cron e o case de atualizar-indices.yml são as de RODADAS", () => {
+    const yml = readFileSync(
+      new URL("../.github/workflows/atualizar-indices.yml", import.meta.url),
+      "utf8",
+    );
+    const crons = [...yml.matchAll(/- cron: "([^"]+)"/g)].map((m) => m[1]);
+    expect(crons).toEqual(Object.values(RODADAS).map((r) => r.cron));
+    for (const [rodada, { cron }] of Object.entries(RODADAS)) {
+      expect(yml).toContain(`"${cron}") RODADA="${rodada}" ;;`);
+    }
   });
 });

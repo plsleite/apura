@@ -40,11 +40,10 @@ describe("cópia embutida dos índices", () => {
     expect(tabela.series["1619"]?.["2024-01"]?.valor).toBe("1412.00");
     expect(tabela.series["1619"]?.["2025-01"]?.valor).toBe("1518.00");
     expect(tabela.series["1619"]?.["2026-01"]?.valor).toBe("1621.00");
-    // Os meses futuros do ano vêm publicados: dezembro do ano do último mês tem valor.
-    const ultimoMinimo = Object.keys(tabela.series["1619"] ?? {})
-      .sort()
-      .at(-1);
-    expect(ultimoMinimo).toMatch(/^\d{4}-12$/);
+    // Os meses futuros do ano vêm publicados (em 11/10/2026 a série já trazia dez/2026). Não se
+    // exige que o último mês seja dezembro: se o BCB publicar o ano novo aos poucos, a rotina não
+    // pode deixar de gravar as outras séries por isso.
+    expect(tabela.series["1619"]?.["2026-12"]).toBeDefined();
   });
 
   it("recusa arquivo de série em formato inesperado", () => {
