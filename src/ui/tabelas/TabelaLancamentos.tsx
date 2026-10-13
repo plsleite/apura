@@ -600,7 +600,12 @@ function Memoria({ linha }: { linha: LinhaDaTabela }) {
         <p>
           <strong>Memória · {nomeDoLancamento(linha.lancamento)}</strong>
         </p>
-        <p>Base: {calculado.memoriaBase}</p>
+        {/* com a base por períodos, a frase do motor já começa por "Base até/desde …" (§17.2) */}
+        <p>
+          {calculado.memoriaBase.startsWith("Base ")
+            ? calculado.memoriaBase
+            : `Base: ${calculado.memoriaBase}`}
+        </p>
         <p>
           Correção (fator {formatarFator(decimal(calculado.correcao.fator))}
           {calculado.correcao.pisoAplicado ? ", com piso no valor original" : ""}):

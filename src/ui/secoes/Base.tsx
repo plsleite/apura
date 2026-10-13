@@ -1,6 +1,13 @@
 import { useState } from "react";
+import { formatarData } from "../../compartilhado/formatacao.ts";
 import { decompor } from "../../compartilhado/datas.ts";
-import type { FormaDaBase, IndiceReajuste } from "../../compartilhado/tipos.ts";
+import type {
+  Base,
+  FormaDaBase,
+  IndiceReajuste,
+  PeriodoDaBase,
+} from "../../compartilhado/tipos.ts";
+import { periodosDaBaseOrdenados } from "../../motor/base.ts";
 import { CampoSelecao, CampoTexto, Opcao, useCampoValidado } from "../componentes/Campo.tsx";
 import {
   DATA_MAXIMA,
@@ -10,15 +17,19 @@ import {
   lerPercentual,
   lerValorPositivo,
 } from "../entrada.ts";
+import { dividirBase, removerDivisaoDaBase, tituloDoPeriodo, trocarForma } from "../estado/base.ts";
 import type { CampoDaBase, FaltaDaBase } from "../estado/faltas.ts";
 
 /**
- * Seção "2 · Base dos alimentos" (§9.2, §6.3): três formas, e só os campos da forma escolhida
- * aparecem. O mês do reajuste some quando o reajuste é pelo salário mínimo ou "nenhum"; em "% dos
- * rendimentos" o rendimento padrão é exigido. Cada forma guarda um rascunho, para que trocar de
- * forma e voltar não perca o que foi digitado. Explicações nos balões ⓘ dos campos. Com prestação
- * lançada pela base, o campo que falta fica em vermelho ("Informe o percentual."; decisão de
- * 13/10/2026).
+ * Seção "2 · Base dos alimentos" (§9.2, §6.3, §17.2): a base é uma lista de períodos seguidos.
+ * Com um período só, a seção é a de antes (três formas, e só os campos da forma escolhida
+ * aparecem), mais "Dividir em" no pé; com dois ou mais, um bloco por período, com o título ("Até
+ * 31/12/2024", "Desde 01/01/2025"), a forma e os campos dele e, menos no primeiro, "Remover
+ * divisão". O mês do reajuste some quando o reajuste é pelo salário mínimo ou "nenhum"; em "% dos
+ * rendimentos" o rendimento padrão é exigido. Cada período guarda um rascunho por forma, para que
+ * trocar de forma e voltar não perca o que foi digitado. Explicações nos balões ⓘ dos campos. Com
+ * prestação lançada pela base, o campo que falta fica em vermelho no bloco do período
+ * ("Informe o percentual."; decisões de 13/10/2026).
  */
 
 /** Erro do campo: o da leitura (texto inválido) ou, com o campo em branco, o de campo que falta. */
@@ -67,13 +78,14 @@ const OPCOES_DE_REAJUSTE: ReadonlyArray<{ valor: IndiceReajuste; rotulo: string 
 
 const OPCOES_DE_MES = NOMES_DOS_MESES.map((nome, i) => ({ valor: String(i + 1), rotulo: nome }));
 
-function rascunhosIniciais(base: FormaDaBase, hoje: string): Rascunhos {
-  const mes = decompor(hoje).mes;
+/** Rascunhos de um período; o valor fixo nasce fixado no início do período (o primeiro, hoje). */
+function rascunhosIniciais(base: FormaDaBase, fixacao: string): Rascunhos {
+  const mes = decompor(fixacao).mes;
   return {
     valorFixo: {
       tipo: "valorFixo",
       valor: "",
-      dataFixacao: hoje,
+      dataFixacao: fixacao,
       indiceReajuste: "nenhum",
       mesReajuste: mes,
     },
@@ -89,62 +101,171 @@ export function BaseDosAlimentos({
   faltas = [],
   aoMudar,
 }: {
-  base: FormaDaBase;
-  /** data de hoje, para o rascunho do valor fixo */
+  base: Base;
+  /** data de hoje, para o rascunho do valor fixo do primeiro período */
   hoje: string;
   /** campos que faltam para apurar as prestações lançadas (`faltasDaBase`) */
   faltas?: FaltaDaBase[];
-  aoMudar: (base: FormaDaBase) => void;
+  aoMudar: (base: Base) => void;
 }) {
-  const [rascunhos, setRascunhos] = useState(() => rascunhosIniciais(base, hoje));
-  const escolher = (tipo: FormaDaBase["tipo"]) => aoMudar(rascunhos[tipo]);
+  const periodos = periodosDaBaseOrdenados(base);
+  const varios = periodos.length > 1;
+  const [dataDaDivisao, setDataDaDivisao] = useState("");
+  const [avisoDaDivisao, setAvisoDaDivisao] = useState<string | null>(null);
+  const dividir = () => {
+    const leitura = lerData(dataDaDivisao);
+    if (!leitura.ok) {
+      setAvisoDaDivisao(leitura.erro);
+      return;
+    }
+    const { base: nova, aviso } = dividirBase(base, leitura.valor);
+    setAvisoDaDivisao(aviso ?? null);
+    if (aviso === undefined) {
+      setDataDaDivisao("");
+      aoMudar(nova);
+    }
+  };
+  const forma = (periodo: PeriodoDaBase, i: number) => (
+    <FormaDoPeriodo
+      forma={periodo.forma}
+      prefixo={i === 0 ? "base" : `base-${i}`}
+      fixacao={periodo.de ?? hoje}
+      faltas={faltas.filter((f) => f.periodo === i)}
+      aoMudar={(nova) => aoMudar(trocarForma(base, i, nova))}
+    />
+  );
+  return (
+    <section className="secao" aria-labelledby="titulo-base">
+      <h2 id="titulo-base">2 · Base dos alimentos</h2>
+      {periodos.map((periodo, i) => (
+        // a mesma estrutura com um ou com vários períodos (só o título e o papel de grupo
+        // mudam), e a chave é o início do período: dividir ou juntar não remonta os blocos que
+        // ficam, nem o primeiro, que guarda os rascunhos do que foi digitado em cada forma
+        <div
+          key={periodo.de ?? "inicio"}
+          className={varios ? "periodo" : undefined}
+          role={varios ? "group" : undefined}
+          aria-labelledby={varios ? `titulo-periodo-base-${i}` : undefined}
+        >
+          {varios ? (
+            <div className="titulo-do-periodo">
+              <h3 id={`titulo-periodo-base-${i}`}>{tituloDoPeriodo(periodo)}</h3>
+              {i > 0 && periodo.de !== null ? (
+                <button
+                  type="button"
+                  className="botao discreto"
+                  onClick={() => aoMudar(removerDivisaoDaBase(base, i))}
+                  aria-label={`Remover a divisão de ${formatarData(periodo.de)}`}
+                >
+                  Remover divisão
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {forma(periodo, i)}
+        </div>
+      ))}
+      <div className="linha dividir-base">
+        {varios ? null : <p className="nota">A base mudou ao longo do tempo?</p>}
+        <CampoTexto
+          id="base-dividir-em"
+          rotulo="Dividir em"
+          ajuda="A data informada passa a iniciar um período novo da base, com as mesmas regras do anterior; depois ajuste a forma e os valores de cada um. Ex.: valor fixo até 2024 e % do salário mínimo desde 2025."
+          tipo="date"
+          valor={dataDaDivisao}
+          aoMudar={(v) => {
+            setDataDaDivisao(v);
+            setAvisoDaDivisao(null);
+          }}
+          erro={avisoDaDivisao}
+          min="1900-01-01"
+          max={DATA_MAXIMA}
+        />
+        <button type="button" className="botao secundario" onClick={dividir}>
+          Dividir
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** A escolha da forma e os campos dela, num período (`prefixo` distingue os ids de cada bloco). */
+function FormaDoPeriodo({
+  forma,
+  prefixo,
+  fixacao,
+  faltas,
+  aoMudar,
+}: {
+  forma: FormaDaBase;
+  prefixo: string;
+  /** data de fixação do rascunho do valor fixo: o início do período (o primeiro, hoje) */
+  fixacao: string;
+  faltas: FaltaDaBase[];
+  aoMudar: (forma: FormaDaBase) => void;
+}) {
+  const [rascunhos, setRascunhos] = useState(() => rascunhosIniciais(forma, fixacao));
+  const escolher = (tipo: FormaDaBase["tipo"]) => {
+    // a forma atual entra nos rascunhos antes da troca: ela pode ter mudado por fora (o
+    // rendimento aplicado pelo lápis, um arquivo aberto) sem passar por este bloco
+    const atuais = { ...rascunhos, [forma.tipo]: forma };
+    setRascunhos(atuais);
+    aoMudar(atuais[tipo]);
+  };
   const atualizar = <T extends FormaDaBase>(nova: T) => {
     setRascunhos({ ...rascunhos, [nova.tipo]: nova });
     aoMudar(nova);
   };
+  const nome = prefixo === "base" ? "tipo-da-base" : `tipo-da-${prefixo}`;
   return (
-    <section className="secao" aria-labelledby="titulo-base">
-      <h2 id="titulo-base">2 · Base dos alimentos</h2>
+    <>
       <fieldset className="grupo">
         <legend>Como os alimentos foram fixados</legend>
         <Opcao
           tipo="radio"
-          nome="tipo-da-base"
+          nome={nome}
           rotulo="Valor fixo em reais"
-          marcado={base.tipo === "valorFixo"}
+          marcado={forma.tipo === "valorFixo"}
           aoMudar={() => escolher("valorFixo")}
         />
         <Opcao
           tipo="radio"
-          nome="tipo-da-base"
+          nome={nome}
           rotulo="% do salário mínimo"
-          marcado={base.tipo === "percentualSalarioMinimo"}
+          marcado={forma.tipo === "percentualSalarioMinimo"}
           aoMudar={() => escolher("percentualSalarioMinimo")}
         />
         <Opcao
           tipo="radio"
-          nome="tipo-da-base"
+          nome={nome}
           rotulo="% dos rendimentos"
-          marcado={base.tipo === "percentualRendimentos"}
+          marcado={forma.tipo === "percentualRendimentos"}
           aoMudar={() => escolher("percentualRendimentos")}
         />
       </fieldset>
-      {base.tipo === "valorFixo" ? (
-        <ValorFixo base={base} faltas={faltas} aoMudar={atualizar} />
-      ) : base.tipo === "percentualSalarioMinimo" ? (
-        <PercentualSalarioMinimo base={base} faltas={faltas} aoMudar={atualizar} />
+      {forma.tipo === "valorFixo" ? (
+        <ValorFixo base={forma} prefixo={prefixo} faltas={faltas} aoMudar={atualizar} />
+      ) : forma.tipo === "percentualSalarioMinimo" ? (
+        <PercentualSalarioMinimo
+          base={forma}
+          prefixo={prefixo}
+          faltas={faltas}
+          aoMudar={atualizar}
+        />
       ) : (
-        <PercentualRendimentos base={base} faltas={faltas} aoMudar={atualizar} />
+        <PercentualRendimentos base={forma} prefixo={prefixo} faltas={faltas} aoMudar={atualizar} />
       )}
-    </section>
+    </>
   );
 }
 
 function ValorFixo({
   base,
+  prefixo,
   faltas,
   aoMudar,
 }: {
+  prefixo: string;
   base: BaseValorFixo;
   faltas: FaltaDaBase[];
   aoMudar: (base: BaseValorFixo) => void;
@@ -174,7 +295,7 @@ function ValorFixo({
     <>
       <div className="linha">
         <CampoTexto
-          id="base-valor"
+          id={`${prefixo}-valor`}
           rotulo="Valor fixado"
           valor={valor.texto}
           aoMudar={valor.aoMudar}
@@ -185,7 +306,7 @@ function ValorFixo({
           placeholder="ex.: 1.000,00"
         />
         <CampoTexto
-          id="base-fixacao"
+          id={`${prefixo}-fixacao`}
           rotulo="Fixado em"
           ajuda="Data da sentença ou do acordo que fixou o valor. O mês do reajuste acompanha esta data, salvo se você escolher outro."
           tipo="date"
@@ -197,7 +318,7 @@ function ValorFixo({
           max={DATA_MAXIMA}
         />
         <CampoSelecao
-          id="base-reajuste"
+          id={`${prefixo}-reajuste`}
           rotulo="Reajuste anual"
           ajuda={
             base.indiceReajuste === "nenhum"
@@ -212,7 +333,7 @@ function ValorFixo({
         />
         {comMes ? (
           <CampoSelecao
-            id="base-mes-reajuste"
+            id={`${prefixo}-mes-reajuste`}
             rotulo="Mês do reajuste"
             valor={String(base.mesReajuste)}
             opcoes={OPCOES_DE_MES}
@@ -226,9 +347,11 @@ function ValorFixo({
 
 function PercentualSalarioMinimo({
   base,
+  prefixo,
   faltas,
   aoMudar,
 }: {
+  prefixo: string;
   base: BasePercentualSM;
   faltas: FaltaDaBase[];
   aoMudar: (base: BasePercentualSM) => void;
@@ -243,7 +366,7 @@ function PercentualSalarioMinimo({
     <>
       <div className="linha">
         <CampoTexto
-          id="base-percentual-sm"
+          id={`${prefixo}-percentual-sm`}
           rotulo="Percentual do salário mínimo"
           ajuda="Percentual × salário mínimo oficial do mês de cada vencimento (valor publicado pelo Banco Central). Mês ainda sem salário mínimo publicado usa o último publicado, com aviso."
           valor={percentual.texto}
@@ -261,9 +384,11 @@ function PercentualSalarioMinimo({
 
 function PercentualRendimentos({
   base,
+  prefixo,
   faltas,
   aoMudar,
 }: {
+  prefixo: string;
   base: BasePercentualRendimentos;
   faltas: FaltaDaBase[];
   aoMudar: (base: BasePercentualRendimentos) => void;
@@ -284,7 +409,7 @@ function PercentualRendimentos({
     <>
       <div className="linha">
         <CampoTexto
-          id="base-percentual-rendimentos"
+          id={`${prefixo}-percentual-rendimentos`}
           rotulo="Percentual dos rendimentos"
           valor={percentual.texto}
           aoMudar={percentual.aoMudar}
@@ -295,7 +420,7 @@ function PercentualRendimentos({
           placeholder="ex.: 30"
         />
         <CampoTexto
-          id="base-rendimento-padrao"
+          id={`${prefixo}-rendimento-padrao`}
           rotulo="Rendimento mensal padrão (obrigatório)"
           ajuda="Percentual × rendimento do mês. O rendimento padrão vale para todas as prestações; quando o rendimento mudar, ou para 13º e férias, informe o rendimento daquele mês na própria prestação (lápis na tabela)."
           valor={rendimento.texto}

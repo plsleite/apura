@@ -855,9 +855,23 @@ td.dica {
   margin-bottom: 8px;
 }
 
-.periodo > h3 {
+.periodo > h3,
+.titulo-do-periodo > h3 {
   font-size: 13px;
   margin-bottom: 6px;
+}
+
+/* base dos alimentos por períodos (§17.2): título do bloco e "Remover divisão" na mesma linha */
+.titulo-do-periodo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dividir-base > .nota {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 /* ---- Celular: campos lado a lado empilham; o balão da ajuda vira uma faixa no pé da tela ---- */
