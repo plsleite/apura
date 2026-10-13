@@ -13396,7 +13396,7 @@ A integração na `main` (merge local pela pasta principal, com commit de merge)
 
 ## Estado
 
-Fase 5: plano escrito em 12/10/2026 e ajustado em 13/10/2026 (D16 a D29), ensaiado e reconstruído tarefa por tarefa; execução a começar depois da escolha do responsável (subagentes com revisor a cada tarefa, ou execução direta com revisão no fim).
+Fase 5: plano escrito em 12/10/2026 e ajustado em 13/10/2026 (D16 a D29), ensaiado e reconstruído tarefa por tarefa, e executado em 13/10/2026 por subagentes, com um revisor a cada tarefa (Tasks 1 a 14 por Claude Sonnet 5.5; Task 15 e coordenação por Claude Opus 5.5). As contagens de testes conferiram com as do plano em todas as tarefas (788 passados e 9 pulados, 797 no total, em 43 arquivos ao fim). A integração na `main` aguarda a decisão do responsável sobre os nove itens que a revisão final recomendou corrigir antes dela, listados em "Pendências registradas na execução da fase 5".
 
 ## Notas para as fases seguintes (ganchos deixados por esta fase)
 
@@ -13406,13 +13406,64 @@ Fase 5: plano escrito em 12/10/2026 e ajustado em 13/10/2026 (D16 a D29), ensaia
 
 ### Pendências registradas na execução da fase 5
 
-(A preencher na Task 16, Step 4, no formato das fases anteriores: achados das revisões por fase de destino, melhorias menores sem fase, decisões tomadas na execução.)
+Achados das revisões que ficaram para depois, agrupados por destino, e as decisões tomadas na execução. Os itens abaixo reúnem os ganchos já conhecidos ao escrever o plano, os achados das revisões por tarefa e os da revisão final da branch. Por decisão do responsável (seguir o plano à risca), nenhuma correção fora do plano foi feita durante a execução: tudo o que as revisões acharam está registrado aqui.
+
+**Decisões tomadas na execução**
+
+- Modo de execução: subagentes com revisor a cada tarefa (`superpowers:subagent-driven-development`), em 13/10/2026, na branch `claude/fase-5-interface-exec-4c6026` (pasta de trabalho separada), a partir de `5924170`.
+- Quem fez o quê: implementação das Tasks 1 a 14 por Claude Sonnet 5.5, um subagente por tarefa, com o código extraído do plano sem alteração. Revisões por tarefa: Claude Sonnet 5.5 nas Tasks 1 a 9, 11, 13 e 14, e Claude Opus 5.5 nas Tasks 10 e 12. A Task 15 (conferência no navegador) e a coordenação foram de Claude Opus 5.5, que também fez a revisão final da branch.
+- Contagens medidas ao fim de cada tarefa, todas iguais às do plano: 1 → 682 passando e 9 pulados (691), 23 arquivos; 2 → 685 (694), 24; 3 → 698 (707), 25; 4 → 709 (718), 26; 5 → 725 (734), 30; 6 → 731 (740), 32; 7 → 741 (750), 34; 8 → 748 (757), 36; 9 → 752 (761), 37; 10 → 767 (776), 39; 11 → 773 (782), 40; 12 → 786 (795), 43; 13 → 788 (797), 43; 14 → 788 (797), 43. Os passos "ver falhar" bateram com os do plano; única nota: quando faltam dois imports no mesmo arquivo de teste, o Vite relata um ou outro (Task 7), o que não é discrepância.
+- Task 14 (identidade visual): o logo gerado tem 368 × 88 px e 31.716 bytes, com SHA-256 igual ao do ensaio. O `npm install` dessa tarefa também corrigiu o `engines.node` da raiz do `package-lock.json`, que estava em `>=22.18` desde a Task 2.
+- Task 15 (conferência no navegador): nenhum ajuste de CSS e nenhum commit. Observado: a Source Sans 3 no peso 600 não carrega hoje (o peso só é usado pelo botão "Relatório / PDF" ligado, da fase 6); a 1024 px as tabelas (603 e 592 px de largura) passam da coluna (540 px), e o lápis e o ✕ ficam fora da vista, na rolagem própria da tabela.
+
+**Recomendados pela revisão final antes da integração na `main` (aguardam decisão do responsável)**
+
+São nove itens que a revisão final da branch recomenda corrigir antes de mesclar na `main`. Nenhum foi corrigido; cada um traz o defeito e a correção sugerida.
+
+1. **"0.500" e "0.075" lidos como 500 e 75.** Em `entrada.ts`, o padrão `COM_MILHARES` aceita "0" como primeiro grupo, e a leitura multiplica o valor ou o percentual por 1.000 sem aviso. Correção: o primeiro grupo começa por 1 a 9, com uma asserção de teste.
+2. **Painel (`Dialogo.tsx`) perde o foco.** O Esc e o ciclo do Tab dependem de o foco estar num controle do painel. Clicar no título ou numa área vazia, ou usar "Remover divisão" ou "Restaurar a metodologia padrão" (o botão com foco some da tela), deixa o foco no `body`, e o Tab sai do painel. Correção: `tabIndex={-1}` no painel e devolver o foco a ele, ou tratar Esc e Tab no `document`.
+3. **Enter segurado acrescenta linhas em silêncio.** Com a tecla repetindo, o Enter em "+ Prestação" e "+ Pagamento", e depois da exclusão pelo ✕, acrescenta linhas sugeridas sem que se perceba (reproduzido por um teste-sonda). Correção: ignorar `evento.repeat` no Enter da linha nova e no "+", com um teste `{Enter>N}`.
+4. **Os recentes pesam demais.** Guardam o envelope inteiro, e a memória do resultado é cerca de 98% dele: aproximadamente 1 MB por cálculo de 60 meses e 3,5 MB de 120. Cinco cálculos de cinco anos estouram a cota do `localStorage`, e o cálculo atual deixa de entrar nos recentes sem aviso; a cada tecla o App lê e regrava megabytes. Isto muda a decisão D5. Sugestão: guardar só o `calculo` e, do resultado, `indicesUsados` e `consultaIndices`, em JSON compacto, e avisar no "Abrir" quando a gravação falhar.
+5. **Data sem teto de ano.** Um arquivo adulterado com `dataElaboracao` no ano 9999 faz o motor lançar erro ao abrir (sem frase no painel) ou calcular por minutos; digitar o ano 9999 na tela apaga a página (não há tela de erro de reserva). Sugestão: um teto comum (por exemplo, 2199) em `lerData`, `lerDataTexto` e `arquivo.ts`, e `max` nos campos de data; `try/catch` em `abrirTexto` e em `arquivo.text()`. A tela de erro de reserva pode ficar para a fase 6.
+6. **"Aplicar este rendimento daqui em diante" passa por cima de 13º e férias.** A ação (`estado/calculo.ts`) sobrescreve o rendimento de 13º e férias avulsos (com descrição) lançados depois e os marca "ajustada". Correção: pular as prestações com descrição (mesma regra da D1), com teste do redutor.
+7. **"Personalizar" → "Aplicar" apaga rendimentos.** Quando a base não é "% dos rendimentos", o painel apaga o rendimento por lançamento; quem compara bases perde os rendimentos de 13º e férias. Correção: manter `lancamento.rendimento` quando a forma da base não usa rendimento.
+8. **Frase da etiqueta "não computada".** O texto manda "clicar no nome da linha", mas a memória abre pelo ▸. Correção de uma frase.
+9. **Digitação válida pisca erro.** Ao digitar "1.500,00", o campo fica vermelho em "1.", "1.5", "1.50" e "1.500," (com a frase do ponto decimal e `role="alert"` a cada passagem). Pede decisão sobre a D4: aceitar "1.500," como incompleto válido e mostrar o erro de formato só ao sair do campo (o estado já só recebe valores válidos).
+
+**Fase 6**
+
+- O relatório força o tema claro na impressão mesmo com `data-theme="dark"`; decide como mostrar a linha "ignorado" e os valores informados à mão (hoje etiquetas na tela); traz o CSS de impressão; e liga o botão "Relatório / PDF" (classe `relatorio`). (Já conhecido ao escrever o plano.)
+- Tela de erro de reserva (error boundary): hoje qualquer exceção do motor apaga a página.
+- Indicadores e caixa de avisos sem região viva: o leitor de tela não é avisado do recálculo.
+- Revisão visual: o logo é exibido a 48 px (o texto do plano fala em 44); itálico sintetizado e peso 700 caindo para 600 (só os pesos 400/600 e 500/700 estão embutidos); a 1024 px o lápis e o ✕ ficam na rolagem da tabela (considerar subir o ponto de duas colunas para cerca de 1200 px ou fixar a coluna de ações).
+
+**Fase 7**
+
+- Versão `0.1.0` no `package.json`; `actions/setup-node` com um Node que satisfaça o `engines` (`>=22.22.2`, já ajustado na Task 2). (Já conhecido ao escrever o plano.)
+- `revokeObjectURL` síncrono no download (`ambiente.ts`): conferir o "Salvar" no Safari.
+- `crypto.randomUUID` exige contexto seguro: em HTTP simples na intranet o app quebraria ao abrir (a publicação prevista é em HTTPS).
+
+**Sem fase (melhorias menores)**
 
 Já conhecidas ao escrever o plano:
 
-- **Fase 6.** O relatório força o tema claro na impressão mesmo com `data-theme="dark"`. O relatório decide como mostrar a linha "ignorado" e os valores informados à mão (hoje etiquetas na tela); o CSS de impressão; o botão "Relatório / PDF" (classe `relatorio`).
-- **Fase 7.** Versão `0.1.0` no `package.json`; `actions/setup-node` com um Node que satisfaça o `engines` (`>=22.22.2`, já ajustado na Task 2).
-- **Sem fase (melhorias menores).** Recálculo a cada tecla sem adiamento (cerca de 90 ms com 180 lançamentos); sem confirmação em "Novo cálculo" e sem "desfazer" depois de uma exclusão confirmada; ao abrir pelo "Abrir" um cálculo com os mesmos ids das linhas que estavam com a memória aberta (por exemplo, o mesmo cálculo de novo), essas memórias continuam abertas; Tab numa célula em edição grava e leva o foco à célula seguinte sem abri-la (Enter abre); o foco do painel vai para o primeiro controle, sem preferir o campo mais relevante; `Opcao` (caixa ou rádio) tem o rótulo por envolvimento (`<label>` em volta), não por `for`; a tabela mostra "Valor" como a soma dos valores-base das linhas computadas, e o "Fator" dos pagamentos repete o das prestações do mesmo mês (correto, mas o SAJ não imprime fator de pagamento).
+- Recálculo a cada tecla sem adiamento (cerca de 90 ms com 180 lançamentos); sem confirmação em "Novo cálculo" e sem "desfazer" depois de uma exclusão confirmada.
+- Ao abrir pelo "Abrir" um cálculo com os mesmos ids das linhas que estavam com a memória aberta (por exemplo, o mesmo cálculo de novo), essas memórias continuam abertas. **Não se confirmou na execução:** o App remonta a coluna direita a cada abertura, e as memórias fecham.
+- Tab numa célula em edição grava e leva o foco à célula seguinte sem abri-la (Enter abre); o foco do painel vai para o primeiro controle, sem preferir o campo mais relevante; `Opcao` (caixa ou rádio) tem o rótulo por envolvimento (`<label>` em volta), não por `for`; a tabela mostra "Valor" como a soma dos valores-base das linhas computadas, e o "Fator" dos pagamentos repete o das prestações do mesmo mês (correto, mas o SAJ não imprime fator de pagamento).
+
+Achados das revisões:
+
+- Redutor: editar ou excluir com id inexistente marca `tocado`; `MudancasDoLancamento` aceita `{ data: undefined }`; o JSDoc de `novoCalculo` diz multa e honorários a zero (são 10%, D26); JSDoc duplicado sobre `MudancasDoLancamento`; lacunas de teste (`tocado` e `atualizadoEm` nas ações de linha, reordenação ao mudar a data, id inexistente).
+- Campos: `CampoArea` e `CampoSelecao` não põem `aria-invalid`; o retorno de `gravarPreferencias` é ignorado (falha de gravação sem aviso); religar "Lembrar" grava os nomes antigos até a próxima tecla; o teste "sem armazenamento" da seção 1 não afirma que nada foi gravado; máscara do processo: tecla que não muda o texto leva o cursor ao fim.
+- Metodologia: sair de "SELIC única" mantém o índice "nenhum" (muda o número; pede decisão de qual índice voltar); `ehPadrao` compara a taxa como texto ("1.0" ≠ "1"); `<p aria-labelledby>` no resumo e "Ajustar" sem vínculo ao resumo.
+- Painel: sem `inert` nem trava de rolagem no fundo; a volta do Tab segue a ordem do DOM.
+- Lotes: o aviso do lote fica sob o formulário enquanto se edita outra coisa; a leitura do intervalo está duplicada nos dois formulários.
+- Tabelas: Esc só desarma o ✕ com foco nele (clique fora e 4 segundos também desarmam); `linhas !== linhasVistas` compara um array recriado a cada render (render extra; comparar com `calculo.lancamentos`); `aria-label` num `<dl>` nos indicadores; mudar o vencimento para um mês que já tem prestação não avisa.
+- Personalizar: termo final anterior ao próprio vencimento é aceito sem aviso; "Aplicar este rendimento daqui em diante" descarta as outras edições do painel; "Aplicar" sem mudança marca "ajustada" (a célula não marca); Enter dentro do painel (em "Dividir em uma data" ou na taxa das regras próprias) envia o painel inteiro.
+- Linha nova: em "% dos rendimentos", ignora o rendimento aplicado daqui em diante (usa o rendimento padrão).
+- Arquivo e recentes: aceita valores que a tela não produz (taxa mensal negativa, casas de 0 a 20, ids duplicados, que colidem como chave e fazem "excluir" remover os dois); confia em `metodologia.ajustada` do arquivo (rodar `normalizar`); prestação sem competência no arquivo é aceita (o lote duplica o mês); `removerRecente` devolve a lista filtrada mesmo se a gravação falhar; campo de arquivo sem `aria-invalid`; expressão regular com caracteres combinantes invisíveis em `arquivo.ts:41` (usar `\u0300-\u036f`); `src/ui/Abrir.test.tsx` com modo 100755.
+- Desempenho: campos que não vão ao motor (nomes, processo, observações) recalculam tudo e regravam os recentes a cada tecla.
+- Comentários: `BarraSuperior` cita a D9 como 13/10 (é 12/10).
 
 ## Auto-revisão do plano
 

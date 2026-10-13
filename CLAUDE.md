@@ -27,18 +27,31 @@ de decidir, uma pergunta por vez, em múltipla escolha com a opção recomendada
 
 ## Estado
 
-Fase 4 (índices: rotina central e monitoramento) concluída em 2026-10-12: o app não consulta o BCB e
-lê só a cópia publicada com o site; uma rotina do GitHub Actions, ativa a partir da fase 7 (de
-segunda a sexta, 10h47, 14h17 e 22h47 de Brasília), baixa as seis séries, grava série por série só o
-que mudou, confere tudo com `npm run verificar` e faz commit descritivo na `main`; congelamento por
-cálculo (`congelarIndices`, síncrono), com a data real dos índices no horário de Brasília, rodapé e
-avisos do calendário ("ainda não chegou ao Apura"); aviso ao reabrir com os índices que mudaram
-(`compararIndicesUsados`); avisos do motor "ainda sem divulgação na data da consulta", com a
-previsão, quando a tabela traz `esperadoAte`; mês parcial da SELIC deduzido do `obtidoEm` do próprio
-valor; monitoramento gratuito (resumo de cada execução, alarme de silêncio no Healthchecks.io,
-relatório mensal em `docs/monitoramento/`); respostas reais do SGS gravadas para os testes. Os dois
-workflows só são testados na fase 7. Próxima: fase 5 (interface), com plano a escrever. A tabela de
-fases do roteiro é a referência; atualize-a e esta seção ao concluir cada fase.
+Fase 5 (interface) concluída em 2026-10-13: tela única em duas colunas em `src/ui/` (React),
+que edita o `Calculo` por um redutor puro (`estado/calculo.ts`) e recalcula a cada alteração;
+cinco seções à esquerda (processo, com o número no padrão do CNJ conferido pelos dígitos e defensor e
+órgão lembrados no navegador; base dos alimentos
+em três formas; prestações e pagamentos em lote, cumulativos; encargos, com o editor de metodologia
+por períodos, multa, honorários, data de elaboração e observações); à direita, cinco indicadores,
+tabelas de prestações e amortizações com memória por lançamento, vencimento e valor editáveis na
+própria linha, "Personalizar" (lápis) para os ajustes finos, exclusão em dois cliques (o ✕ fica vermelho
+no primeiro) e linha nova já sugerida (`estado/novaLinha.ts`), e a caixa de avisos (calendário dos índices,
+abertura de arquivo e motor); explicações em balões ⓘ (`componentes/Ajuda.tsx`), sem menção a outros
+sistemas; o vencimento é a referência de cada linha (a competência não aparece na tela);
+"Salvar" e "Abrir" (`arquivo.ts` valida tudo o que vem do arquivo; recálculo com os índices de
+hoje e `compararIndicesUsados`); cinco cálculos recentes e preferências só no `localStorage`
+(`recentes.ts`, `preferencias.ts`, com "Esquecer"); tema do sistema, claro ou escuro pelo botão da
+barra, guardado nas preferências; identidade visual da DPE-MS (logo em `public/logos/`, fontes Ubuntu
+e Source Sans 3 pelos pacotes `@fontsource`, importadas no `main.tsx`); tudo o
+que vem do navegador entra pelo `Ambiente` (`ambiente.ts`), trocado nos testes de componente
+(Testing Library + jsdom, só nos arquivos marcados `// @vitest-environment jsdom`; o ambiente de
+teste usa a tabela fixa de 2024–2026 dos testes do motor, nunca a cópia publicada). Motor:
+percentuais de multa e honorários e taxa mensal inválidos valem zero, com aviso; o lote considera
+ocupada a competência das prestações de lote e das avulsas sem descrição (13º e férias avulsos não a
+ocupam), e os avisos do lote falam em mês de vencimento. "Relatório
+/ PDF" está na barra, desligado, até a fase 6. Próxima: fase 6 (relatório e PDF), com plano a
+escrever. A tabela de fases do roteiro é a referência; atualize-a e esta seção ao concluir cada
+fase.
 
 ## Comandos
 
@@ -71,6 +84,7 @@ docs/referencia/          briefing original, relatório de exemplo
 docs/superpowers/specs/   design e visão
 docs/superpowers/plans/   planos de implementação (um por fase)
 docs/monitoramento/       relatórios mensais da rotina de índices (gerados pelo workflow)
+public/logos/             logo da DPE-MS reduzido para a barra da tela (gerado do PNG do manual)
 scripts/                  atualizar-indices.ts · relatorio-indices.ts (com o teste dele)
 src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
 src/motor/                periodos.ts · correcao.ts · juros.ts · lote.ts · base.ts · calcular.ts · casos/ (casos de referência)
@@ -78,7 +92,7 @@ src/motor/testes/         dados de teste: IGP-M e salário mínimo de 2017–201
 src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
 src/indices/testes/       respostas reais do SGS gravadas em 10 e 11/10/2026 e execuções sintéticas da rotina
 src/metodologias/         tjms-saj.v1.json · padrao.ts
-src/ui/                   interface (fase 5)
+src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ (calculo.ts · metodologia.ts · novaLinha.ts) · secoes/ · tabelas/ · componentes/ · testes/ (ambiente de teste)
 src/relatorio/            relatório e impressão (fase 6)
 ```
 
@@ -94,6 +108,8 @@ src/relatorio/            relatório e impressão (fase 6)
    percentual de juros multiplicam com precisão integral e são impressos com 6 casas (convenção do
    SAJ, decidida em 11/10/2026). Os juros incidem sobre o corrigido sem arredondar:
    `jurosValor = arred2(valorBase × fator × percentual ÷ 100)` (fase 3).
+   A tela lê o que o usuário digita com `src/ui/entrada.ts` (vírgula nos centavos; ponto só de milhar;
+   "1.5" é recusado) e só põe no `Calculo` texto decimal válido.
 3. **Datas como texto ISO** (`"AAAA-MM-DD"`, competências `"AAAA-MM"`), com os utilitários de
    `src/compartilhado/datas.ts`. Nada de `Date` no motor.
 4. **Motor puro.** `src/motor/` não usa `Date.now()`, `fetch`, DOM ou armazenamento; recebe o
@@ -104,6 +120,8 @@ src/relatorio/            relatório e impressão (fase 6)
    passado pelo script, e o relatório mensal é puro (recebe o mês, as execuções e o texto do
    `git log` já lidos), para que nenhum teste use a rede; disco, git e argumentos ficam nos scripts
    de `scripts/`, os únicos com os tipos do Node; `new Date()` só em `src/indices/relogio.ts`.
+   Na interface, relógio, ids, armazenamento e download entram pelo `Ambiente` (`src/ui/ambiente.ts`),
+   trocado nos testes de componente; nenhum teste depende dos últimos meses de `dados/indices/`.
 5. **Português no domínio** (`prestacao`, `amortizacao`, `fatorCorrecao`, `metodologia`);
    infraestrutura técnica com os nomes usuais em inglês. Commits e documentação em português,
    mensagens no formato "módulo: o que muda".
