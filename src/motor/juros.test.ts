@@ -95,6 +95,31 @@ describe("jurosSimples (regime antigo: percentual mensal rateado por mês-calend
     expect(r.detalhe[1]).toMatchObject({ dias: 5, diasDoMes: 31, percentual: "0.161290" });
   });
 
+  it("taxa mensal inválida não derruba o motor: o trecho fica sem juros, com aviso", () => {
+    const invalida: Metodologia = {
+      ...padrao,
+      periodos: [
+        {
+          de: null,
+          ate: null,
+          correcao: { indice: "IGP-M" },
+          juros: { tipo: "percentualMensal", taxaMensal: "1,5" },
+        },
+      ],
+    };
+    const r = jurosSimples({
+      ...antigo,
+      metodologia: invalida,
+      termoInicial: "2018-01-10",
+      termoFinal: "2018-02-20",
+    });
+    expect(paraTexto(r.percentual, 6)).toBe("0.000000");
+    expect(r.detalhe).toEqual([]);
+    expect(r.avisos).toEqual([
+      'Taxa mensal de juros inválida ("1,5") no trecho de 10/01/2018 a 20/02/2018: esses dias ficaram sem juros.',
+    ]);
+  });
+
   it("um único dia rende 1/diasDoMes da taxa; termo inicial posterior ao final rende zero", () => {
     const umDia = jurosSimples({ ...antigo, termoInicial: "2018-05-25", termoFinal: "2018-05-25" });
     expect(paraTexto(umDia.percentual, 6)).toBe("0.032258");

@@ -65,14 +65,14 @@ export function competenciasDoLote(
     ) {
       return {
         competencias: [],
-        avisos: ["Informe as competências inicial e final do lote (mês/ano)."],
+        avisos: ["Informe o mês do primeiro e do último vencimento do lote (mês/ano)."],
       };
     }
     if (lote.ate < lote.de) {
       return {
         competencias: [],
         avisos: [
-          `Competência final (${formatarCompetencia(lote.ate)}) anterior à inicial (${formatarCompetencia(lote.de)}): nenhuma prestação lançada.`,
+          `Mês final (${formatarCompetencia(lote.ate)}) anterior ao inicial (${formatarCompetencia(lote.de)}): nenhuma prestação lançada.`,
         ],
       };
     }
@@ -82,13 +82,13 @@ export function competenciasDoLote(
   if (meses === undefined || !Number.isInteger(meses) || meses < 1) {
     return {
       competencias: [],
-      avisos: ["Informe quantos meses estão em atraso (1 ou mais) ou o intervalo de competências."],
+      avisos: ["Informe quantos meses estão em atraso (1 ou mais) ou o intervalo de vencimentos."],
     };
   }
   let ultima = competenciaDe(dataElaboracao);
   if (dataNoMes(ultima, lote.diaVencimento) > dataElaboracao) {
     if (ultima === PRIMEIRA_COMPETENCIA) {
-      return { competencias: [], avisos: ["Não há competência anterior a jan/1900 para lançar."] };
+      return { competencias: [], avisos: ["Não há vencimento anterior a jan/1900 para lançar."] };
     }
     ultima = mesAnterior(ultima);
   }
@@ -99,7 +99,7 @@ export function competenciasDoLote(
     if (atual === PRIMEIRA_COMPETENCIA) {
       if (i + 1 < meses) {
         avisos.push(
-          `As datas do motor começam em jan/1900: lançadas ${competencias.length} competências em vez de ${meses}.`,
+          `As datas do motor começam em jan/1900: lançadas ${competencias.length} prestações em vez de ${meses}.`,
         );
       }
       break;
@@ -111,7 +111,8 @@ export function competenciasDoLote(
 
 /**
  * Gera as prestações do lote, sem valor informado (o motor apura pela base, §6.3), pulando as
- * competências que já têm prestação na lista (§6.1: lotes cumulativos não duplicam). O
+ * competências que já têm prestação de lote ou avulsa sem descrição na lista (§6.1: lotes
+ * cumulativos não duplicam; um 13º ou férias avulsos, com descrição, não ocupam a competência). O
  * vencimento é o dia escolhido ou o último dia do mês quando o mês é mais curto.
  */
 export function gerarLotePrestacoes(
@@ -120,8 +121,15 @@ export function gerarLotePrestacoes(
   existentes: Lancamento[],
 ): LoteGerado {
   const { competencias, avisos } = competenciasDoLote(lote, dataElaboracao);
+  // Ocupam a competência as prestações do próprio lote (mesmo anotadas no lápis) e as avulsas sem
+  // descrição; uma avulsa com descrição (13º salário, férias) é um extra, e o lote ainda lança a
+  // prestação do mês (decisão de 12/10/2026).
   const jaLancadas = new Set(
-    existentes.filter((l) => l.tipo === "prestacao").map((l) => l.competencia),
+    existentes
+      .filter(
+        (l) => l.tipo === "prestacao" && (l.origem === "lote" || (l.descricao ?? "").trim() === ""),
+      )
+      .map((l) => l.competencia),
   );
   const lancamentos: Lancamento[] = [];
   const pulados: Competencia[] = [];
@@ -141,11 +149,13 @@ export function gerarLotePrestacoes(
   }
   if (pulados.length > 0) {
     avisos.push(
-      `Competências já lançadas, não repetidas: ${pulados.map(formatarCompetencia).join(", ")}.`,
+      `Meses de vencimento já lançados, não repetidos: ${pulados.map(formatarCompetencia).join(", ")}.`,
     );
   }
   if (competencias.length > 0 && lancamentos.length === 0) {
-    avisos.push("Nenhuma prestação nova: todas as competências do lote já estavam lançadas.");
+    avisos.push(
+      "Nenhuma prestação nova: todos os meses de vencimento do lote já estavam lançados.",
+    );
   }
   return { lancamentos, pulados, avisos };
 }

@@ -67,6 +67,14 @@ function semValor(
   return { valor: null, memoria, indicesUsados: [], mesesSemIndice, avisos: [aviso] };
 }
 
+/**
+ * Campo da base deixado em branco (a tela ainda não o recebeu): aviso próprio, em vez de "não é um
+ * número válido", que fica para o texto de fato inválido (arquivo editado à mão).
+ */
+function semCampo(nome: string): ValorBaseApurado {
+  return semValor(`${nome} não informado`, `${nome} não informado: a prestação ficou sem valor.`);
+}
+
 function registro(
   tabela: TabelaIndices,
   serie: CodigoSerie,
@@ -135,6 +143,7 @@ function porSalarioMinimo(
   tabela: TabelaIndices,
   valorCasas: number,
 ): ValorBaseApurado {
+  if (percentualTexto.trim() === "") return semCampo("Percentual do salário mínimo");
   const percentual = decimalOuNulo(percentualTexto);
   if (percentual === null) {
     return semValor(
@@ -179,6 +188,7 @@ function porRendimentos(
   competencia: Competencia,
   valorCasas: number,
 ): ValorBaseApurado {
+  if (base.percentual.trim() === "") return semCampo("Percentual dos rendimentos");
   const percentual = decimalOuNulo(base.percentual);
   if (percentual === null) {
     return semValor(
@@ -189,6 +199,7 @@ function porRendimentos(
   const proprio = lancamento.rendimento !== undefined;
   const texto = lancamento.rendimento ?? base.rendimentoPadrao;
   const origem = proprio ? `de ${formatarCompetencia(competencia)}` : "padrão";
+  if (texto.trim() === "") return semCampo(`Rendimento ${origem}`);
   const rendimento = decimalOuNulo(texto);
   if (rendimento === null) {
     return semValor(
@@ -361,6 +372,7 @@ function porValorFixo(
   tabela: TabelaIndices,
   valorCasas: number,
 ): ValorBaseApurado {
+  if (base.valor.trim() === "") return semCampo("Valor fixado");
   const fixado = decimalOuNulo(base.valor);
   if (fixado === null) {
     return semValor(

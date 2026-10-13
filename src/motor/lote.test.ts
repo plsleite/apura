@@ -108,7 +108,7 @@ describe("lote de prestações (§6.1)", () => {
     expect(segundo.lancamentos.map((l) => l.id)).toEqual(["p-2026-10"]);
     expect(segundo.pulados).toEqual(["2026-07", "2026-08", "2026-09"]);
     expect(segundo.avisos).toEqual([
-      "Competências já lançadas, não repetidas: jul/2026, ago/2026, set/2026.",
+      "Meses de vencimento já lançados, não repetidos: jul/2026, ago/2026, set/2026.",
     ]);
     const terceiro = gerarLotePrestacoes(
       { diaVencimento: 10, de: "2026-06", ate: "2026-08" },
@@ -117,9 +117,47 @@ describe("lote de prestações (§6.1)", () => {
     );
     expect(terceiro.lancamentos).toEqual([]);
     expect(terceiro.avisos).toEqual([
-      "Competências já lançadas, não repetidas: jun/2026, jul/2026, ago/2026.",
-      "Nenhuma prestação nova: todas as competências do lote já estavam lançadas.",
+      "Meses de vencimento já lançados, não repetidos: jun/2026, jul/2026, ago/2026.",
+      "Nenhuma prestação nova: todos os meses de vencimento do lote já estavam lançados.",
     ]);
+  });
+
+  it("prestação avulsa com descrição (13º, férias) não ocupa a competência: o lote lança a prestação comum do mês (decisão de 12/10/2026)", () => {
+    const decimoTerceiro: Lancamento = {
+      id: "p-2025-12",
+      tipo: "prestacao",
+      data: "2025-12-20",
+      competencia: "2025-12",
+      descricao: "13º salário 2025",
+      rendimento: "3000.00",
+      origem: "avulso",
+      editado: false,
+    };
+    const lote = gerarLotePrestacoes(
+      { diaVencimento: 10, de: "2025-11", ate: "2025-12" },
+      "2026-10-11",
+      [decimoTerceiro],
+    );
+    expect(lote.lancamentos.map((l) => [l.id, l.competencia])).toEqual([
+      ["p-2025-11", "2025-11"],
+      ["p-2025-12-2", "2025-12"],
+    ]);
+    expect(lote.pulados).toEqual([]);
+    expect(lote.avisos).toEqual([]);
+    // descrição vazia ou só com espaços não conta como descrição: a competência fica ocupada
+    const comum: Lancamento = { ...decimoTerceiro, id: "x", descricao: "  " };
+    expect(
+      gerarLotePrestacoes({ diaVencimento: 10, de: "2025-12", ate: "2025-12" }, "2026-10-11", [
+        comum,
+      ]).pulados,
+    ).toEqual(["2025-12"]);
+    // uma prestação do próprio lote que ganhou descrição no lápis continua ocupando a competência
+    const doLote: Lancamento = { ...decimoTerceiro, origem: "lote", descricao: "conforme acordo" };
+    expect(
+      gerarLotePrestacoes({ diaVencimento: 10, de: "2025-12", ate: "2025-12" }, "2026-10-11", [
+        doLote,
+      ]).pulados,
+    ).toEqual(["2025-12"]);
   });
 
   it("ids não colidem com os existentes", () => {
@@ -145,7 +183,7 @@ describe("lote de prestações (§6.1)", () => {
   it("entradas incompletas ou inválidas geram aviso e nenhuma prestação, sem erro", () => {
     expect(competenciasDoLote({ diaVencimento: 10 }, "2026-10-11")).toEqual({
       competencias: [],
-      avisos: ["Informe quantos meses estão em atraso (1 ou mais) ou o intervalo de competências."],
+      avisos: ["Informe quantos meses estão em atraso (1 ou mais) ou o intervalo de vencimentos."],
     });
     expect(
       competenciasDoLote({ diaVencimento: 10, mesesEmAtraso: 0 }, "2026-10-11").competencias,
@@ -157,13 +195,11 @@ describe("lote de prestações (§6.1)", () => {
       competenciasDoLote({ diaVencimento: 32, mesesEmAtraso: 2 }, "2026-10-11").competencias,
     ).toEqual([]);
     expect(competenciasDoLote({ diaVencimento: 10, de: "2026-08" }, "2026-10-11").avisos).toEqual([
-      "Informe as competências inicial e final do lote (mês/ano).",
+      "Informe o mês do primeiro e do último vencimento do lote (mês/ano).",
     ]);
     expect(
       competenciasDoLote({ diaVencimento: 10, de: "2026-10", ate: "2026-08" }, "2026-10-11").avisos,
-    ).toEqual([
-      "Competência final (ago/2026) anterior à inicial (out/2026): nenhuma prestação lançada.",
-    ]);
+    ).toEqual(["Mês final (ago/2026) anterior ao inicial (out/2026): nenhuma prestação lançada."]);
   });
 });
 
@@ -174,11 +210,11 @@ describe("lote de prestações: limite inferior das datas", () => {
     expect(r.competencias.at(-1)).toBe("2026-10");
     expect(r.competencias).toHaveLength(1522);
     expect(r.avisos).toEqual([
-      "As datas do motor começam em jan/1900: lançadas 1522 competências em vez de 100000.",
+      "As datas do motor começam em jan/1900: lançadas 1522 prestações em vez de 100000.",
     ]);
     expect(competenciasDoLote({ diaVencimento: 15, mesesEmAtraso: 1 }, "1900-01-10")).toEqual({
       competencias: [],
-      avisos: ["Não há competência anterior a jan/1900 para lançar."],
+      avisos: ["Não há vencimento anterior a jan/1900 para lançar."],
     });
     expect(
       competenciasDoLote({ diaVencimento: 5, mesesEmAtraso: 1522 }, "2026-10-11").avisos,

@@ -22,6 +22,7 @@ import type {
   Resultado,
   SituacaoLancamento,
   TabelaIndices,
+  TextoDecimal,
   Totais,
 } from "../compartilhado/tipos.ts";
 import { apurarValorBase, type MesSemIndice } from "./base.ts";
@@ -107,7 +108,7 @@ function resolverValor(
     const editado = lancamento.tipo === "prestacao";
     if (informado === null) {
       avisos.push(
-        `Valor informado ("${lancamento.valorInformado}") não é um número válido (use ponto decimal, como 451.91): o lançamento não foi computado nos totais.`,
+        `Valor informado ("${lancamento.valorInformado}") não é um número válido: o lançamento não foi computado nos totais; corrija o valor.`,
       );
       return { valorBase: ZERO, memoriaBase: "Valor informado inválido", editado, semValor: true };
     }
@@ -320,6 +321,33 @@ function atualizarComRastro(
   };
 }
 
+/**
+ * Percentual de multa ou de honorários (§6.6) lido do texto do cálculo: texto inválido ("10,5",
+ * vazio) ou negativo vale zero, com aviso, para que a entrada da tela nunca derrube o motor
+ * (regra 4 do CLAUDE.md).
+ */
+function lerPercentualDoAcrescimo(
+  texto: TextoDecimal,
+  nome: "multa" | "honorários",
+): { percentual: Decimal; aviso?: string } {
+  const naoAplicado =
+    nome === "multa" ? "a multa não foi aplicada" : "os honorários não foram aplicados";
+  const valor = decimalOuNulo(texto);
+  if (valor === null) {
+    return {
+      percentual: ZERO,
+      aviso: `Percentual de ${nome} inválido ("${texto}"): ${naoAplicado}.`,
+    };
+  }
+  if (valor.lt(ZERO)) {
+    return {
+      percentual: ZERO,
+      aviso: `Percentual de ${nome} negativo ("${texto}"): ${naoAplicado}.`,
+    };
+  }
+  return { percentual: valor };
+}
+
 /** Lista "prestação de jan/2017, pagamento de 10/02/2017" na ordem dos lançamentos. */
 function listar(lancamentos: Lancamento[]): string {
   return lancamentos.map(rotulo).join(", ");
@@ -341,8 +369,13 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
   const totalDevido = prestacoes.minus(amortizacoes);
   // Multa e honorários do art. 523, §1º, do CPC (§6.6): cada percentual sobre o total devido,
   // separadamente (os honorários não incidem sobre a multa); nada quando não há valor devido.
-  const percentualMulta = decimal(calculo.acrescimos.multaPercentual);
-  const percentualHonorarios = decimal(calculo.acrescimos.honorariosPercentual);
+  const multaLida = lerPercentualDoAcrescimo(calculo.acrescimos.multaPercentual, "multa");
+  const honorariosLidos = lerPercentualDoAcrescimo(
+    calculo.acrescimos.honorariosPercentual,
+    "honorários",
+  );
+  const percentualMulta = multaLida.percentual;
+  const percentualHonorarios = honorariosLidos.percentual;
   const haValorDevido = totalDevido.gt(ZERO);
   const multa = haValorDevido
     ? arredondar(totalDevido.times(percentualMulta).div(CEM), valorCasas)
@@ -363,7 +396,9 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
   const avisos: string[] = [...validarMetodologia(calculo.metodologia)];
   if (lancamentos.length === 0) {
     avisos.push("Nenhum lançamento.");
-  } else if (!haValorDevido) {
+  } else if (!haValorDevido && amortizacoes.gt(ZERO)) {
+    // só com pagamento lançado: sem ele, o total zerado vem de prestações sem valor, que têm
+    // aviso próprio (decisão de 13/10/2026)
     avisos.push(
       `As amortizações atualizadas (${formatarMoeda(amortizacoes)}) igualam ou superam as prestações atualizadas (${formatarMoeda(prestacoes)}): não há valor devido na data do cálculo.`,
     );
@@ -371,6 +406,8 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
       avisos.push("Multa e honorários não foram aplicados porque não há valor devido.");
     }
   }
+  if (multaLida.aviso !== undefined) avisos.push(multaLida.aviso);
+  if (honorariosLidos.aviso !== undefined) avisos.push(honorariosLidos.aviso);
 
   // Índices efetivamente usados (sem repetição) e resumo dos meses sem índice. Um mês de
   // fração zero não pesou no fator: não conta como índice usado nem como mês sem índice. A taxa
