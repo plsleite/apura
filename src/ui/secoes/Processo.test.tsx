@@ -26,6 +26,11 @@ describe("1 · Processo: número do processo no padrão do CNJ (decisão de 13/1
     const campo = screen.getByLabelText("Nº do processo") as HTMLInputElement;
     await user.type(campo, "080000046202681200");
     expect(campo.value).toBe("0800000-46.2026.8.12.00");
+    // incompleto: nada em vermelho enquanto digita; o erro aparece ao sair do campo
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(campo.getAttribute("aria-invalid")).toBeNull();
+    await user.tab();
+    expect(campo.getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByRole("alert").textContent).toBe(
       "Número do processo inválido (confira os dígitos).",
     );
@@ -36,6 +41,8 @@ describe("1 · Processo: número do processo no padrão do CNJ (decisão de 13/1
     await user.tripleClick(campo);
     await user.paste("0800000-45.2026.8.12.0001");
     expect(campo.value).toBe("0800000-45.2026.8.12.0001");
+    expect(screen.queryByRole("alert")).toBeNull();
+    await user.tab();
     expect(screen.getByRole("alert").textContent).toBe(
       "Número do processo inválido (confira os dígitos).",
     );

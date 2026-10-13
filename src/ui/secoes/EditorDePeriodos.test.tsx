@@ -79,6 +79,7 @@ describe("Editor de períodos (§6.5)", () => {
       taxaMensal: "0.5",
     });
     await user.type(taxas[0] as HTMLElement, "x");
+    await user.tab();
     expect(screen.getByRole("alert").textContent).toContain("Use vírgula");
     expect(espiao.mock.lastCall?.[0].periodos[0].juros.taxaMensal).toBe("0.5");
     const juros = screen.getAllByLabelText("Juros");

@@ -63,6 +63,9 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     espiao.mockClear();
     await user.type(screen.getByLabelText("Valor fixado"), ",");
     expect(espiao).not.toHaveBeenCalled();
+    // o erro de formato aparece ao sair do campo (decisão de 13/10/2026)
+    expect(screen.queryByRole("alert")).toBeNull();
+    await user.tab();
     expect(screen.getByRole("alert").textContent).toContain("Use vírgula para os centavos");
     fireEvent.change(screen.getByLabelText("Fixado em"), { target: { value: "2024-03-15" } });
     expect(espiao).toHaveBeenLastCalledWith({
@@ -74,6 +77,7 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     espiao.mockClear();
     fireEvent.change(screen.getByLabelText("Fixado em"), { target: { value: "" } });
     expect(espiao).not.toHaveBeenCalled();
+    fireEvent.blur(screen.getByLabelText("Fixado em"));
     expect(screen.getAllByRole("alert").map((a) => a.textContent)).toContain(
       "Informe a data (dia, mês e ano a partir de 1900).",
     );
@@ -116,11 +120,13 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
       rendimentoPadrao: "1500",
     });
     await user.clear(screen.getByLabelText("Rendimento mensal padrão (obrigatório)"));
+    await user.tab();
     expect(screen.getByRole("alert").textContent).toBe("Informe um número.");
     await user.click(screen.getByLabelText("% do salário mínimo"));
     expect(espiao).toHaveBeenLastCalledWith({ tipo: "percentualSalarioMinimo", percentual: "" });
     expect(screen.queryByLabelText("Percentual dos rendimentos")).toBeNull();
     await user.type(screen.getByLabelText("Percentual do salário mínimo"), "-1");
+    await user.tab();
     expect(screen.getByRole("alert").textContent).toBe("O percentual não pode ser negativo.");
     await user.click(screen.getByLabelText("Valor fixo em reais"));
     expect(espiao).toHaveBeenLastCalledWith({ ...fixa, valor: "500" });

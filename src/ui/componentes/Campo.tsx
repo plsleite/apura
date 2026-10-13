@@ -14,8 +14,9 @@ import { Ajuda } from "./Ajuda.tsx";
  * Campos de formulário com rótulo associado, ajuda sob demanda (botão ⓘ ao lado do rótulo, que
  * abre um balão; decisão de 13/10/2026) e erro inline (§9.4): nada de janelas pop-up.
  * `useCampoValidado` liga um campo de texto a um valor do estado: o que o usuário digita fica no
- * campo; só o que passa na leitura vai para o estado, e o erro aparece embaixo até ser corrigido
- * (o estado guarda o último valor válido). `useMascara` formata números enquanto se digita.
+ * campo; só o que passa na leitura vai para o estado (o estado guarda o último valor válido), e o
+ * erro de formato aparece embaixo ao sair do campo, até ser corrigido (decisão de 13/10/2026).
+ * `useMascara` formata números enquanto se digita.
  */
 
 interface PropriedadesComuns {
@@ -254,8 +255,13 @@ export function Opcao({
 /**
  * Liga um campo de texto a um valor validado do estado. `valorGuardado` é o valor atual do
  * estado; `paraTexto` o mostra no campo; `ler` interpreta o que foi digitado; `aoValidar` recebe
- * só valores válidos. Quando o estado muda por fora (novo cálculo, arquivo aberto, sugestão de
- * outro formulário), o campo acompanha; enquanto o usuário digita, o texto é dele.
+ * só valores válidos (cada tecla que forma um valor válido já recalcula). Quando o estado muda por
+ * fora (novo cálculo, arquivo aberto, sugestão de outro formulário), o campo acompanha; enquanto o
+ * usuário digita, o texto é dele.
+ *
+ * O erro de formato (decisão de 13/10/2026) só aparece quando a pessoa sai do campo (`aoSair`)
+ * com texto inválido: enquanto digita, nada fica vermelho e nada é anunciado. Depois de mostrado,
+ * some assim que o texto volta a ser válido.
  */
 export function useCampoValidado<T>(opcoes: {
   valorGuardado: T;
@@ -265,21 +271,24 @@ export function useCampoValidado<T>(opcoes: {
 }): { texto: string; erro: string | null; aoMudar: (texto: string) => void; aoSair: () => void } {
   const [texto, setTexto] = useState(() => opcoes.paraTexto(opcoes.valorGuardado));
   const [erro, setErro] = useState<string | null>(null);
+  const [erroVisivel, setErroVisivel] = useState(false);
   const [visto, setVisto] = useState(opcoes.valorGuardado);
   if (opcoes.valorGuardado !== visto) {
     // mudança vinda de fora (não do que acabamos de validar): o campo acompanha o estado
     setVisto(opcoes.valorGuardado);
     setTexto(opcoes.paraTexto(opcoes.valorGuardado));
     setErro(null);
+    setErroVisivel(false);
   }
   return {
     texto,
-    erro,
+    erro: erroVisivel ? erro : null,
     aoMudar: (novo) => {
       setTexto(novo);
       const leitura = opcoes.ler(novo);
       if (leitura.ok) {
         setErro(null);
+        setErroVisivel(false);
         setVisto(leitura.valor);
         opcoes.aoValidar(leitura.valor);
       } else {
@@ -288,6 +297,7 @@ export function useCampoValidado<T>(opcoes: {
     },
     aoSair: () => {
       if (erro === null) setTexto(opcoes.paraTexto(opcoes.valorGuardado));
+      else setErroVisivel(true);
     },
   };
 }

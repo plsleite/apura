@@ -48,6 +48,10 @@ describe("useCampoValidado + CampoTexto (validação inline, §9.4)", () => {
     expect(screen.getByText("Use vírgula para os centavos.")).toBeDefined();
     await user.clear(campo);
     await user.type(campo, "1.5");
+    // enquanto digita, nada fica vermelho; o erro aparece ao sair do campo (decisão de 13/10/2026)
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(campo.getAttribute("aria-invalid")).toBeNull();
+    await user.tab();
     expect(screen.getByRole("alert").textContent).toBe(
       "Use vírgula para os centavos (ex.: 1.234,56 ou 1234,56).",
     );
@@ -70,9 +74,61 @@ describe("useCampoValidado + CampoTexto (validação inline, §9.4)", () => {
     const campo = screen.getByLabelText("Valor") as HTMLInputElement;
     await user.clear(campo);
     await user.type(campo, "x");
+    await user.tab();
     expect(screen.getByRole("alert")).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Mudar por fora" }));
     expect(campo.value).toBe("2.500,00");
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("digitar um valor válido tecla a tecla nunca deixa o campo vermelho nem anuncia erro", async () => {
+    const user = userEvent.setup();
+    render(<Exemplo />);
+    const campo = screen.getByLabelText("Valor") as HTMLInputElement;
+    await user.clear(campo);
+    for (const tecla of "1.500,00") {
+      await user.type(campo, tecla);
+      // "1." e "1.5", no meio do caminho, são inválidos: nada aparece enquanto se digita
+      expect(campo.getAttribute("aria-invalid"), campo.value).toBeNull();
+      expect(screen.queryByRole("alert"), campo.value).toBeNull();
+    }
+    expect(screen.getByTestId("estado").textContent).toBe("1500.00");
+    await user.tab();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(campo.value).toBe("1.500,00");
+  });
+
+  it("o erro aparece ao sair do campo com texto inválido e some assim que o texto volta a ser válido; o estado nunca recebe o inválido", async () => {
+    const user = userEvent.setup();
+    render(<Exemplo />);
+    const campo = screen.getByLabelText("Valor") as HTMLInputElement;
+    await user.clear(campo);
+    await user.type(campo, "1.5");
+    expect(screen.getByTestId("estado").textContent).toBe("1");
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.blur(campo);
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Use vírgula para os centavos (ex.: 1.234,56 ou 1234,56).",
+    );
+    expect(campo.getAttribute("aria-invalid")).toBe("true");
+    expect(campo.getAttribute("aria-describedby")).toBe("valor-erro");
+    // de volta ao campo, continuar com texto inválido mantém o erro (já mostrado)
+    await user.type(campo, "x");
+    expect(screen.getByRole("alert")).toBeDefined();
+    expect(screen.getByTestId("estado").textContent).toBe("1");
+    // apagar até ficar válido tira o erro na hora
+    await user.type(campo, "{Backspace}{Backspace}");
+    expect(campo.value).toBe("1.");
+    expect(screen.getByRole("alert")).toBeDefined();
+    await user.type(campo, "{Backspace}");
+    expect(campo.value).toBe("1");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(campo.getAttribute("aria-invalid")).toBeNull();
+    // e um novo erro, dali em diante, só aparece ao sair de novo
+    await user.type(campo, ".");
+    expect(screen.queryByRole("alert")).toBeNull();
+    await user.tab();
+    expect(screen.getByRole("alert")).toBeDefined();
+    expect(screen.getByTestId("estado").textContent).toBe("1");
   });
 });

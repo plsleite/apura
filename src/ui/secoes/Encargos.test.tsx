@@ -68,6 +68,7 @@ describe("5 · Encargos e data do cálculo (§9.2)", () => {
     const honorarios = screen.getByLabelText("Honorários (%)");
     await user.clear(honorarios);
     await user.type(honorarios, "-5");
+    await user.tab();
     expect(screen.getByRole("alert").textContent).toBe("O percentual não pode ser negativo.");
     expect(espiao.mock.lastCall?.[0].acrescimos.honorariosPercentual).toBe("10");
     await user.clear(honorarios);
@@ -80,6 +81,7 @@ describe("5 · Encargos e data do cálculo (§9.2)", () => {
     espiao.mockClear();
     fireEvent.change(screen.getByLabelText("Data de elaboração"), { target: { value: "" } });
     expect(espiao).not.toHaveBeenCalled();
+    fireEvent.blur(screen.getByLabelText("Data de elaboração"));
     expect(screen.getByRole("alert").textContent).toContain("Informe a data");
     await user.type(screen.getByLabelText("Observações para o relatório"), "Conforme a sentença.");
     expect(espiao.mock.lastCall?.[0].observacoes).toBe("Conforme a sentença.");

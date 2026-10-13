@@ -99,6 +99,7 @@ export function Encargos({
           tipo="date"
           valor={data.texto}
           aoMudar={data.aoMudar}
+          aoSair={data.aoSair}
           erro={data.erro}
           min="1900-01-01"
           max={DATA_MAXIMA}
