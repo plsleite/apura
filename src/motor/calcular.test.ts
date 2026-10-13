@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { competenciasEntre } from "../compartilhado/datas.ts";
 import type {
-  Base,
   Calculo,
   CodigoSerie,
   Competencia,
+  FormaDaBase,
   Lancamento,
   TabelaIndices,
 } from "../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../metodologias/padrao.ts";
+import { baseUnica } from "./base.ts";
 import { calcular } from "./calcular.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
 import { metodologiaSelicUnica, tabelaRegimeNovo } from "./testes/regime-novo.ts";
@@ -22,13 +23,13 @@ function calculoCom(lancamentos: Lancamento[], dataElaboracao = "2018-05-25"): C
     atualizadoEm: "2026-10-10T00:00:00.000Z",
     dataElaboracao,
     cabecalho: { defensor: "", orgao: "", processo: "", exequente: "", executado: "" },
-    base: {
+    base: baseUnica({
       tipo: "valorFixo",
       valor: "451.91",
       dataFixacao: "2017-01-10",
       indiceReajuste: "nenhum",
       mesReajuste: 1,
-    },
+    }),
     lotes: {},
     lancamentos,
     metodologia: metodologiaPadrao(),
@@ -547,9 +548,13 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
     editado: false,
     ...extra,
   });
-  const comBase = (base: Base, lancamentos: Lancamento[], dataElaboracao = hoje): Calculo => ({
+  const comBase = (
+    forma: FormaDaBase,
+    lancamentos: Lancamento[],
+    dataElaboracao = hoje,
+  ): Calculo => ({
     ...calculoCom(lancamentos, dataElaboracao),
-    base,
+    base: baseUnica(forma),
   });
 
   it("pagamento posterior à data de elaboração fica fora dos totais, com aviso no lançamento e no resumo", () => {
@@ -690,7 +695,7 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
   });
 
   it("base em % do salário mínimo: valor apurado, salário mínimo em indicesUsados e séries em ordem numérica", () => {
-    const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+    const base: FormaDaBase = { tipo: "percentualSalarioMinimo", percentual: "30" };
     const r = calcular(
       comBase(base, [
         semValorInformado("p-2025-01", "2025-01-10"),
@@ -724,7 +729,7 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
   });
 
   it("prestação vincenda em % do salário mínimo de mês ainda sem salário mínimo publicado: último publicado, nominal, avisos e resumos", () => {
-    const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+    const base: FormaDaBase = { tipo: "percentualSalarioMinimo", percentual: "30" };
     const r = calcular(
       comBase(base, [semValorInformado("p-2027-01", "2027-01-10")]),
       tabelaRegimeNovo(),
@@ -756,7 +761,7 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
   });
 
   it("valor fixo reajustado pelo IPCA: os 12 meses do acumulado entram em indicesUsados mesmo fora do período de correção", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "500.00",
       dataFixacao: "2024-03-15",
@@ -818,9 +823,13 @@ describe("calcular (fase 4: meses ainda não divulgados na data da consulta)", (
     origem: "lote",
     editado: false,
   });
-  const comBase = (base: Base, lancamentos: Lancamento[], dataElaboracao = hoje): Calculo => ({
+  const comBase = (
+    forma: FormaDaBase,
+    lancamentos: Lancamento[],
+    dataElaboracao = hoje,
+  ): Calculo => ({
     ...calculoCom(lancamentos, dataElaboracao),
-    base,
+    base: baseUnica(forma),
   });
 
   it("IPCA do mês da consulta ainda não divulgado: aviso próprio no lançamento e resumo próprio, sem o genérico; valores inalterados", () => {
@@ -1005,7 +1014,7 @@ describe("calcular (fase 4: meses ainda não divulgados na data da consulta)", (
   });
 
   it("reajuste pelo IPCA ainda não divulgado: aviso próprio no lançamento e resumo próprio da base", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "500.00",
       dataFixacao: "2025-11-15",

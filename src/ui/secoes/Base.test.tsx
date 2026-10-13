@@ -3,13 +3,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Base } from "../../compartilhado/tipos.ts";
+import type { FormaDaBase } from "../../compartilhado/tipos.ts";
 import { BaseDosAlimentos } from "./Base.tsx";
 
 afterEach(cleanup);
 
 const HOJE = "2026-10-11";
-const fixa: Base = {
+const fixa: FormaDaBase = {
   tipo: "valorFixo",
   valor: "",
   dataFixacao: HOJE,
@@ -18,7 +18,13 @@ const fixa: Base = {
 };
 
 /** A seção dentro de um estado de verdade (como no App): cada mudança válida volta como `base`. */
-function Harness({ inicial, espiao }: { inicial: Base; espiao: (base: Base) => void }) {
+function Harness({
+  inicial,
+  espiao,
+}: {
+  inicial: FormaDaBase;
+  espiao: (base: FormaDaBase) => void;
+}) {
   const [base, setBase] = useState(inicial);
   return (
     <BaseDosAlimentos

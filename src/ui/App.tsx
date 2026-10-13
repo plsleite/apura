@@ -204,11 +204,19 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             aoEsquecer={esquecerTudo}
             armazenamentoDisponivel={armazenamento !== null}
           />
+          {/* provisório (fase 5b, Task 2): a seção edita o único período; a Task 4 a troca pela
+              seção com períodos */}
           <BaseDosAlimentos
-            base={estado.calculo.base}
+            base={estado.calculo.base.periodos[0]!.forma}
             hoje={ambiente.hoje()}
-            faltas={faltas}
-            aoMudar={(base) => despachar({ tipo: "base", base, em: agora() })}
+            faltas={faltas.filter((f) => f.periodo === 0)}
+            aoMudar={(forma) =>
+              despachar({
+                tipo: "base",
+                base: { periodos: [{ ...estado.calculo.base.periodos[0]!, forma }] },
+                em: agora(),
+              })
+            }
           />
           <LotePrestacoesSecao
             ultimoLote={estado.calculo.lotes.ultimoLotePrestacoes}

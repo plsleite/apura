@@ -17,10 +17,10 @@
       "exequente": "",
       "executado": ""
     },
-    "base": {
+    "base": {"periodos": [{"de": null, "ate": null, "forma": {
       "tipo": "percentualSalarioMinimo",
       "percentual": "30"
-    },
+    }}]},
     "lotes": {
       "ultimoLotePrestacoes": {
         "diaVencimento": 1,

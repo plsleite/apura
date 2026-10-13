@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Lancamento } from "../../compartilhado/tipos.ts";
 import { descreverSituacao } from "../../indices/congelar.ts";
 import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { baseUnica } from "../../motor/base.ts";
 import { tabelaRegimeNovo } from "../../motor/testes/regime-novo.ts";
 import { estadoInicial, novoCalculo, reduzir, type Estado } from "./calculo.ts";
 
@@ -41,11 +42,19 @@ describe("novoCalculo", () => {
         executado: "",
       },
       base: {
-        tipo: "valorFixo",
-        valor: "",
-        dataFixacao: HOJE,
-        indiceReajuste: "nenhum",
-        mesReajuste: 10,
+        periodos: [
+          {
+            de: null,
+            ate: null,
+            forma: {
+              tipo: "valorFixo",
+              valor: "",
+              dataFixacao: HOJE,
+              indiceReajuste: "nenhum",
+              mesReajuste: 10,
+            },
+          },
+        ],
       },
       lotes: {},
       lancamentos: [],
@@ -72,10 +81,12 @@ describe("reduzir: campos simples", () => {
     expect(estado.tocado).toBe(true);
     estado = reduzir(estado, {
       tipo: "base",
-      base: { tipo: "percentualSalarioMinimo", percentual: "30" },
+      base: baseUnica({ tipo: "percentualSalarioMinimo", percentual: "30" }),
       em: DEPOIS,
     });
-    expect(estado.calculo.base).toEqual({ tipo: "percentualSalarioMinimo", percentual: "30" });
+    expect(estado.calculo.base).toEqual(
+      baseUnica({ tipo: "percentualSalarioMinimo", percentual: "30" }),
+    );
     estado = reduzir(estado, { tipo: "dataElaboracao", data: "2026-09-30", em: DEPOIS });
     expect(estado.calculo.dataElaboracao).toBe("2026-09-30");
     estado = reduzir(estado, {

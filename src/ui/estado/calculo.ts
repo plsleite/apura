@@ -13,6 +13,7 @@ import type {
 } from "../../compartilhado/tipos.ts";
 import type { SituacaoIndices } from "../../indices/congelar.ts";
 import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { baseUnica } from "../../motor/base.ts";
 import { gerarLoteAmortizacoes, gerarLotePrestacoes, idLivre } from "../../motor/lote.ts";
 
 /**
@@ -76,8 +77,8 @@ export type Acao =
   | { tipo: "excluirLancamento"; id: string; em: string };
 
 /**
- * Cálculo novo em branco (§5.2): data de elaboração de hoje, base em valor fixo sem reajuste com a
- * data de fixação de hoje (o único campo da base que o motor exige válido) e o valor a preencher,
+ * Cálculo novo em branco (§5.2): data de elaboração de hoje, base de um período só (§17.2) em
+ * valor fixo sem reajuste com a data de fixação de hoje (o único campo da base que o motor exige válido) e o valor a preencher,
  * metodologia padrão, multa e honorários de 10% cada (decisão de 13/10/2026, D26). Defensor e
  * órgão vêm das preferências.
  */
@@ -102,13 +103,13 @@ export function novoCalculo(p: {
       executado: "",
       ...p.cabecalho,
     },
-    base: {
+    base: baseUnica({
       tipo: "valorFixo",
       valor: "",
       dataFixacao: p.hoje,
       indiceReajuste: "nenhum",
       mesReajuste: decompor(p.hoje).mes,
-    },
+    }),
     lotes: {},
     lancamentos: [],
     metodologia: metodologiaPadrao(),

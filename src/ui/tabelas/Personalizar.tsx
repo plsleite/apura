@@ -7,6 +7,7 @@ import type {
   Lancamento,
   Metodologia,
 } from "../../compartilhado/tipos.ts";
+import { periodoDaData } from "../../motor/base.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import { CampoTexto, Opcao } from "../componentes/Campo.tsx";
 import {
@@ -76,7 +77,11 @@ export function Personalizar({
     lancamento.encargos?.metodologia ?? null,
   );
   const [erros, setErros] = useState<Partial<Record<Campo, string>>>({});
-  const comRendimento = calculo.base.tipo === "percentualRendimentos" && prestacao;
+  // o rendimento do mês aparece quando o período da base em que a prestação vence é "% dos
+  // rendimentos" (§17.2)
+  const comRendimento =
+    prestacao &&
+    periodoDaData(calculo.base, lancamento.data)?.forma.tipo === "percentualRendimentos";
 
   const aplicar = (evento: FormEvent) => {
     evento.preventDefault();

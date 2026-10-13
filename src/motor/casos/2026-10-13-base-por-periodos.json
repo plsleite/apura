@@ -1,0 +1,56 @@
+{
+  "formato": "apura/caso-de-referencia@1",
+  "nome": "Base dos alimentos por períodos: valor fixo até 31/12/2024 e 30% do salário mínimo desde 01/01/2025, cálculo de 11/10/2026",
+  "fonte": "Aritmética decimal independente (§17.2 do design): R$ 500,00 fixados em 10/03/2024, sem reajuste; 30% × R$ 1.518,00 (salário mínimo de 2025, série 1619 do BCB) = R$ 455,40.",
+  "observacoes": "Metodologia sem correção e sem juros, para o caso provar só a escolha do período pela data do vencimento: o último dia do 1º período (31/12/2024) e o primeiro do 2º (01/01/2025), a prestação anterior à fixação (aviso de sempre, com o prefixo do período na memória) e o valor informado à mão, que a base não toca.",
+  "calculo": {
+    "formato": "apura/calculo@1",
+    "tipo": "alimentos",
+    "id": "caso-base-por-periodos",
+    "criadoEm": "2026-10-13T00:00:00.000Z",
+    "atualizadoEm": "2026-10-13T00:00:00.000Z",
+    "dataElaboracao": "2026-10-11",
+    "cabecalho": {"defensor": "", "orgao": "", "processo": "", "exequente": "", "executado": ""},
+    "base": {"periodos": [
+      {"de": null, "ate": "2024-12-31", "forma": {"tipo": "valorFixo", "valor": "500.00", "dataFixacao": "2024-03-10", "indiceReajuste": "nenhum", "mesReajuste": 3}},
+      {"de": "2025-01-01", "ate": null, "forma": {"tipo": "percentualSalarioMinimo", "percentual": "30"}}
+    ]},
+    "lotes": {},
+    "lancamentos": [
+      {"id": "p-2024-02", "tipo": "prestacao", "data": "2024-02-05", "competencia": "2024-02", "origem": "lote", "editado": false},
+      {"id": "p-2024-12", "tipo": "prestacao", "data": "2024-12-05", "competencia": "2024-12", "origem": "lote", "editado": false},
+      {"id": "p-2024-12-2", "tipo": "prestacao", "data": "2024-12-31", "competencia": "2024-12", "origem": "avulso", "editado": false},
+      {"id": "p-2025-01", "tipo": "prestacao", "data": "2025-01-01", "competencia": "2025-01", "origem": "lote", "editado": false},
+      {"id": "p-2025-01-2", "tipo": "prestacao", "data": "2025-01-05", "competencia": "2025-01", "descricao": "Valor informado à mão", "valorInformado": "600.00", "origem": "avulso", "editado": true},
+      {"id": "p-2025-03", "tipo": "prestacao", "data": "2025-03-05", "competencia": "2025-03", "origem": "lote", "editado": false}
+    ],
+    "metodologia": {
+      "id": "sem-encargos", "versao": 1, "nome": "Sem correção e sem juros", "ajustada": true,
+      "periodos": [{"de": null, "ate": null, "correcao": {"indice": "nenhum"}, "juros": {"tipo": "percentualMensal", "taxaMensal": "0"}}],
+      "incidenciaMesInicial": "proRata", "deflacao": "aplicarComPiso",
+      "arredondamento": {"fatorCasas": 6, "percentualCasas": 6, "valorCasas": 2, "modo": "comercial"}
+    },
+    "acrescimos": {"multaPercentual": "0", "honorariosPercentual": "0"},
+    "observacoes": ""
+  },
+  "indices": {
+    "consultadoEm": "2026-10-11T13:00:00.000Z",
+    "series": {
+      "1619": {
+        "2025-01": {"valor": "1518.00", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"},
+        "2025-03": {"valor": "1518.00", "fonte": "embutida", "obtidoEm": "2026-10-11T00:00:00.000Z"}
+      }
+    }
+  },
+  "esperado": {
+    "lancamentos": [
+      {"id": "p-2024-02", "valorBase": "500.00", "memoriaBase": "Base até 31/12/2024: Valor fixado em 10/03/2024: R$ 500,00 (prestação anterior à fixação, sem reajuste)", "editado": false, "situacao": "atualizado", "fator": "1.000000", "corrigido": "500.00", "jurosValor": "0.00", "atualizado": "500.00", "avisos": ["Prestação de fev/2024 anterior à data de fixação (10/03/2024): usado o valor fixado, sem reajuste."]},
+      {"id": "p-2024-12", "valorBase": "500.00", "memoriaBase": "Base até 31/12/2024: Valor fixado em 10/03/2024: R$ 500,00 (sem reajuste)", "corrigido": "500.00", "jurosValor": "0.00", "atualizado": "500.00", "avisos": []},
+      {"id": "p-2024-12-2", "valorBase": "500.00", "memoriaBase": "Base até 31/12/2024: Valor fixado em 10/03/2024: R$ 500,00 (sem reajuste)", "corrigido": "500.00", "jurosValor": "0.00", "atualizado": "500.00"},
+      {"id": "p-2025-01", "valorBase": "455.40", "memoriaBase": "Base desde 01/01/2025: 30% do salário mínimo de jan/2025 (R$ 1.518,00) = R$ 455,40", "editado": false, "corrigido": "455.40", "jurosValor": "0.00", "atualizado": "455.40", "avisos": []},
+      {"id": "p-2025-01-2", "valorBase": "600.00", "memoriaBase": "Valor informado: R$ 600,00", "editado": true, "corrigido": "600.00", "jurosValor": "0.00", "atualizado": "600.00"},
+      {"id": "p-2025-03", "valorBase": "455.40", "memoriaBase": "Base desde 01/01/2025: 30% do salário mínimo de mar/2025 (R$ 1.518,00) = R$ 455,40", "corrigido": "455.40", "jurosValor": "0.00", "atualizado": "455.40"}
+    ],
+    "totais": {"prestacoes": "3010.80", "amortizacoes": "0.00", "totalDevido": "3010.80", "multa": "0.00", "honorarios": "0.00", "totalGeral": "3010.80"}
+  }
+}

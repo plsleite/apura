@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { baseUnica } from "../motor/base.ts";
 import { calcular } from "../motor/calcular.ts";
 import { tabelaRegimeNovo } from "../motor/testes/regime-novo.ts";
 import { lerArquivo, montarArquivo, serializarArquivo } from "./arquivo.ts";
@@ -85,13 +86,13 @@ describe("cálculos recentes no navegador (§5.5)", () => {
   it("cada recente guarda só o cálculo e, do resultado, os índices usados e a data da consulta, em JSON compacto (D5 revisto)", () => {
     const armazenamento = armazenamentoEmMemoria();
     const calculo = calculoDe("c-1", "2026-10-11T10:00:00-03:00", "processo-1");
-    calculo.base = {
+    calculo.base = baseUnica({
       tipo: "valorFixo",
       valor: "1000.00",
       dataFixacao: "2024-01-10",
       indiceReajuste: "nenhum",
       mesReajuste: 1,
-    };
+    });
     calculo.lancamentos = gerarLotePrestacoes(
       { diaVencimento: 5, mesesEmAtraso: 24 },
       HOJE,

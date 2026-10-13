@@ -8,7 +8,7 @@ import type {
   TabelaIndices,
   TextoDecimal,
 } from "../../compartilhado/tipos.ts";
-import { apurarValorBase } from "../../motor/base.ts";
+import { apurarPelaBase } from "../../motor/base.ts";
 
 /**
  * Sugestões da linha nova de "+ Prestação" e "+ Pagamento" (decisões de 13/10/2026): a linha
@@ -29,7 +29,10 @@ export interface RascunhoDeLancamento {
   encargos?: EncargosProprios;
 }
 
-/** Valor que a base dos alimentos dá para uma prestação com este vencimento, ou "" se não dá. */
+/**
+ * Valor que a base dos alimentos dá para uma prestação com este vencimento (pelo período em que
+ * ele cai, §17.2), ou "" se não dá.
+ */
 export function valorPelaBase(
   calculo: Calculo,
   tabela: TabelaIndices,
@@ -44,7 +47,7 @@ export function valorPelaBase(
     origem: "avulso",
     editado: false,
   };
-  const apurado = apurarValorBase(prestacao, calculo.base, tabela, casas);
+  const apurado = apurarPelaBase(prestacao, calculo.base, tabela, casas);
   return apurado.valor === null ? "" : paraTexto(apurado.valor, casas);
 }
 

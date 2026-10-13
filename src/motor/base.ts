@@ -25,9 +25,12 @@ import type {
   Base,
   CodigoSerie,
   Competencia,
+  DataISO,
+  FormaDaBase,
   IndiceUsado,
   Lancamento,
   NomeIndice,
+  PeriodoDaBase,
   TabelaIndices,
 } from "../compartilhado/tipos.ts";
 import { aindaNaoDivulgado, divulgacaoPrevista } from "../compartilhado/divulgacao.ts";
@@ -52,7 +55,7 @@ export interface ValorBaseApurado {
 
 const SALARIO_MINIMO = CODIGO_DA_SERIE.SM;
 
-type BaseValorFixo = Extract<Base, { tipo: "valorFixo" }>;
+type BaseValorFixo = Extract<FormaDaBase, { tipo: "valorFixo" }>;
 
 /** "30%", "48,23%": o percentual da base como foi informado, sem casas fixas. */
 function percentualInformado(valor: Decimal): string {
@@ -183,7 +186,7 @@ function porSalarioMinimo(
 }
 
 function porRendimentos(
-  base: Extract<Base, { tipo: "percentualRendimentos" }>,
+  base: Extract<FormaDaBase, { tipo: "percentualRendimentos" }>,
   lancamento: Lancamento,
   competencia: Competencia,
   valorCasas: number,
@@ -434,7 +437,7 @@ function porValorFixo(
  */
 export function apurarValorBase(
   lancamento: Lancamento,
-  base: Base,
+  base: FormaDaBase,
   tabela: TabelaIndices,
   valorCasas: number,
 ): ValorBaseApurado {
@@ -447,11 +450,68 @@ export function apurarValorBase(
     case "valorFixo":
       return porValorFixo(base, competencia, tabela, valorCasas);
     default:
-      // Checagem de exaustividade: uma forma nova de Base esquecida aqui falha na compilação.
+      // Checagem de exaustividade: uma forma nova da base esquecida aqui falha na compilação.
       base satisfies never;
       return semValor(
-        "Base desconhecida",
+        "FormaDaBase desconhecida",
         "Tipo de base não reconhecido: a prestação ficou sem valor; informe o valor à mão.",
       );
   }
+}
+
+/** Base de um período só, de `null` a `null`: o cálculo comum (§17.2). */
+export function baseUnica(forma: FormaDaBase): Base {
+  return { periodos: [{ de: null, ate: null, forma }] };
+}
+
+/** Os períodos da base em ordem cronológica (o sem começo primeiro). */
+export function periodosDaBaseOrdenados(base: Base): PeriodoDaBase[] {
+  return [...base.periodos].sort((a, b) => {
+    if (a.de === b.de) return 0;
+    if (a.de === null) return -1;
+    if (b.de === null) return 1;
+    return a.de < b.de ? -1 : 1;
+  });
+}
+
+/**
+ * O período da base em que cai a data: o primeiro, em ordem cronológica, cujo intervalo [de, ate]
+ * (nulos = aberto) a contém; `undefined` se nenhum a cobre (só com base fora do padrão).
+ */
+export function periodoDaData(base: Base, data: DataISO): PeriodoDaBase | undefined {
+  return periodosDaBaseOrdenados(base).find(
+    (p) => (p.de === null || p.de <= data) && (p.ate === null || data <= p.ate),
+  );
+}
+
+/** "até 31/12/2024", "de 01/01/2025 a 30/06/2025", "desde 01/07/2025" ou "em todo o período". */
+export function descreverPeriodoDaBase(p: Pick<PeriodoDaBase, "de" | "ate">): string {
+  if (p.de !== null && p.ate !== null) return `de ${formatarData(p.de)} a ${formatarData(p.ate)}`;
+  if (p.de !== null) return `desde ${formatarData(p.de)}`;
+  if (p.ate !== null) return `até ${formatarData(p.ate)}`;
+  return "em todo o período";
+}
+
+/**
+ * Valor-base de uma prestação pela base por períodos (§17.2): a forma do período em que cai o
+ * vencimento, com a conta de `apurarValorBase`. Com dois ou mais períodos, a memória começa
+ * dizendo qual valeu ("Base desde 01/01/2025: …"). Vencimento que nenhum período cobre fica sem
+ * valor, com aviso; nunca lança erro.
+ */
+export function apurarPelaBase(
+  lancamento: Lancamento,
+  base: Base,
+  tabela: TabelaIndices,
+  valorCasas: number,
+): ValorBaseApurado {
+  const periodo = periodoDaData(base, lancamento.data);
+  if (periodo === undefined) {
+    return semValor(
+      "Nenhum período da base cobre o vencimento",
+      `Nenhum período da base cobre o vencimento de ${formatarData(lancamento.data)}: a prestação ficou sem valor; informe o valor à mão.`,
+    );
+  }
+  const apurado = apurarValorBase(lancamento, periodo.forma, tabela, valorCasas);
+  if (base.periodos.length <= 1) return apurado;
+  return { ...apurado, memoria: `Base ${descreverPeriodoDaBase(periodo)}: ${apurado.memoria}` };
 }

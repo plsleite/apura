@@ -21,11 +21,20 @@ function calculoCompleto(): Calculo {
   calculo.cabecalho.exequente = "A. B. C.";
   calculo.cabecalho.executado = "D. E. F.";
   calculo.base = {
-    tipo: "valorFixo",
-    valor: "1000.00",
-    dataFixacao: "2024-03-15",
-    indiceReajuste: "IPCA",
-    mesReajuste: 3,
+    periodos: [
+      {
+        de: null,
+        ate: "2025-12-31",
+        forma: {
+          tipo: "valorFixo",
+          valor: "1000.00",
+          dataFixacao: "2024-03-15",
+          indiceReajuste: "IPCA",
+          mesReajuste: 3,
+        },
+      },
+      { de: "2026-01-01", ate: null, forma: { tipo: "percentualSalarioMinimo", percentual: "30" } },
+    ],
   };
   calculo.lotes = { ultimoLotePrestacoes: { diaVencimento: 5, mesesEmAtraso: 2 } };
   calculo.lancamentos = gerarLotePrestacoes(
@@ -118,6 +127,10 @@ describe("lerArquivo (validação do arquivo aberto, §5.1)", () => {
   it("recusa dados inválidos no cálculo, dizendo onde", () => {
     const calculo = calculoCompleto();
     const resultado = calcular(calculo, tabelaRegimeNovo());
+    const periodo = (c: Record<string, unknown>, i: number) =>
+      (c.base as { periodos: Array<Record<string, unknown>> }).periodos[i]!;
+    const forma = (c: Record<string, unknown>, i: number) =>
+      periodo(c, i).forma as Record<string, unknown>;
     const com = (mexer: (c: Record<string, unknown>) => void): string => {
       const copia = structuredClone(calculo) as unknown as Record<string, unknown>;
       mexer(copia);
@@ -126,13 +139,21 @@ describe("lerArquivo (validação do arquivo aberto, §5.1)", () => {
     const casos: Array<[string, (c: Record<string, unknown>) => void]> = [
       ["dataElaboracao", (c) => (c.dataElaboracao = "11/10/2026")],
       ["dataElaboracao", (c) => (c.dataElaboracao = "2026-02-30")],
-      ["base.tipo", (c) => ((c.base as Record<string, unknown>).tipo = "outra")],
-      ["base.dataFixacao", (c) => ((c.base as Record<string, unknown>).dataFixacao = "")],
-      ["base.mesReajuste", (c) => ((c.base as Record<string, unknown>).mesReajuste = 13)],
-      [
-        "base.indiceReajuste",
-        (c) => ((c.base as Record<string, unknown>).indiceReajuste = "SELIC"),
-      ],
+      ["base.periodos[0].forma.tipo", (c) => (forma(c, 0).tipo = "outra")],
+      ["base.periodos[0].forma.dataFixacao", (c) => (forma(c, 0).dataFixacao = "")],
+      ["base.periodos[0].forma.mesReajuste", (c) => (forma(c, 0).mesReajuste = 13)],
+      ["base.periodos[0].forma.indiceReajuste", (c) => (forma(c, 0).indiceReajuste = "SELIC")],
+      ["base.periodos[1].forma.percentual", (c) => (forma(c, 1).percentual = 30)],
+      // a base antiga, de um item só, não abre (sem retrocompatibilidade, §17.2)
+      ["base.periodos", (c) => (c.base = forma(c, 0))],
+      ["base.periodos", (c) => (c.base = { periodos: [] })],
+      // o primeiro sem começo, o último sem fim, seguidos, sem buraco nem sobreposição
+      ["base.periodos[0].de", (c) => (periodo(c, 0).de = "2020-01-01")],
+      ["base.periodos[1].ate", (c) => (periodo(c, 1).ate = "2030-12-31")],
+      ["base.periodos[1].de", (c) => (periodo(c, 1).de = "2026-02-01")],
+      ["base.periodos[1].de", (c) => (periodo(c, 1).de = "2025-12-31")],
+      ["base.periodos[0].ate", (c) => (periodo(c, 0).ate = null)],
+      ["base.periodos[0].ate", (c) => (periodo(c, 0).ate = "2025-13-01")],
       [
         "lancamentos[0].data",
         (c) => ((c.lancamentos as Array<Record<string, unknown>>)[0]!.data = 20260905),
@@ -205,6 +226,8 @@ describe("lerArquivo (validação do arquivo aberto, §5.1)", () => {
       expect(leitura.ok, caminho).toBe(false);
       if (leitura.ok) continue;
       expect(leitura.erro, caminho).toMatch(/^O arquivo traz um dado inválido em "/);
+      // na base, a frase aponta o campo exato
+      if (caminho.startsWith("base")) expect(leitura.erro, caminho).toContain(`"${caminho}"`);
     }
     expect(lerArquivo(com((c) => (c.dataElaboracao = "2026-02-30")))).toEqual({
       ok: false,
@@ -222,7 +245,7 @@ describe("lerArquivo (validação do arquivo aberto, §5.1)", () => {
     ).toMatchObject({ ok: false, erro: expect.stringContaining('"lancamentos[0].data"') });
     expect(lerArquivo(com((c) => (c.dataElaboracao = "2199-12-31"))).ok).toBe(true);
     // textos decimais da base e dos acréscimos são aceitos como texto (o motor avisa se inválidos)
-    const leitura = lerArquivo(com((c) => ((c.base as Record<string, unknown>).valor = "1,5")));
+    const leitura = lerArquivo(com((c) => (forma(c, 0).valor = "1,5")));
     expect(leitura.ok).toBe(true);
   });
 

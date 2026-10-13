@@ -17,13 +17,13 @@
       "exequente": "",
       "executado": ""
     },
-    "base": {
+    "base": {"periodos": [{"de": null, "ate": null, "forma": {
       "tipo": "valorFixo",
       "valor": "451.91",
       "dataFixacao": "2017-01-10",
       "indiceReajuste": "SM",
       "mesReajuste": 1
-    },
+    }}]},
     "lotes": {
       "ultimoLotePrestacoes": {
         "diaVencimento": 10,

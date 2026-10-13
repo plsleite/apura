@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
-import type { Base, Competencia, Lancamento, TabelaIndices } from "../compartilhado/tipos.ts";
-import { apurarValorBase } from "./base.ts";
+import type {
+  Base,
+  Competencia,
+  FormaDaBase,
+  Lancamento,
+  TabelaIndices,
+} from "../compartilhado/tipos.ts";
+import {
+  apurarPelaBase,
+  apurarValorBase,
+  baseUnica,
+  descreverPeriodoDaBase,
+  periodoDaData,
+} from "./base.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
 import { tabelaRegimeNovo } from "./testes/regime-novo.ts";
 
@@ -19,7 +31,7 @@ function prestacao(data: string, extra: Partial<Lancamento> = {}): Lancamento {
 const obtidoEm = "2026-10-11T12:00:00.000Z";
 
 describe("base em percentual do salário mínimo (§6.3)", () => {
-  const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+  const base: FormaDaBase = { tipo: "percentualSalarioMinimo", percentual: "30" };
 
   it("percentual × salário mínimo do mês do vencimento, com proveniência (série 1619)", () => {
     const tabela = tabelaRegimeNovo();
@@ -121,7 +133,7 @@ describe("base em percentual do salário mínimo (§6.3)", () => {
 });
 
 describe("base em percentual dos rendimentos (§6.3)", () => {
-  const base: Base = {
+  const base: FormaDaBase = {
     tipo: "percentualRendimentos",
     percentual: "30",
     rendimentoPadrao: "1500.00",
@@ -209,7 +221,7 @@ describe("base em valor fixo (§6.3)", () => {
   const tabela = tabelaRegimeNovo();
 
   it("sem reajuste: o valor fixado, com arredondamento a 2 casas", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "451.91",
       dataFixacao: "2017-01-10",
@@ -240,7 +252,7 @@ describe("base em valor fixo (§6.3)", () => {
   });
 
   it("prestação anterior à data de fixação: valor fixado, sem reajuste, com aviso", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "500.00",
       dataFixacao: "2024-03-15",
@@ -260,7 +272,7 @@ describe("base em valor fixo (§6.3)", () => {
   });
 
   it("valor fixado inválido: sem valor, com aviso", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "1.500,00",
       dataFixacao: "2024-03-15",
@@ -278,7 +290,7 @@ describe("base em valor fixo (§6.3)", () => {
   });
 
   describe("reajuste pelo salário mínimo (proporção entre o SM do vencimento e o da fixação)", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "451.91",
       dataFixacao: "2017-01-10",
@@ -342,7 +354,7 @@ describe("base em valor fixo (§6.3)", () => {
   });
 
   describe("reajuste anual pelo índice acumulado (IGP-M, INPC ou IPCA)", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "500.00",
       dataFixacao: "2024-03-15",
@@ -391,7 +403,7 @@ describe("base em valor fixo (§6.3)", () => {
     });
 
     it("mês de reajuste diferente do mês da fixação: o primeiro reajuste usa o acumulado desde a fixação até o mês anterior, depois janelas de 12 meses", () => {
-      const janeiro: Base = { ...base, mesReajuste: 1 };
+      const janeiro: FormaDaBase = { ...base, mesReajuste: 1 };
       expect(apurarValorBase(prestacao("2024-12-15"), janeiro, tabela, 2).valor?.toFixed(2)).toBe(
         "500.00",
       );
@@ -406,7 +418,7 @@ describe("base em valor fixo (§6.3)", () => {
         "e em jan/2026 (IPCA de jan/2025 a dez/2025: 4,2644%) = R$ 539,75",
       );
       // mês de reajuste logo depois da fixação: janela curta, de um mês
-      const junho: Base = { ...base, dataFixacao: "2024-05-20", mesReajuste: 6 };
+      const junho: FormaDaBase = { ...base, dataFixacao: "2024-05-20", mesReajuste: 6 };
       const curto = apurarValorBase(prestacao("2024-06-20"), junho, tabela, 2);
       expect(curto.valor?.toFixed(2)).toBe("502.30");
       expect(curto.memoria).toBe(
@@ -415,7 +427,7 @@ describe("base em valor fixo (§6.3)", () => {
     });
 
     it("acumulado negativo não reduz o valor: IGP-M de 2017 (−0,53%) mantém R$ 451,91 em 2018", () => {
-      const igpm: Base = {
+      const igpm: FormaDaBase = {
         tipo: "valorFixo",
         valor: "451.91",
         dataFixacao: "2017-01-10",
@@ -432,7 +444,7 @@ describe("base em valor fixo (§6.3)", () => {
     });
 
     it("índice do reajuste ainda não divulgado: reajuste não aplicado, valor vigente mantido, aviso e mês sinalizado", () => {
-      const novembro: Base = { ...base, dataFixacao: "2025-11-15", mesReajuste: 11 };
+      const novembro: FormaDaBase = { ...base, dataFixacao: "2025-11-15", mesReajuste: 11 };
       const r = apurarValorBase(prestacao("2026-11-15"), novembro, tabela, 2);
       expect(r.valor?.toFixed(2)).toBe("500.00");
       expect(r.avisos).toEqual([
@@ -468,7 +480,7 @@ describe("base em valor fixo (§6.3)", () => {
     });
 
     it("INPC como índice de reajuste usa a série 188", () => {
-      const inpc: Base = { ...base, indiceReajuste: "INPC" };
+      const inpc: FormaDaBase = { ...base, indiceReajuste: "INPC" };
       const r = apurarValorBase(prestacao("2025-03-15"), inpc, tabela, 2);
       expect(r.indicesUsados.every((i) => i.serie === "188")).toBe(true);
       expect(r.indicesUsados).toHaveLength(12);
@@ -479,7 +491,7 @@ describe("base em valor fixo (§6.3)", () => {
 
 describe("base de tipo desconhecido", () => {
   it("tipo de base desconhecido (arquivo editado à mão) fica sem valor, com aviso, sem erro", () => {
-    const estranha = { tipo: "desconhecida" } as unknown as Base;
+    const estranha = { tipo: "desconhecida" } as unknown as FormaDaBase;
     const r = apurarValorBase(prestacao("2024-03-10"), estranha, tabelaRegimeNovo(), 2);
     expect(r.valor).toBeNull();
     expect(r.avisos).toEqual([
@@ -500,7 +512,7 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
   const comCalendario = (): TabelaIndices => ({ ...tabelaRegimeNovo(), esperadoAte: ESPERADO_ATE });
 
   describe("percentual do salário mínimo", () => {
-    const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+    const base: FormaDaBase = { tipo: "percentualSalarioMinimo", percentual: "30" };
 
     it("mês posterior ao esperado: 'ainda não publicado', o último publicado vale até o novo decreto", () => {
       const r = apurarValorBase(prestacao("2027-01-05"), base, comCalendario(), 2);
@@ -564,7 +576,7 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
   });
 
   describe("valor fixo reajustado pelo salário mínimo", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "451.91",
       dataFixacao: "2017-01-10",
@@ -612,7 +624,7 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
   });
 
   describe("valor fixo reajustado por índice", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "500.00",
       dataFixacao: "2025-11-15",
@@ -634,7 +646,7 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
     });
 
     it("dois meses ainda não divulgados saem listados na mesma frase", () => {
-      const dezembro: Base = { ...base, dataFixacao: "2025-12-15", mesReajuste: 12 };
+      const dezembro: FormaDaBase = { ...base, dataFixacao: "2025-12-15", mesReajuste: 12 };
       const r = apurarValorBase(prestacao("2026-12-15"), dezembro, comCalendario(), 2);
       expect(r.avisos).toEqual([
         "IPCA de out/2026, nov/2026 ainda sem divulgação na data da consulta (previsão para nov/2026: por volta de 10/12/2026): o reajuste de dez/2026 não foi aplicado; a prestação mantém R$ 500,00.",
@@ -646,7 +658,7 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
     });
 
     it("segundo reajuste com meses ainda não divulgados: a frase mantém o valor já reajustado", () => {
-      const marco: Base = { ...base, dataFixacao: "2024-11-15", mesReajuste: 11 };
+      const marco: FormaDaBase = { ...base, dataFixacao: "2024-11-15", mesReajuste: 11 };
       const r = apurarValorBase(prestacao("2026-11-15"), marco, comCalendario(), 2);
       expect(r.avisos).toEqual([
         "IPCA de out/2026 ainda sem divulgação na data da consulta (previsão: por volta de 10/11/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 523,40.",
@@ -671,7 +683,7 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
     it("buraco só, num mês já esperado: texto genérico", () => {
       const tabela = comCalendario();
       delete tabela.series["433"]?.["2025-05"];
-      const marco: Base = { ...base, dataFixacao: "2024-03-15", mesReajuste: 3 };
+      const marco: FormaDaBase = { ...base, dataFixacao: "2024-03-15", mesReajuste: 3 };
       const r = apurarValorBase(prestacao("2026-09-15"), marco, tabela, 2);
       expect(r.avisos).toEqual([
         "IPCA de mai/2025 não disponível na tabela de índices (último mês disponível: set/2026): o reajuste de mar/2026 não foi aplicado; a prestação mantém R$ 525,29.",
@@ -707,5 +719,145 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
         "IGP-M de out/2026 ainda sem divulgação na data da consulta (previsão: no fim de out/2026): o reajuste de nov/2026 não foi aplicado; a prestação mantém R$ 500,00.",
       ]);
     });
+  });
+});
+
+describe("base por períodos (§17.2, fase 5b)", () => {
+  const fixo: FormaDaBase = {
+    tipo: "valorFixo",
+    valor: "500.00",
+    dataFixacao: "2024-03-10",
+    indiceReajuste: "nenhum",
+    mesReajuste: 3,
+  };
+  const sm: FormaDaBase = { tipo: "percentualSalarioMinimo", percentual: "30" };
+  // até 31/12/2024: R$ 500,00 fixados em 10/03/2024, sem reajuste; desde 01/01/2025: 30% do SM
+  const dividida: Base = {
+    periodos: [
+      { de: null, ate: "2024-12-31", forma: fixo },
+      { de: "2025-01-01", ate: null, forma: sm },
+    ],
+  };
+  const tabela = tabelaRegimeNovo();
+
+  it("um período só, de null a null: a conta e a memória de sempre, sem prefixo", () => {
+    expect(baseUnica(sm)).toEqual({ periodos: [{ de: null, ate: null, forma: sm }] });
+    const unica = apurarPelaBase(prestacao("2025-01-05"), baseUnica(sm), tabela, 2);
+    expect(unica).toEqual(apurarValorBase(prestacao("2025-01-05"), sm, tabela, 2));
+    expect(unica.memoria).toBe("30% do salário mínimo de jan/2025 (R$ 1.518,00) = R$ 455,40");
+  });
+
+  it("cada prestação usa o período em que cai o vencimento; a memória diz qual período valeu", () => {
+    const antesDaFixacao = apurarPelaBase(prestacao("2024-02-05"), dividida, tabela, 2);
+    expect(antesDaFixacao.valor?.toFixed(2)).toBe("500.00");
+    expect(antesDaFixacao.memoria).toBe(
+      "Base até 31/12/2024: Valor fixado em 10/03/2024: R$ 500,00 (prestação anterior à fixação, sem reajuste)",
+    );
+    expect(antesDaFixacao.avisos).toEqual([
+      "Prestação de fev/2024 anterior à data de fixação (10/03/2024): usado o valor fixado, sem reajuste.",
+    ]);
+    const dezembro = apurarPelaBase(prestacao("2024-12-05"), dividida, tabela, 2);
+    expect(dezembro.memoria).toBe(
+      "Base até 31/12/2024: Valor fixado em 10/03/2024: R$ 500,00 (sem reajuste)",
+    );
+    // último dia do 1º período e primeiro dia do 2º
+    expect(apurarPelaBase(prestacao("2024-12-31"), dividida, tabela, 2).valor?.toFixed(2)).toBe(
+      "500.00",
+    );
+    const janeiro = apurarPelaBase(prestacao("2025-01-01"), dividida, tabela, 2);
+    expect(janeiro.valor?.toFixed(2)).toBe("455.40");
+    expect(janeiro.memoria).toBe(
+      "Base desde 01/01/2025: 30% do salário mínimo de jan/2025 (R$ 1.518,00) = R$ 455,40",
+    );
+    expect(janeiro.indicesUsados.map((i) => i.competencia)).toEqual(["2025-01"]);
+  });
+
+  it("corrigir a base de um período muda só as prestações daquele período (35% × 1.518,00 = 531,30)", () => {
+    const corrigida: Base = {
+      periodos: [
+        { de: null, ate: "2024-12-31", forma: fixo },
+        { de: "2025-01-01", ate: null, forma: { ...sm, percentual: "35" } },
+      ],
+    };
+    expect(apurarPelaBase(prestacao("2024-12-05"), corrigida, tabela, 2).valor?.toFixed(2)).toBe(
+      "500.00",
+    );
+    expect(apurarPelaBase(prestacao("2025-03-05"), corrigida, tabela, 2).valor?.toFixed(2)).toBe(
+      "531.30",
+    );
+  });
+
+  it('período do meio: "de … a …"; a ordem da lista não importa', () => {
+    const tres: Base = {
+      periodos: [
+        { de: "2025-07-01", ate: null, forma: sm },
+        { de: null, ate: "2024-12-31", forma: fixo },
+        { de: "2025-01-01", ate: "2025-06-30", forma: { ...fixo, valor: "600.00" } },
+      ],
+    };
+    const r = apurarPelaBase(prestacao("2025-06-30"), tres, tabela, 2);
+    expect(r.valor?.toFixed(2)).toBe("600.00");
+    expect(r.memoria).toBe(
+      "Base de 01/01/2025 a 30/06/2025: Valor fixado em 10/03/2024: R$ 600,00 (sem reajuste)",
+    );
+    expect(periodoDaData(tres, "2025-07-01")?.forma).toBe(sm);
+  });
+
+  it("valor fixo num período posterior: o reajuste conta da data de fixação do próprio período", () => {
+    const ipca: FormaDaBase = {
+      tipo: "valorFixo",
+      valor: "500.00",
+      dataFixacao: "2024-03-15",
+      indiceReajuste: "IPCA",
+      mesReajuste: 3,
+    };
+    const comReajuste: Base = {
+      periodos: [
+        { de: null, ate: "2024-12-31", forma: sm },
+        { de: "2025-01-01", ate: null, forma: ipca },
+      ],
+    };
+    const sozinha = apurarValorBase(prestacao("2025-04-10"), ipca, tabela, 2);
+    const r = apurarPelaBase(prestacao("2025-04-10"), comReajuste, tabela, 2);
+    expect(r.valor?.toFixed(2)).toBe(sozinha.valor?.toFixed(2));
+    expect(r.memoria).toBe(`Base desde 01/01/2025: ${sozinha.memoria}`);
+    expect(r.memoria).toContain("reajustados em mar/2025");
+  });
+
+  it("vencimento sem período (base fora do padrão, vinda de arquivo): sem valor, com aviso, sem erro", () => {
+    const comBuraco: Base = {
+      periodos: [
+        { de: null, ate: "2024-12-31", forma: fixo },
+        { de: "2025-02-01", ate: null, forma: sm },
+      ],
+    };
+    const r = apurarPelaBase(prestacao("2025-01-10"), comBuraco, tabela, 2);
+    expect(r.valor).toBeNull();
+    expect(r.memoria).toBe("Nenhum período da base cobre o vencimento");
+    expect(r.avisos).toEqual([
+      "Nenhum período da base cobre o vencimento de 10/01/2025: a prestação ficou sem valor; informe o valor à mão.",
+    ]);
+    expect(apurarPelaBase(prestacao("2025-01-10"), { periodos: [] }, tabela, 2).avisos).toEqual(
+      r.avisos,
+    );
+  });
+
+  it("períodos sobrepostos (arquivo fora do padrão): vale o primeiro, em ordem cronológica, que contém o vencimento", () => {
+    const sobrepostos: Base = {
+      periodos: [
+        { de: "2025-01-01", ate: null, forma: sm },
+        { de: null, ate: "2025-06-30", forma: fixo },
+      ],
+    };
+    expect(periodoDaData(sobrepostos, "2025-03-10")?.forma).toBe(fixo);
+  });
+
+  it("descreve o período como o título dos blocos da seção 2, em minúsculas", () => {
+    expect(descreverPeriodoDaBase({ de: null, ate: "2024-12-31" })).toBe("até 31/12/2024");
+    expect(descreverPeriodoDaBase({ de: "2025-01-01", ate: "2025-06-30" })).toBe(
+      "de 01/01/2025 a 30/06/2025",
+    );
+    expect(descreverPeriodoDaBase({ de: "2025-07-01", ate: null })).toBe("desde 01/07/2025");
+    expect(descreverPeriodoDaBase({ de: null, ate: null })).toBe("em todo o período");
   });
 });

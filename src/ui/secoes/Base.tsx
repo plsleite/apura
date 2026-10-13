@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { decompor } from "../../compartilhado/datas.ts";
-import type { Base, IndiceReajuste } from "../../compartilhado/tipos.ts";
+import type { FormaDaBase, IndiceReajuste } from "../../compartilhado/tipos.ts";
 import { CampoSelecao, CampoTexto, Opcao, useCampoValidado } from "../componentes/Campo.tsx";
 import {
   DATA_MAXIMA,
@@ -47,9 +47,9 @@ export const NOMES_DOS_MESES = [
   "dezembro",
 ] as const;
 
-type BaseValorFixo = Extract<Base, { tipo: "valorFixo" }>;
-type BasePercentualSM = Extract<Base, { tipo: "percentualSalarioMinimo" }>;
-type BasePercentualRendimentos = Extract<Base, { tipo: "percentualRendimentos" }>;
+type BaseValorFixo = Extract<FormaDaBase, { tipo: "valorFixo" }>;
+type BasePercentualSM = Extract<FormaDaBase, { tipo: "percentualSalarioMinimo" }>;
+type BasePercentualRendimentos = Extract<FormaDaBase, { tipo: "percentualRendimentos" }>;
 
 interface Rascunhos {
   valorFixo: BaseValorFixo;
@@ -67,7 +67,7 @@ const OPCOES_DE_REAJUSTE: ReadonlyArray<{ valor: IndiceReajuste; rotulo: string 
 
 const OPCOES_DE_MES = NOMES_DOS_MESES.map((nome, i) => ({ valor: String(i + 1), rotulo: nome }));
 
-function rascunhosIniciais(base: Base, hoje: string): Rascunhos {
+function rascunhosIniciais(base: FormaDaBase, hoje: string): Rascunhos {
   const mes = decompor(hoje).mes;
   return {
     valorFixo: {
@@ -89,16 +89,16 @@ export function BaseDosAlimentos({
   faltas = [],
   aoMudar,
 }: {
-  base: Base;
+  base: FormaDaBase;
   /** data de hoje, para o rascunho do valor fixo */
   hoje: string;
   /** campos que faltam para apurar as prestações lançadas (`faltasDaBase`) */
   faltas?: FaltaDaBase[];
-  aoMudar: (base: Base) => void;
+  aoMudar: (base: FormaDaBase) => void;
 }) {
   const [rascunhos, setRascunhos] = useState(() => rascunhosIniciais(base, hoje));
-  const escolher = (tipo: Base["tipo"]) => aoMudar(rascunhos[tipo]);
-  const atualizar = <T extends Base>(nova: T) => {
+  const escolher = (tipo: FormaDaBase["tipo"]) => aoMudar(rascunhos[tipo]);
+  const atualizar = <T extends FormaDaBase>(nova: T) => {
     setRascunhos({ ...rascunhos, [nova.tipo]: nova });
     aoMudar(nova);
   };

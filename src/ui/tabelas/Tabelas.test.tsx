@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { decimal } from "../../compartilhado/decimal.ts";
 import { formatarMoeda } from "../../compartilhado/formatacao.ts";
+import { baseUnica } from "../../motor/base.ts";
 import { calcular } from "../../motor/calcular.ts";
 import { gerarLoteAmortizacoes, gerarLotePrestacoes } from "../../motor/lote.ts";
 import App from "../App.tsx";
@@ -20,13 +21,13 @@ const multaEHonorarios = (r: ReturnType<typeof calcular>) =>
 /** O que o motor devolve para o mesmo caso montado na tela: valor fixo R$ 1.000,00, dia 5, 2 meses. */
 function esperado() {
   const calculo = novoCalculo({ id: "x", agora: AGORA_DE_TESTE, hoje: HOJE_DE_TESTE });
-  calculo.base = {
+  calculo.base = baseUnica({
     tipo: "valorFixo",
     valor: "1000.00",
     dataFixacao: HOJE_DE_TESTE,
     indiceReajuste: "nenhum",
     mesReajuste: 10,
-  };
+  });
   calculo.lancamentos = gerarLotePrestacoes(
     { diaVencimento: 5, mesesEmAtraso: 2 },
     HOJE_DE_TESTE,

@@ -17,13 +17,13 @@
       "exequente": "",
       "executado": ""
     },
-    "base": {
+    "base": {"periodos": [{"de": null, "ate": null, "forma": {
       "tipo": "valorFixo",
       "valor": "500.00",
       "dataFixacao": "2024-03-15",
       "indiceReajuste": "IPCA",
       "mesReajuste": 3
-    },
+    }}]},
     "lotes": {},
     "lancamentos": [
       {"id": "p-2024-01", "tipo": "prestacao", "data": "2024-01-15", "competencia": "2024-01", "descricao": "Anterior à fixação", "origem": "avulso", "editado": false},
