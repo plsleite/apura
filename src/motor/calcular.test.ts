@@ -8,7 +8,7 @@ import type {
   Lancamento,
   TabelaIndices,
 } from "../compartilhado/tipos.ts";
-import { metodologiaPadrao } from "../metodologias/padrao.ts";
+import { metodologiaDaOpcao, metodologiaPadrao } from "../metodologias/padrao.ts";
 import { baseUnica } from "./base.ts";
 import { calcular } from "./calcular.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
@@ -294,6 +294,34 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
     valorInformado: string,
     encargos?: Lancamento["encargos"],
   ): Lancamento => ({ id, tipo, data, valorInformado, origem: "avulso", editado: true, encargos });
+
+  it("as duas metodologias pré-carregadas (§17.3): R$ 1.000,00 de 10/01/2025 até 10/10/2026, IGP-M e 1% ao mês em todo o período contra IPCA e taxa legal", () => {
+    const calculo = calculoCom(
+      [lancamento("p", "prestacao", "2025-01-10", "1000.00")],
+      "2026-10-10",
+    );
+    const semTransicao = calcular(
+      { ...calculo, metodologia: metodologiaDaOpcao("igpmJuros1") },
+      tabelaRegimeNovo(),
+    ).lancamentos[0];
+    // juros de 1% ao mês rateados por mês-calendário, contando as duas pontas:
+    // 22/31 + 20 meses inteiros (fev/2025 a set/2026) + 10/31 = 21,032258%
+    expect(semTransicao).toMatchObject({
+      correcao: { fator: "1.022857" },
+      corrigido: "1022.86",
+      juros: { percentual: "21.032258" },
+      atualizado: "1237.99",
+    });
+    expect(semTransicao?.correcao.indices.every((i) => i.serie === "189")).toBe(true);
+    expect(semTransicao?.juros.detalhe.every((d) => d.regime === "percentualMensal")).toBe(true);
+    const comTransicao = calcular(calculo, tabelaRegimeNovo()).lancamentos[0];
+    expect(comTransicao).toMatchObject({
+      correcao: { fator: "1.083283" },
+      juros: { percentual: "15.779661" },
+      atualizado: "1254.22",
+    });
+    expect(comTransicao?.juros.detalhe.every((d) => d.regime === "taxaLegal")).toBe(true);
+  });
 
   it("regime novo de ponta a ponta: IPCA e taxa legal conferidos na Calculadora do Cidadão", () => {
     const r = calcular(

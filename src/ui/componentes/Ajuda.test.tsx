@@ -73,6 +73,9 @@ describe("Ajuda (toggletip: ajuda sob demanda)", () => {
     expect(balao.className).toBe("balao flutuante");
     // posição fixa, junto do botão, para não ficar presa na rolagem da tabela
     expect(balao.style.getPropertyValue("--balao-topo")).toMatch(/px$/);
+    // rolar dentro do próprio balão (altura máxima com rolagem própria) não o fecha
+    fireEvent.scroll(balao);
+    expect(screen.getByText("Tudo sobre a linha.")).toBeDefined();
     fireEvent.scroll(window);
     expect(screen.queryByText("Tudo sobre a linha.")).toBeNull();
   });

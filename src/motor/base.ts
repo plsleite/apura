@@ -464,8 +464,13 @@ export function baseUnica(forma: FormaDaBase): Base {
   return { periodos: [{ de: null, ate: null, forma }] };
 }
 
-/** Os períodos da base em ordem cronológica (o sem começo primeiro). */
+/**
+ * Os períodos da base em ordem cronológica (o sem começo primeiro). Uma base fora do formato (sem
+ * a lista de períodos, como a de antes da fase 5b, vinda de um arquivo editado à mão) não tem
+ * períodos: as prestações ficam sem valor, com aviso, e o motor não lança erro (regra 4).
+ */
 export function periodosDaBaseOrdenados(base: Base): PeriodoDaBase[] {
+  if (!Array.isArray(base.periodos)) return [];
   return [...base.periodos].sort((a, b) => {
     if (a.de === b.de) return 0;
     if (a.de === null) return -1;

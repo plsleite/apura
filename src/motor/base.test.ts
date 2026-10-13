@@ -842,6 +842,16 @@ describe("base por períodos (§17.2, fase 5b)", () => {
     );
   });
 
+  it("base no formato antigo, de uma forma só (sem a lista de períodos): sem valor, com aviso, sem erro (regra 4)", () => {
+    const antiga = { tipo: "percentualSalarioMinimo", percentual: "30" } as unknown as Base;
+    const r = apurarPelaBase(prestacao("2025-01-10"), antiga, tabela, 2);
+    expect(r.valor).toBeNull();
+    expect(r.avisos).toEqual([
+      "Nenhum período da base cobre o vencimento de 10/01/2025: a prestação ficou sem valor; informe o valor à mão.",
+    ]);
+    expect(periodoDaData(antiga, "2025-01-10")).toBeUndefined();
+  });
+
   it("períodos sobrepostos (arquivo fora do padrão): vale o primeiro, em ordem cronológica, que contém o vencimento", () => {
     const sobrepostos: Base = {
       periodos: [

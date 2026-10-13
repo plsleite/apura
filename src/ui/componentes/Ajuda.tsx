@@ -66,7 +66,11 @@ export function Ajuda({
       if (evento.target instanceof Node && raiz.current?.contains(evento.target)) return;
       setAberta(false);
     };
-    const rolou = () => setAberta(false);
+    // rolar a página (ou a tabela) fecha o balão; rolar dentro dele, não
+    const rolou = (evento: Event) => {
+      if (evento.target instanceof Node && balao.current?.contains(evento.target)) return;
+      setAberta(false);
+    };
     document.addEventListener("pointerdown", fora, true);
     document.addEventListener("focusin", fora);
     if (flutuante) window.addEventListener("scroll", rolou, true);
