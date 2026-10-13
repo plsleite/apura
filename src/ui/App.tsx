@@ -23,6 +23,7 @@ import {
 } from "./preferencias.ts";
 import { Rodape } from "./Rodape.tsx";
 import { Indicadores } from "./tabelas/Indicadores.tsx";
+import { Personalizar } from "./tabelas/Personalizar.tsx";
 import { TabelaLancamentos, type LinhaDaTabela } from "./tabelas/TabelaLancamentos.tsx";
 import { BaseDosAlimentos } from "./secoes/Base.tsx";
 import { EditorDePeriodos } from "./secoes/EditorDePeriodos.tsx";
@@ -69,6 +70,9 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
   const incluir = (lancamento: Omit<Lancamento, "id" | "origem" | "editado">) =>
     despachar({ tipo: "incluirLancamento", lancamento, em: agora() });
   const valorDaBase = (data: string) => valorPelaBase(estado.calculo, estado.tabela, data);
+  const [personalizando, setPersonalizando] = useState<Lancamento | null>(null);
+  const personalizar = (id: string) =>
+    setPersonalizando(estado.calculo.lancamentos.find((l) => l.id === id) ?? null);
 
   const novo = () =>
     despachar({ tipo: "novo", calculo: calculoNovo(preferencias), ...ambiente.congelar() });
@@ -138,7 +142,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
           <TabelaLancamentos
             tipo="prestacao"
             linhas={linhas.filter((l) => l.lancamento.tipo === "prestacao")}
-            aoPersonalizar={() => undefined}
+            aoPersonalizar={personalizar}
             aoExcluir={excluir}
             aoEditar={editar}
             aoSugerir={() => sugerirPrestacao(estado.calculo, estado.tabela)}
@@ -148,7 +152,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
           <TabelaLancamentos
             tipo="amortizacao"
             linhas={linhas.filter((l) => l.lancamento.tipo === "amortizacao")}
-            aoPersonalizar={() => undefined}
+            aoPersonalizar={personalizar}
             aoExcluir={excluir}
             aoEditar={editar}
             aoSugerir={() => sugerirPagamento(estado.calculo)}
@@ -180,6 +184,27 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             Fechar
           </button>
         </div>
+      </Dialogo>
+      <Dialogo
+        titulo={
+          personalizando?.tipo === "amortizacao"
+            ? "Personalizar pagamento"
+            : "Personalizar prestação"
+        }
+        aberto={personalizando !== null}
+        aoFechar={() => setPersonalizando(null)}
+      >
+        {personalizando !== null ? (
+          <Personalizar
+            lancamento={personalizando}
+            calculo={estado.calculo}
+            aoEditar={editar}
+            aoAplicarRendimento={(id, rendimento) =>
+              despachar({ tipo: "aplicarRendimentoDaquiEmDiante", id, rendimento, em: agora() })
+            }
+            aoFechar={() => setPersonalizando(null)}
+          />
+        ) : null}
       </Dialogo>
     </div>
   );
