@@ -26,6 +26,7 @@ Este arquivo diz em que ponto o projeto está e como retomar o trabalho em qualq
 | 3 · Bases e lotes | valor fixo com reajuste, % do salário mínimo, % dos rendimentos; lotes cumulativos de prestações e amortizações; casos-limite | concluída em 2026-10-11 · plano: `docs/superpowers/plans/2026-10-11-fase-3-bases-e-lotes.md` |
 | 4 · Índices: rotina central e monitoramento | rotina central diária no repositório, congelamento por cálculo, calendário de divulgação, monitoramento gratuito | concluída em 2026-10-12 · plano: `docs/superpowers/plans/2026-10-12-fase-4-indices-rotina-central.md` |
 | 5 · Interface | layout em duas colunas, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-12-fase-5-interface.md` |
+| 5b · Ajustes da interface depois do uso | pagamento sugerido no mês seguinte, base dos alimentos por períodos, escolha da metodologia padrão de encargos (guardada no navegador), etiquetas das linhas numa linha só (§17 do design) | desenho aprovado em 2026-10-13 · plano a escrever: `docs/superpowers/plans/2026-10-13-fase-5b-ajustes-da-interface.md` |
 | 6 · Relatório e PDF | componente, metodologia gerada, matriz de índices, marca, fontes, impressão | plano a escrever |
 | 7 · Publicação | GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores | pendente |
 
