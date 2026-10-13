@@ -291,6 +291,59 @@ describe("reduzir: lotes cumulativos e lançamentos", () => {
     ).toBe(estado);
   });
 
+  it("aplicar o rendimento daqui em diante não mexe nas prestações com descrição (13º, férias), como no lote (D1)", () => {
+    let estado = reduzir(estadoNovo(), {
+      tipo: "lancarPrestacoes",
+      lote: { diaVencimento: 5, de: "2026-07", ate: "2026-09" },
+      em: DEPOIS,
+    });
+    estado = reduzir(estado, {
+      tipo: "incluirLancamento",
+      lancamento: {
+        tipo: "prestacao",
+        data: "2026-09-20",
+        descricao: "13º salário",
+        rendimento: "3000.00",
+      },
+      em: DEPOIS,
+    });
+    estado = reduzir(estado, {
+      tipo: "incluirLancamento",
+      lancamento: { tipo: "prestacao", data: "2026-09-25", descricao: "   " },
+      em: DEPOIS,
+    });
+    estado = reduzir(estado, {
+      tipo: "aplicarRendimentoDaquiEmDiante",
+      id: "p-2026-08",
+      rendimento: "2500.00",
+      em: DEPOIS,
+    });
+    expect(
+      estado.calculo.lancamentos.map((l) => [l.data, l.rendimento ?? null, l.editado]),
+    ).toEqual([
+      ["2026-07-05", null, false],
+      ["2026-08-05", "2500.00", true],
+      ["2026-09-05", "2500.00", true],
+      ["2026-09-20", "3000.00", false],
+      ["2026-09-25", "2500.00", true],
+    ]);
+    // aplicado a partir do próprio 13º, ele entra (e as comuns depois dele também)
+    const decimoTerceiro = estado.calculo.lancamentos.find((l) => l.descricao === "13º salário");
+    estado = reduzir(estado, {
+      tipo: "aplicarRendimentoDaquiEmDiante",
+      id: decimoTerceiro?.id ?? "",
+      rendimento: "3100.00",
+      em: DEPOIS,
+    });
+    expect(estado.calculo.lancamentos.map((l) => [l.data, l.rendimento ?? null])).toEqual([
+      ["2026-07-05", null],
+      ["2026-08-05", "2500.00"],
+      ["2026-09-05", "2500.00"],
+      ["2026-09-20", "3100.00"],
+      ["2026-09-25", "3100.00"],
+    ]);
+  });
+
   it("exclui pelo id", () => {
     let estado = reduzir(estadoNovo(), {
       tipo: "lancarPrestacoes",

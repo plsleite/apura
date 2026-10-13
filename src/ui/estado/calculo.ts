@@ -254,8 +254,12 @@ export function reduzir(estado: Estado, acao: Acao): Estado {
       if (origem === undefined) return estado;
       return comLancamentos(
         estado,
+        // as prestações com descrição (13º, férias) não entram, como no lote (D1); a própria
+        // linha de onde se aplicou entra sempre
         estado.calculo.lancamentos.map((l) =>
-          l.tipo === "prestacao" && l.data >= origem.data
+          l.tipo === "prestacao" &&
+          l.data >= origem.data &&
+          (l.id === origem.id || !l.descricao?.trim())
             ? { ...l, rendimento: acao.rendimento, editado: true }
             : l,
         ),
