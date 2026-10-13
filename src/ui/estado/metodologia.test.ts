@@ -1,24 +1,28 @@
 import { describe, expect, it } from "vitest";
 import type { Metodologia } from "../../compartilhado/tipos.ts";
-import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { metodologiaDaOpcao, metodologiaPadrao } from "../../metodologias/padrao.ts";
 import { validarMetodologia } from "../../motor/periodos.ts";
 import { metodologiaSelicUnica } from "../../motor/testes/regime-novo.ts";
 import {
   dividirPeriodo,
-  ehPadrao,
   escolherIndice,
   escolherJuros,
   escolherOpcoes,
   escolherTaxa,
+  normalizar,
+  opcaoDaMetodologia,
   removerDivisao,
   restaurarPadrao,
   resumirMetodologia,
 } from "./metodologia.ts";
 
 describe("resumirMetodologia (resumo em uma frase, §9.2)", () => {
-  it("descreve a padrão TJMS/SAJ v1 e a SELIC única", () => {
+  it("descreve as duas opções pré-carregadas e a SELIC única", () => {
     expect(resumirMetodologia(metodologiaPadrao())).toBe(
       "Até 29/08/2024: IGP-M e juros de 1% ao mês. Desde 30/08/2024: IPCA e taxa legal.",
+    );
+    expect(resumirMetodologia(metodologiaDaOpcao("igpmJuros1"))).toBe(
+      "Sempre: IGP-M e juros de 1% ao mês.",
     );
     expect(resumirMetodologia(metodologiaSelicUnica())).toBe(
       "Sempre: SELIC única (correção e juros juntos).",
@@ -86,6 +90,11 @@ describe("dividir e remover divisões", () => {
     expect(dividirPeriodo(semPeriodo, "2019-05-05").aviso).toBe(
       "Nenhum período cobre 05/05/2019: nada foi dividido.",
     );
+    // em 01/01/1900, o período anterior acabaria em 1899, e o arquivo não reabriria
+    expect(dividirPeriodo(metodologiaPadrao(), "1900-01-01")).toEqual({
+      metodologia: metodologiaPadrao(),
+      aviso: "A data precisa ser posterior a 01/01/1900.",
+    });
   });
 
   it("remover a divisão funde o período no anterior, que mantém as regras; a padrão volta a ser padrão", () => {
@@ -96,17 +105,11 @@ describe("dividir e remover divisões", () => {
     // remover a primeira "divisão" (índice 0) ou um índice inexistente não muda nada
     expect(removerDivisao(dividida, 0)).toBe(dividida);
     expect(removerDivisao(dividida, 9)).toBe(dividida);
-    // remover a transição legal: um período só, com as regras antigas
+    // remover a transição legal: um período só, com as regras antigas, que é a segunda opção
+    // pré-carregada (reconhecida pelo conteúdo, §17.3)
     const semTransicao = removerDivisao(metodologiaPadrao(), 1);
-    expect(semTransicao.periodos).toEqual([
-      {
-        de: null,
-        ate: null,
-        correcao: { indice: "IGP-M" },
-        juros: { tipo: "percentualMensal", taxaMensal: "1" },
-      },
-    ]);
-    expect(semTransicao.ajustada).toBe(true);
+    expect(semTransicao).toEqual(metodologiaDaOpcao("igpmJuros1"));
+    expect(semTransicao.ajustada).toBe(false);
   });
 });
 
@@ -155,12 +158,44 @@ describe("índice, juros, taxa e opções de cada período", () => {
       deflacao: "zerarNegativos",
       ajustada: true,
     });
-    expect(ehPadrao(opcoes)).toBe(false);
+    expect(opcaoDaMetodologia(opcoes)).toBeNull();
     expect(
       escolherOpcoes(opcoes, { incidenciaMesInicial: "proRata", deflacao: "aplicarComPiso" })
         .ajustada,
     ).toBe(false);
     expect(restaurarPadrao()).toEqual(metodologiaPadrao());
-    expect(ehPadrao({ ...metodologiaPadrao(), ajustada: true })).toBe(true);
+    expect(restaurarPadrao("igpmJuros1")).toEqual(metodologiaDaOpcao("igpmJuros1"));
+    expect(opcaoDaMetodologia({ ...metodologiaPadrao(), ajustada: true })).toBe("lei14905");
+  });
+});
+
+describe("reconhecimento das opções pré-carregadas pelo conteúdo (§17.3)", () => {
+  it("diz qual opção a metodologia é, ou nenhuma; id e nome não contam, a taxa vale como número", () => {
+    expect(opcaoDaMetodologia(metodologiaPadrao())).toBe("lei14905");
+    expect(opcaoDaMetodologia(metodologiaDaOpcao("igpmJuros1"))).toBe("igpmJuros1");
+    // um arquivo antigo, com o nome de antes e a taxa escrita "1.0", é a mesma metodologia
+    const antiga: Metodologia = {
+      ...metodologiaPadrao(),
+      id: "tjms-saj",
+      nome: "TJMS/SAJ",
+      ajustada: true,
+      periodos: metodologiaPadrao().periodos.map((p) =>
+        p.juros.tipo === "percentualMensal"
+          ? { ...p, juros: { tipo: "percentualMensal", taxaMensal: "1.0" } }
+          : p,
+      ),
+    };
+    expect(opcaoDaMetodologia(antiga)).toBe("lei14905");
+    expect(normalizar(antiga)).toMatchObject({
+      id: "lei-14905-2024",
+      nome: "Lei 14.905/2024",
+      ajustada: false,
+    });
+    // taxa de 2% ao mês: nenhuma das duas; o id e o nome ficam como estavam
+    const dois = escolherTaxa(metodologiaDaOpcao("igpmJuros1"), 0, "2");
+    expect(opcaoDaMetodologia(dois)).toBeNull();
+    expect(dois).toMatchObject({ id: "igpm-juros-1", ajustada: true });
+    // taxa inválida não quebra a comparação
+    expect(opcaoDaMetodologia(escolherTaxa(metodologiaPadrao(), 0, "x"))).toBeNull();
   });
 });

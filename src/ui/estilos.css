@@ -434,6 +434,30 @@ textarea {
   align-items: center;
 }
 
+/* metodologia de encargos (§17.3): cada opção numa linha, o balão ⓘ ao lado da segunda */
+.metodologia-de-encargos {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.metodologia-de-encargos label {
+  align-items: flex-start;
+}
+
+.metodologia-de-encargos label input {
+  margin-top: 3px;
+}
+
+.opcao-com-ajuda {
+  display: inline-flex;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.metodologia-de-encargos > .linha {
+  margin: 4px 0 0;
+}
+
 .nota {
   font-size: 13px;
   color: var(--discreto);
@@ -705,15 +729,58 @@ td:first-child .celula-em-edicao .erro {
   font-size: 12px;
 }
 
-/* a primeira coluna quebra a linha: descrição e etiquetas descem para baixo do vencimento
-   quando falta espaço, sem empurrar os botões da linha para fora da tabela */
-tbody td:first-child {
-  white-space: normal;
-  min-width: 8.5em;
+/* a linha nunca quebra (§17.4): a descrição encolhe até caber, com reticências (inteira no
+   title e no balão), sem empurrar o lápis e o ✕ para fora da tabela; só a etiqueta mais
+   importante aparece, com "+N" (decisão de 13/10/2026) */
+.celula-vencimento {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
-td .descricao {
+.celula-vencimento > * {
+  flex: none;
+}
+
+.celula-vencimento > .ajuda-balao {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ajuda-balao > .situacao {
+  flex: 1 1 auto;
+}
+
+/* com descrição na tabela, a primeira coluna prefere 18em: a sobra vai para a descrição, e,
+   sem espaço, ela encolhe até o mínimo, sem a tabela passar da coluna */
+table.com-descricao tbody td:first-child {
+  width: 18em;
+}
+
+.situacao {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* contain: o tamanho do texto não conta na largura da coluna, e a descrição ocupa só o que
+   sobra (de 1,5 a 9 letras de largura) */
+.situacao > .descricao {
+  contain: inline-size;
+  flex: 1 1 9em;
+  min-width: 1.5em;
+  max-width: 9em;
   margin-left: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
   color: var(--discreto);
 }
 
@@ -731,12 +798,39 @@ td.dica {
   display: inline-block;
   border-radius: 3px;
   padding: 0 5px;
+  font-family: var(--corpo);
   font-size: 11px;
+  line-height: 1.5;
   margin: 1px 0 1px 4px;
   white-space: nowrap;
   background: var(--aviso-fundo);
   border: 1px solid var(--aviso-borda);
   color: var(--texto);
+  flex: none;
+}
+
+.situacao[aria-expanded="true"] > .etiqueta {
+  border-color: var(--verde);
+}
+
+/* balão das etiquetas: em posição fixa, junto do botão (não fica preso na rolagem da tabela) */
+.balao.flutuante {
+  position: fixed;
+  top: var(--balao-topo);
+  left: var(--balao-esquerda);
+  z-index: 20;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.balao-descricao,
+.balao-etiqueta {
+  display: block;
+}
+
+.balao-descricao {
+  margin-bottom: 4px;
+  color: var(--discreto);
 }
 
 .acoes-linha {
@@ -855,9 +949,23 @@ td.dica {
   margin-bottom: 8px;
 }
 
-.periodo > h3 {
+.periodo > h3,
+.titulo-do-periodo > h3 {
   font-size: 13px;
   margin-bottom: 6px;
+}
+
+/* base dos alimentos por períodos (§17.2): título do bloco e "Remover divisão" na mesma linha */
+.titulo-do-periodo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dividir-base > .nota {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 /* ---- Celular: campos lado a lado empilham; o balão da ajuda vira uma faixa no pé da tela ---- */
@@ -867,7 +975,8 @@ td.dica {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .balao {
+  .balao,
+  .balao.flutuante {
     position: fixed;
     top: auto;
     left: 16px;
@@ -884,6 +993,12 @@ td.dica {
 @media (max-width: 1023px) {
   .principal {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* empilhadas, a tabela tem a largura da tela (e rola sozinha no celular): a descrição mostra
+     o tamanho cheio (§17.4) */
+  .situacao > .descricao {
+    contain: none;
   }
 
   .coluna-direita {

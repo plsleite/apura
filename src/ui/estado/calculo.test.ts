@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Lancamento } from "../../compartilhado/tipos.ts";
 import { descreverSituacao } from "../../indices/congelar.ts";
-import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { metodologiaDaOpcao, metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { baseUnica } from "../../motor/base.ts";
 import { tabelaRegimeNovo } from "../../motor/testes/regime-novo.ts";
 import { estadoInicial, novoCalculo, reduzir, type Estado } from "./calculo.ts";
 
@@ -19,6 +20,15 @@ function estadoNovo(): Estado {
 }
 
 describe("novoCalculo", () => {
+  it("nasce com a metodologia escolhida como padrão nas preferências (§17.3)", () => {
+    expect(novoCalculo({ id: "c", agora: AGORA, hoje: HOJE }).metodologia).toEqual(
+      metodologiaPadrao(),
+    );
+    expect(
+      novoCalculo({ id: "c", agora: AGORA, hoje: HOJE, metodologia: "igpmJuros1" }).metodologia,
+    ).toEqual(metodologiaDaOpcao("igpmJuros1"));
+  });
+
   it("nasce em branco, com a data de hoje, valor fixo sem reajuste fixado hoje e a metodologia padrão", () => {
     const calculo = novoCalculo({
       id: "c-1",
@@ -41,11 +51,19 @@ describe("novoCalculo", () => {
         executado: "",
       },
       base: {
-        tipo: "valorFixo",
-        valor: "",
-        dataFixacao: HOJE,
-        indiceReajuste: "nenhum",
-        mesReajuste: 10,
+        periodos: [
+          {
+            de: null,
+            ate: null,
+            forma: {
+              tipo: "valorFixo",
+              valor: "",
+              dataFixacao: HOJE,
+              indiceReajuste: "nenhum",
+              mesReajuste: 10,
+            },
+          },
+        ],
       },
       lotes: {},
       lancamentos: [],
@@ -72,10 +90,12 @@ describe("reduzir: campos simples", () => {
     expect(estado.tocado).toBe(true);
     estado = reduzir(estado, {
       tipo: "base",
-      base: { tipo: "percentualSalarioMinimo", percentual: "30" },
+      base: baseUnica({ tipo: "percentualSalarioMinimo", percentual: "30" }),
       em: DEPOIS,
     });
-    expect(estado.calculo.base).toEqual({ tipo: "percentualSalarioMinimo", percentual: "30" });
+    expect(estado.calculo.base).toEqual(
+      baseUnica({ tipo: "percentualSalarioMinimo", percentual: "30" }),
+    );
     estado = reduzir(estado, { tipo: "dataElaboracao", data: "2026-09-30", em: DEPOIS });
     expect(estado.calculo.dataElaboracao).toBe("2026-09-30");
     estado = reduzir(estado, {
@@ -258,41 +278,17 @@ describe("reduzir: lotes cumulativos e lançamentos", () => {
     ).toBe(false);
   });
 
-  it("aplica o rendimento daqui em diante só às prestações da data em diante", () => {
+  it("aplicar o rendimento daqui em diante divide a base no vencimento da linha (§17.2): as linhas seguem a regra, sem a marca de ajustada", () => {
     let estado = reduzir(estadoNovo(), {
-      tipo: "lancarPrestacoes",
-      lote: { diaVencimento: 5, de: "2026-07", ate: "2026-09" },
-      em: DEPOIS,
-    });
-    estado = reduzir(estado, {
-      tipo: "lancarPagamentos",
-      lote: { valorMensal: "100.00", diaPagamento: 5, de: "2026-08", ate: "2026-08" },
-      em: DEPOIS,
-    });
-    estado = reduzir(estado, {
-      tipo: "aplicarRendimentoDaquiEmDiante",
-      id: "p-2026-08",
-      rendimento: "2500.00",
-      em: DEPOIS,
-    });
-    expect(estado.calculo.lancamentos.map((l) => [l.id, l.rendimento ?? null, l.editado])).toEqual([
-      ["p-2026-07", null, false],
-      ["a-2026-08", null, false],
-      ["p-2026-08", "2500.00", true],
-      ["p-2026-09", "2500.00", true],
-    ]);
-    expect(
-      reduzir(estado, {
-        tipo: "aplicarRendimentoDaquiEmDiante",
-        id: "x",
-        rendimento: "1",
-        em: DEPOIS,
+      tipo: "base",
+      base: baseUnica({
+        tipo: "percentualRendimentos",
+        percentual: "30",
+        rendimentoPadrao: "2000.00",
       }),
-    ).toBe(estado);
-  });
-
-  it("aplicar o rendimento daqui em diante não mexe nas prestações com descrição (13º, férias), como no lote (D1)", () => {
-    let estado = reduzir(estadoNovo(), {
+      em: DEPOIS,
+    });
+    estado = reduzir(estado, {
       tipo: "lancarPrestacoes",
       lote: { diaVencimento: 5, de: "2026-07", ate: "2026-09" },
       em: DEPOIS,
@@ -307,9 +303,11 @@ describe("reduzir: lotes cumulativos e lançamentos", () => {
       },
       em: DEPOIS,
     });
+    // a linha de onde se aplica tinha um rendimento próprio digitado antes
     estado = reduzir(estado, {
-      tipo: "incluirLancamento",
-      lancamento: { tipo: "prestacao", data: "2026-09-25", descricao: "   " },
+      tipo: "editarLancamento",
+      id: "p-2026-08",
+      mudancas: { rendimento: "2400.00" },
       em: DEPOIS,
     });
     estado = reduzir(estado, {
@@ -318,30 +316,52 @@ describe("reduzir: lotes cumulativos e lançamentos", () => {
       rendimento: "2500.00",
       em: DEPOIS,
     });
+    expect(estado.calculo.base).toEqual({
+      periodos: [
+        {
+          de: null,
+          ate: "2026-08-04",
+          forma: { tipo: "percentualRendimentos", percentual: "30", rendimentoPadrao: "2000.00" },
+        },
+        {
+          de: "2026-08-05",
+          ate: null,
+          forma: { tipo: "percentualRendimentos", percentual: "30", rendimentoPadrao: "2500.00" },
+        },
+      ],
+    });
+    // a linha de onde se aplicou perde o rendimento próprio; as outras ficam como estão
     expect(
       estado.calculo.lancamentos.map((l) => [l.data, l.rendimento ?? null, l.editado]),
     ).toEqual([
       ["2026-07-05", null, false],
-      ["2026-08-05", "2500.00", true],
-      ["2026-09-05", "2500.00", true],
+      ["2026-08-05", null, true],
+      ["2026-09-05", null, false],
       ["2026-09-20", "3000.00", false],
-      ["2026-09-25", "2500.00", true],
     ]);
-    // aplicado a partir do próprio 13º, ele entra (e as comuns depois dele também)
-    const decimoTerceiro = estado.calculo.lancamentos.find((l) => l.descricao === "13º salário");
-    estado = reduzir(estado, {
-      tipo: "aplicarRendimentoDaquiEmDiante",
-      id: decimoTerceiro?.id ?? "",
-      rendimento: "3100.00",
+    expect(estado.calculo.atualizadoEm).toBe(DEPOIS);
+    // linha inexistente ou período de outra forma: nada muda
+    expect(
+      reduzir(estado, {
+        tipo: "aplicarRendimentoDaquiEmDiante",
+        id: "x",
+        rendimento: "1",
+        em: DEPOIS,
+      }),
+    ).toBe(estado);
+    const fixo = reduzir(estadoNovo(), {
+      tipo: "lancarPrestacoes",
+      lote: { diaVencimento: 5, de: "2026-07", ate: "2026-07" },
       em: DEPOIS,
     });
-    expect(estado.calculo.lancamentos.map((l) => [l.data, l.rendimento ?? null])).toEqual([
-      ["2026-07-05", null],
-      ["2026-08-05", "2500.00"],
-      ["2026-09-05", "2500.00"],
-      ["2026-09-20", "3100.00"],
-      ["2026-09-25", "3100.00"],
-    ]);
+    expect(
+      reduzir(fixo, {
+        tipo: "aplicarRendimentoDaquiEmDiante",
+        id: "p-2026-07",
+        rendimento: "1",
+        em: DEPOIS,
+      }),
+    ).toBe(fixo);
   });
 
   it("exclui pelo id", () => {

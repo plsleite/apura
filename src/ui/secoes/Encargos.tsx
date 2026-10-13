@@ -1,12 +1,14 @@
 import type { Calculo } from "../../compartilhado/tipos.ts";
+import type { OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
-import { CampoArea, CampoTexto, useCampoValidado } from "../componentes/Campo.tsx";
+import { CampoArea, CampoTexto, Opcao, useCampoValidado } from "../componentes/Campo.tsx";
 import { DATA_MAXIMA, formatarNumeroParaCampo, lerData, lerPercentual } from "../entrada.ts";
-import { resumirMetodologia } from "../estado/metodologia.ts";
+import { opcaoDaMetodologia, resumirMetodologia } from "../estado/metodologia.ts";
 
 /**
- * Seção "5 · Encargos e data do cálculo" (§9.2; explicações nos balões ⓘ): metodologia com
- * resumo em uma frase e "Ajustar" (abre o editor de períodos), multa e honorários do art. 523,
+ * Seção "5 · Encargos e data do cálculo" (§9.2; explicações nos balões ⓘ): metodologia escolhida
+ * entre as duas opções pré-carregadas (§17.3; ajustada, nenhuma fica marcada e o resumo em uma
+ * frase aparece) e "Ajustar" (abre o editor de períodos), multa e honorários do art. 523,
  * §1º, do CPC (10% cada por padrão, decisão de 13/10/2026), data de elaboração e observações para
  * o relatório.
  */
@@ -16,12 +18,15 @@ export function Encargos({
   aoMudarDataElaboracao,
   aoMudarObservacoes,
   aoAjustar,
+  aoEscolherMetodologia,
 }: {
   calculo: Calculo;
   aoMudarAcrescimo: (campo: "multaPercentual" | "honorariosPercentual", valor: string) => void;
   aoMudarDataElaboracao: (data: string) => void;
   aoMudarObservacoes: (texto: string) => void;
   aoAjustar: () => void;
+  /** aplica a opção ao cálculo e a guarda como padrão dos cálculos novos (§17.3) */
+  aoEscolherMetodologia: (opcao: OpcaoDeMetodologia) => void;
 }) {
   const multa = useCampoValidado({
     valorGuardado: calculo.acrescimos.multaPercentual,
@@ -41,34 +46,58 @@ export function Encargos({
     ler: lerData,
     aoValidar: aoMudarDataElaboracao,
   });
-  const ajustada = calculo.metodologia.ajustada;
+  const opcao = opcaoDaMetodologia(calculo.metodologia);
   return (
     <section className="secao" aria-labelledby="titulo-encargos">
       <div className="titulo-secao">
         <h2 id="titulo-encargos">5 · Encargos e data do cálculo</h2>
       </div>
-      <div className="linha">
-        <div className="campo largo">
+      <fieldset className="grupo metodologia-de-encargos">
+        <legend>
           <span className="rotulo-do-campo">
-            <span className="rotulo-estatico" id="rotulo-metodologia">
-              Metodologia de encargos{ajustada ? " (ajustada)" : " (padrão)"}
+            <span className="rotulo-estatico">
+              Metodologia de encargos{opcao === null ? " (ajustada)" : ""}
             </span>
             <Ajuda assunto="Metodologia de encargos">
               Correção pelo índice de cada período, proporcional aos dias restantes do mês do
-              vencimento ou do pagamento (pro rata); juros simples sobre o valor corrigido; a
-              transição de 30/08/2024 (Lei 14.905/2024) já vem pronta. Em "Ajustar" dá para dividir
-              períodos, trocar índices e taxas e escolher SELIC única, incidência no mês inicial e
-              tratamento de índices negativos.
+              vencimento ou do pagamento (pro rata); juros simples sobre o valor corrigido. A opção
+              escolhida vale para este cálculo e para os próximos (fica guardada neste navegador).
+              Em "Ajustar" dá para dividir períodos, trocar índices e taxas e escolher SELIC única,
+              incidência no mês inicial e tratamento de índices negativos.
             </Ajuda>
           </span>
-          <p className="resumo-metodologia" aria-labelledby="rotulo-metodologia">
-            {resumirMetodologia(calculo.metodologia)}
-          </p>
+        </legend>
+        <Opcao
+          tipo="radio"
+          nome="metodologia"
+          rotulo="Até 29/08/2024: IGP-M e juros de 1% ao mês. Desde 30/08/2024: IPCA e taxa legal."
+          marcado={opcao === "lei14905"}
+          aoMudar={() => aoEscolherMetodologia("lei14905")}
+        />
+        <span className="opcao-com-ajuda">
+          <Opcao
+            tipo="radio"
+            nome="metodologia"
+            rotulo="IGP-M e juros de 1% ao mês em todo o período."
+            marcado={opcao === "igpmJuros1"}
+            aoMudar={() => aoEscolherMetodologia("igpmJuros1")}
+          />
+          <Ajuda assunto="IGP-M e juros de 1% ao mês em todo o período">
+            IGP-M e juros de 1% ao mês do vencimento até a data do cálculo, sem a mudança de
+            30/08/2024. Use quando a decisão ou o acordo fixou esses critérios, ou quando o juízo
+            mantém o critério anterior à Lei 14.905/2024. Sem isso, a regra legal desde 30/08/2024 é
+            IPCA e taxa legal (arts. 389 e 406 do CC).
+          </Ajuda>
+        </span>
+        {opcao === null ? (
+          <p className="resumo-metodologia">Ajustada: {resumirMetodologia(calculo.metodologia)}</p>
+        ) : null}
+        <div className="linha">
+          <button type="button" className="botao secundario" onClick={aoAjustar}>
+            Ajustar
+          </button>
         </div>
-        <button type="button" className="botao secundario" onClick={aoAjustar}>
-          Ajustar
-        </button>
-      </div>
+      </fieldset>
       <div className="linha">
         <CampoTexto
           id="multa"

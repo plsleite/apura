@@ -63,10 +63,10 @@ describe("App (fundação da tela)", () => {
     );
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByText(/Até 29\/08\/2024/).textContent).toBe(
-      "Até 29/08/2024: INPC e juros de 1% ao mês. Desde 30/08/2024: IPCA e taxa legal.",
+    expect(screen.getByText(/^Ajustada:/).textContent).toBe(
+      "Ajustada: Até 29/08/2024: INPC e juros de 1% ao mês. Desde 30/08/2024: IPCA e taxa legal.",
     );
-    expect(screen.getByText(/Metodologia de encargos/).textContent).toBe(
+    expect(screen.getByText(/^Metodologia de encargos/).textContent).toBe(
       "Metodologia de encargos (ajustada)",
     );
   });

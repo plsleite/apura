@@ -121,7 +121,7 @@ Verificação feita em 10/10/2026: a API SGS do BCB responde a chamadas feitas p
 |---|---|---|
 | `motor/` | Funções puras: gerar lançamentos em lote, apurar valor-base, atualizar cada lançamento, totais, avisos. Recebe Cálculo + tabela de índices, devolve Resultado. Sem rede, relógio ou tela. | `compartilhado/` |
 | `indices/` | Cópia embutida das séries (publicada com o site), congelamento por cálculo e calendário de divulgação, que entregam uma tabela de índices ao motor; fora do app, a rotina central (cliente da API do BCB, script e workflow) e o relatório mensal da rotina. | `compartilhado/` |
-| `metodologias/` | Metodologias de encargos em JSON versionado (padrão "TJMS/SAJ v1"). | — |
+| `metodologias/` | Metodologias de encargos em JSON versionado (padrão "Lei 14.905/2024", `lei-14905-2024.v1.json`; alternativa "IGP-M e juros de 1% ao mês", `igpm-juros-1.v1.json`; §17.3). | — |
 | `ui/` | Tela única em duas colunas; edita o Cálculo; chama o motor a cada alteração; recentes e preferências. | `motor/`, `indices/`, `metodologias/`, `relatorio/` |
 | `relatorio/` | Componente do relatório (tela e impressão), texto de metodologia gerado, matriz de índices, marca e CSS de impressão. | `motor/` (tipos) |
 | `compartilhado/` | Tipos básicos, datas, decimal, formatação pt-BR. | — |
@@ -161,7 +161,7 @@ Calculo {
   id: string; criadoEm: string; atualizadoEm: string
   dataElaboracao: "AAAA-MM-DD"            // padrão: hoje; editável
   cabecalho: { defensor; orgao; processo; exequente; executado }   // texto livre
-  base:
+  base:                                   // desde a fase 5b: { periodos: PeriodoDaBase[] } (§17.2)
     | { tipo: "valorFixo"; valor; dataFixacao; indiceReajuste: "IPCA"|"INPC"|"IGP-M"|"SM"|"nenhum"; mesReajuste: 1..12 }
     | { tipo: "percentualSalarioMinimo"; percentual }
     | { tipo: "percentualRendimentos"; percentual; rendimentoPadrao }
@@ -199,7 +199,7 @@ EncargosProprios {
 
 ```ts
 Metodologia {
-  id: "tjms-saj"; versao: 1; nome: "TJMS/SAJ"; ajustada: boolean
+  id: "lei-14905-2024"; versao: 1; nome: "Lei 14.905/2024"; ajustada: boolean   // ids e nomes desde a fase 5b (§17.3)
   periodos: Array<{
     de: "AAAA-MM-DD" | null; ate: "AAAA-MM-DD" | null
     correcao: { indice: "IGP-M"|"INPC"|"IPCA"|"nenhum" }
@@ -213,7 +213,7 @@ Metodologia {
 }
 ```
 
-Metodologia padrão "TJMS/SAJ v1": período até 29/08/2024 com IGP-M e 1% ao mês; período desde 30/08/2024 com IPCA e taxa legal. O nome e a versão aparecem só na tela e no arquivo; o relatório descreve apenas o que foi aplicado (§10.4).
+Metodologia padrão "Lei 14.905/2024" (até a fase 5, "TJMS/SAJ v1"; renomeada na fase 5b, §17.3): período até 29/08/2024 com IGP-M e 1% ao mês; período desde 30/08/2024 com IPCA e taxa legal. Desde a fase 5b, a pessoa escolhe entre ela e "IGP-M e juros de 1% ao mês" em todo o período, e a escolha fica nas preferências do navegador (§17.3). O nome e a versão ficam só no arquivo; a tela mostra as regras e o relatório descreve apenas o que foi aplicado (§10.4).
 
 ### 5.4 Resultado (derivado pelo motor)
 
@@ -272,12 +272,13 @@ Todas as regras abaixo nascem com teste e exemplo numérico (§11). O motor nunc
 
 ### 6.3 Valor-base de cada prestação
 
+- Desde a fase 5b, a base é uma lista de períodos, e cada prestação usa a forma do período em que cai o vencimento (§17.2); as regras abaixo valem dentro de cada período.
 - A base usa sempre o mês da data do vencimento da prestação (a competência é o rótulo da linha e, no lote, é igual ao mês do vencimento). Toda prestação sem valor informado, de lote ou avulsa, é apurada pela base (decisões de 11/10/2026, fase 3).
 - Valor fixo com reajuste por índice (IGP-M, INPC ou IPCA): no mês do reajuste (padrão: mês da fixação; editável), o valor vigente é multiplicado pelo índice acumulado dos 12 meses anteriores ao mês do reajuste; a partir daí, a cada 12 meses. O primeiro reajuste cai 12 meses após a fixação quando o mês do reajuste é o próprio mês da fixação (fixado em 15/03/2024, reajuste em março: mar/2025, com o acumulado de mar/2024 a fev/2025); com outro mês escolhido, cai na primeira ocorrência dele depois do mês da fixação, com o acumulado desde o mês da fixação até o mês anterior ao reajuste (pode ter menos de 12 meses). O acumulado (produto dos fatores mensais) multiplica com precisão integral e aparece na memória com 4 casas; o valor reajustado é arredondado a 2 casas a cada reajuste, e o seguinte parte dele. Acumulado negativo ou zero não reduz o valor: o valor vigente é mantido e a memória registra. Se faltar na tabela algum mês do acumulado, o reajuste não é aplicado, o valor vigente anterior é mantido e o aviso diz até que mês o índice está disponível. Com o calendário na tabela (fase 4), quando todos os meses que faltam ainda não saíram, o aviso diz que estão "ainda sem divulgação na data da consulta", com a previsão ("previsão: …" quando falta um mês; "previsão para <último mês>: …" quando falta mais de um), e não o último mês disponível.
 - Reajuste "pelo salário mínimo": valor × (salário mínimo do mês do vencimento ÷ salário mínimo do mês da fixação), sem usar o mês de reajuste (o valor acompanha o salário mínimo no mês em que ele muda). "Nenhum": valor constante.
 - Prestação anterior ao mês da fixação: entra com o valor fixado, sem reajuste, com aviso.
 - Percentual do salário mínimo: percentual × salário mínimo do mês do vencimento (série 1619). Mês ainda sem salário mínimo publicado: usa-se o último publicado, que vigora até o novo decreto, com aviso; a proveniência registra o mês realmente usado. Com o calendário na tabela (fase 4), o mês posterior ao esperado sai como "ainda não publicado na data da consulta", com a previsão, e o mês já esperado que falta (buraco de dados) sai como "não consta na tabela de índices", com o último anterior disponível.
-- Percentual dos rendimentos: percentual × rendimento do mês (o do lançamento, se informado; senão o padrão). Não há reajuste automático: quando o rendimento muda, o usuário informa o novo rendimento nos meses afetados ou altera o padrão.
+- Percentual dos rendimentos: percentual × rendimento do mês (o do lançamento, se informado; senão o padrão). Não há reajuste automático: quando o rendimento muda, o usuário informa o novo rendimento nos meses afetados ou altera o padrão (desde a fase 5b, "Aplicar este rendimento daqui em diante" divide a base, §17.2).
 - Valor informado à mão prevalece: a linha do resultado traz `editado = true`, aviso no lançamento e resumo no resultado; o relatório menciona esses valores. Amortizações têm o valor sempre informado e não recebem a marca.
 - Valor-base arredondado a 2 casas. `memoriaBase` explica a conta em uma frase (ex.: "30% do salário mínimo de mar/2024 (R$ 1.412,00) = R$ 423,60"; "R$ 500,00 fixados em 15/03/2024, reajustados em mar/2025 (IPCA de mar/2024 a fev/2025: 5,0576%) = R$ 525,29").
 - 13º salário e férias, quando a base for percentual dos rendimentos, entram como prestação avulsa com descrição e com o rendimento do evento informado no lançamento; o motor aplica o percentual (ponto de validação 11, decidido em 11/10/2026).
@@ -406,7 +407,7 @@ Barra superior: nome do sistema ("Apura · Sistema de Cálculos Judiciais · DPE
 ### 9.2 Seções da esquerda
 
 1. **Processo**: defensor(a) e órgão (lembrados no navegador, com "Lembrar neste navegador" e "Esquecer"), nº do processo, exequente (alimentando), executado (alimentante); opção "Guardar cálculos recentes neste navegador". Ajuda: partes e processo não são gravados em servidor algum.
-2. **Base dos alimentos**: três opções; só os campos da opção escolhida aparecem; ajuda sobre reajuste e salário mínimo.
+2. **Base dos alimentos**: três opções; só os campos da opção escolhida aparecem; ajuda sobre reajuste e salário mínimo. Desde a fase 5b, "Dividir em" cria períodos com formas diferentes (§17.2).
 3. **Prestações em atraso**: dia do vencimento; "Meses em atraso" ou "De / até"; botão "Lançar em lote" (cumulativo).
 4. **Pagamentos**: valor por mês, dia do pagamento, de / até; botão "Lançar em lote".
 5. **Encargos e data do cálculo**: metodologia com resumo em uma frase e "Ajustar…", que abre o editor de períodos: lista de períodos (de/até) com índice de correção e regra de juros (tipo e taxa) em cada um, "Dividir em uma data" e "Remover divisão", incidência no mês inicial e tratamento da deflação; multa e honorários (padrão 0, sugestão 10); data de elaboração; observações para o relatório.
@@ -427,7 +428,7 @@ Barra superior: nome do sistema ("Apura · Sistema de Cálculos Judiciais · DPE
 - Tema claro e escuro conforme o sistema; impressão sempre clara.
 - Acessibilidade básica: rótulos associados, navegação por teclado, contraste das cores da marca.
 
-**Decisões registradas em 12 e 13/10/2026 (fase 5).** Ajuda: em vez de textos sempre visíveis, balões ⓘ ao lado dos títulos e dos campos, abertos sob demanda (clique, toque, Enter ou Espaço; Esc, novo clique ou clique fora fecham; no celular, uma faixa no pé da tela); sempre visíveis ficam só os erros, os avisos e os exemplos dentro dos campos (decisão de 13/10/2026). A tela não menciona outros sistemas (a metodologia padrão aparece como "padrão"). Nº do processo no padrão do CNJ, com máscara e conferência dos dígitos verificadores (vazio é aceito); com prestação lançada e o campo da base que a alimenta em branco, a caixa de avisos diz o que falta e onde, e o campo fica em vermelho; os exemplos dentro dos campos começam por "ex.:"; na seção 1, os campos ficam lado a lado, em duas colunas. Entrada de números: vírgula nos centavos, ponto só como separador de milhar, "1.5" recusado com a frase de ajuda; cada tecla válida recalcula e o inválido fica no campo, com o estado guardando o último valor válido; o erro de formato (campo em vermelho e a frase embaixo) aparece só quando a pessoa sai do campo com texto inválido, nunca enquanto digita, e some assim que o texto volta a ser válido (decisão de 13/10/2026; os avisos do que falta na base continuam imediatos); datas pelo campo de data do navegador, inclusive nos intervalos dos lotes, de 1900 a 2199 (na tela e no arquivo aberto; data posterior a 31/12/2199 é recusada). Painéis (editor de períodos, "Personalizar", "Abrir") são um componente próprio com papel `dialog` (o `<dialog>` nativo não existe no jsdom dos testes). O cálculo novo nasce em valor fixo, sem reajuste, fixado hoje, com o valor em branco e multa e honorários de 10% cada (decisão de 13/10/2026). Lotes de até 600 meses; o lote de prestações pede, por padrão, o primeiro e o último vencimento (datas), e o dia do vencimento só em "meses em atraso"; o lote de pagamentos pede o primeiro e o último pagamento (datas); os avisos do lote saem embaixo do formulário que o lançou. Linhas das tabelas com o vencimento como referência (a competência não aparece; por dentro, é o mês do vencimento), etiquetas "vincenda", "não computada", "valor informado" e "ajustada", e vencimento e valor editáveis na própria célula (Enter grava, Esc desiste; valor digitado vira "valor informado", apagado volta à base); o ✕ exclui em dois cliques, sem janela pop-up: no primeiro, ele fica vermelho, sem mexer na linha (decisão de 13/10/2026); editar na célula não muda a tabela (o campo tem o tamanho do texto, e a data é digitada como dd/mm/aaaa); dívida negativa sai como R$ 0,00 nos indicadores, cujos valores nunca quebram entre "R$" e o número, com os cartões em 5, 3 + 2, 2 + 2 + 1 ou um por linha. "+ Prestação" e "+ Pagamento" acrescentam uma linha nova no fim da tabela, já sugerida (prestação: vencimento no mês seguinte ao da última e o valor informado da última ou o da base; pagamento: data de hoje e o valor do anterior), que herda as regras próprias de correção e juros da última, mas não os termos; o lápis ("Personalizar") fica para os ajustes finos; em "% dos rendimentos" o painel traz o rendimento do mês e "Aplicar este rendimento daqui em diante". Termo final posterior à data de elaboração e termo inicial posterior ao final são recusados no painel. "SELIC única" é uma escolha só no editor (juros `selicUnica` e correção "nenhum"). Tema: em vez de só "conforme o sistema", um botão na barra que alterna "do sistema", "claro" e "escuro" a cada clique (padrão "do sistema"), guardado nas preferências; "claro" e "escuro" marcam `data-theme` na raiz, e a impressão continua sempre clara (fase 6). "Relatório / PDF" fica na barra, desligado, até a fase 6. Identidade visual na tela já nesta fase (decisão de 13/10/2026): logo horizontal branco da DPE-MS na barra (`public/logos/dpems-horizontal-branca.png`, gerado do PNG do manual), faixa verde com linha dourada e fontes Ubuntu e Source Sans 3 embutidas pelos pacotes `@fontsource` (no lugar de `.woff2` copiados para `public/fontes/`), sem carregar do Google. Na tela, o texto discreto usa o cinza `#6E716C` e o vermelho `#C8101A`, por contraste (o cinza e o vermelho do manual ficam para elementos não textuais); os campos de data mostram o formato do idioma do navegador. Arquivo salvo: `{ formato, calculo, resultado }`, nome `apura-<processo>-<data de elaboração>.json`, validado campo a campo ao abrir; o `resultado` é opcional (sem ele, abre com aviso e sem a comparação de índices).
+**Decisões registradas em 12 e 13/10/2026 (fase 5).** Ajuda: em vez de textos sempre visíveis, balões ⓘ ao lado dos títulos e dos campos, abertos sob demanda (clique, toque, Enter ou Espaço; Esc, novo clique ou clique fora fecham; no celular, uma faixa no pé da tela); sempre visíveis ficam só os erros, os avisos e os exemplos dentro dos campos (decisão de 13/10/2026). A tela não menciona outros sistemas (a metodologia padrão aparece como "padrão"). Nº do processo no padrão do CNJ, com máscara e conferência dos dígitos verificadores (vazio é aceito); com prestação lançada e o campo da base que a alimenta em branco, a caixa de avisos diz o que falta e onde, e o campo fica em vermelho; os exemplos dentro dos campos começam por "ex.:"; na seção 1, os campos ficam lado a lado, em duas colunas. Entrada de números: vírgula nos centavos, ponto só como separador de milhar, "1.5" recusado com a frase de ajuda; cada tecla válida recalcula e o inválido fica no campo, com o estado guardando o último valor válido; o erro de formato (campo em vermelho e a frase embaixo) aparece só quando a pessoa sai do campo com texto inválido, nunca enquanto digita, e some assim que o texto volta a ser válido (decisão de 13/10/2026; os avisos do que falta na base continuam imediatos); datas pelo campo de data do navegador, inclusive nos intervalos dos lotes, de 1900 a 2199 (na tela e no arquivo aberto; data posterior a 31/12/2199 é recusada). Painéis (editor de períodos, "Personalizar", "Abrir") são um componente próprio com papel `dialog` (o `<dialog>` nativo não existe no jsdom dos testes). O cálculo novo nasce em valor fixo, sem reajuste, fixado hoje, com o valor em branco e multa e honorários de 10% cada (decisão de 13/10/2026). Lotes de até 600 meses; o lote de prestações pede, por padrão, o primeiro e o último vencimento (datas), e o dia do vencimento só em "meses em atraso"; o lote de pagamentos pede o primeiro e o último pagamento (datas); os avisos do lote saem embaixo do formulário que o lançou. Linhas das tabelas com o vencimento como referência (a competência não aparece; por dentro, é o mês do vencimento), etiquetas "vincenda", "não computada", "valor informado" e "ajustada" (desde a fase 5b, uma só na linha, com "+N" e balão, §17.4), e vencimento e valor editáveis na própria célula (Enter grava, Esc desiste; valor digitado vira "valor informado", apagado volta à base); o ✕ exclui em dois cliques, sem janela pop-up: no primeiro, ele fica vermelho, sem mexer na linha (decisão de 13/10/2026); editar na célula não muda a tabela (o campo tem o tamanho do texto, e a data é digitada como dd/mm/aaaa); dívida negativa sai como R$ 0,00 nos indicadores, cujos valores nunca quebram entre "R$" e o número, com os cartões em 5, 3 + 2, 2 + 2 + 1 ou um por linha. "+ Prestação" e "+ Pagamento" acrescentam uma linha nova no fim da tabela, já sugerida (prestação: vencimento no mês seguinte ao da última e o valor informado da última ou o da base; pagamento: data de hoje e o valor do anterior; desde a fase 5b, o mês seguinte ao do último pagamento, §17.1), que herda as regras próprias de correção e juros da última, mas não os termos; o lápis ("Personalizar") fica para os ajustes finos; em "% dos rendimentos" o painel traz o rendimento do mês e "Aplicar este rendimento daqui em diante". Termo final posterior à data de elaboração e termo inicial posterior ao final são recusados no painel. "SELIC única" é uma escolha só no editor (juros `selicUnica` e correção "nenhum"). Tema: em vez de só "conforme o sistema", um botão na barra que alterna "do sistema", "claro" e "escuro" a cada clique (padrão "do sistema"), guardado nas preferências; "claro" e "escuro" marcam `data-theme` na raiz, e a impressão continua sempre clara (fase 6). "Relatório / PDF" fica na barra, desligado, até a fase 6. Identidade visual na tela já nesta fase (decisão de 13/10/2026): logo horizontal branco da DPE-MS na barra (`public/logos/dpems-horizontal-branca.png`, gerado do PNG do manual), faixa verde com linha dourada e fontes Ubuntu e Source Sans 3 embutidas pelos pacotes `@fontsource` (no lugar de `.woff2` copiados para `public/fontes/`), sem carregar do Google. Na tela, o texto discreto usa o cinza `#6E716C` e o vermelho `#C8101A`, por contraste (o cinza e o vermelho do manual ficam para elementos não textuais); os campos de data mostram o formato do idioma do navegador. Arquivo salvo: `{ formato, calculo, resultado }`, nome `apura-<processo>-<data de elaboração>.json`, validado campo a campo ao abrir; o `resultado` é opcional (sem ele, abre com aviso e sem a comparação de índices).
 
 ---
 
@@ -462,7 +463,7 @@ Não há linha de "competências em aberto" nem qualquer referência à Súmula 
 
 Gerado a partir do que foi aplicado, nunca de parâmetros do sistema: não cita nome ou versão de perfil, nem "personalização". Parágrafos:
 
-- **Base.** Como o valor de cada prestação foi apurado (valor fixo e reajustes aplicados, com percentuais; ou percentual do salário mínimo; ou percentual dos rendimentos), e menção a valores editados à mão.
+- **Base.** Como o valor de cada prestação foi apurado (valor fixo e reajustes aplicados, com percentuais; ou percentual do salário mínimo; ou percentual dos rendimentos), e menção a valores editados à mão. Com a base dividida em períodos (fase 5b), um trecho por período (§17.2).
 - **Termos.** "Encargos desde o vencimento de cada prestação (mora automática, art. 397 do CC). Correção pelo índice do mês do vencimento, proporcional aos dias restantes (pro rata), e pelos meses seguintes até {último mês divulgado}; juros até a data do cálculo." Lançamentos com termos iniciais ou finais próprios são descritos aqui, com suas datas.
 - **Encargos.** Texto fixo aprovado: "Até 29/08/2024, IGP-M e juros de 1% ao mês, simples, pro rata die; desde 30/08/2024, IPCA (art. 389, parágrafo único, do CC) e juros pela taxa legal (art. 406, §1º, do CC; Lei 14.905/2024; Resolução CMN 5.171/2024), série 29543 do BCB, acumulada por juros simples e pro rata por dias corridos, sobre o valor corrigido." Adaptado automaticamente quando a metodologia for outra (INPC, IPCA, SELIC única).
 - **Amortizações.** "Cada pagamento é atualizado pelos mesmos critérios, da data do pagamento até a data do cálculo, e abatido do total atualizado."
@@ -513,7 +514,7 @@ apura/
   src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
   src/motor/                lote.ts · base.ts · correcao.ts · juros.ts · calcular.ts · casos/
   src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
-  src/metodologias/         tjms-saj.v1.json
+  src/metodologias/         lei-14905-2024.v1.json · igpm-juros-1.v1.json · padrao.ts
   src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ · secoes/ · tabelas/ · componentes/ · testes/
   src/relatorio/            Relatorio.tsx · metodologia.ts · matriz-indices.tsx · impressao.css
 ```
@@ -564,8 +565,114 @@ Conteúdo: o que é o Apura e o estado do MVP; comandos (`npm install`, `npm run
 3. **Bases e lotes**: valor fixo com reajuste, % do salário mínimo, % dos rendimentos; lotes cumulativos de prestações e amortizações; casos-limite.
 4. **Índices: rotina central e monitoramento**: rotina central diária no repositório, congelamento por cálculo, calendário de divulgação, monitoramento.
 5. **Interface**: layout, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas.
+   5b. **Ajustes da interface depois do uso** (§17): pagamento sugerido, base por períodos, escolha da metodologia padrão, etiquetas numa linha.
 6. **Relatório e PDF**: componente, metodologia gerada, matriz, marca, fontes, impressão.
 7. **Publicação**: GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores.
+
+---
+
+## 17. Ajustes depois do uso da fase 5 (fase 5b)
+
+Decididos pelo responsável em 13/10/2026, depois de usar a interface da fase 5. Quatro ajustes; os itens 17.1 e o princípio de 17.2 vieram decididos, o restante foi fechado no brainstorming da fase 5b. Onde esta seção e as anteriores divergirem, vale esta.
+
+### 17.1 Pagamento sugerido em "+ Pagamento"
+
+A linha nova de "+ Pagamento" (D20 da fase 5) sugere a data no **mês seguinte ao do último pagamento** (o mais recente pela data), no mesmo dia (último dia do mês quando ele for mais curto, como na prestação), e o valor do último pagamento; sem pagamento anterior, a data de elaboração e o valor em branco, como antes. Continua herdando as regras próprias de correção e juros do último pagamento, sem os termos. "+ Prestação" não muda (mês seguinte ao da última prestação comum): a tabela é ordenada por data, a linha nova fica embaixo, e o uso principal é acrescentar as prestações vencidas no curso do processo; o histórico longo se lança pelo lote.
+
+Exemplos: último pagamento em 10/09/2026 → sugere 10/10/2026; em 31/01/2026 → 28/02/2026. A data sugerida pode cair depois da data do cálculo (último pagamento em 05/10/2026, cálculo em 13/10/2026 → 05/11/2026, que sairia "não computado"); a pessoa corrige a data na linha antes de incluí-la, como já ocorre com a prestação vincenda.
+
+### 17.2 Base dos alimentos por períodos
+
+**Problema.** Até a fase 5, o cálculo tinha uma única base, e mudar a base recalculava todas as prestações; não dava para fazer, por exemplo, 2024 em valor fixo e 2025 em % do salário mínimo. **Decisão:** a base vira uma lista de períodos seguidos, cada um com a sua forma e os seus campos; a coluna da esquerda continua sendo a regra e a tabela, o resultado.
+
+**Modelo.**
+
+```ts
+Calculo.base: { periodos: PeriodoDaBase[] }
+PeriodoDaBase { de: "AAAA-MM-DD" | null; ate: "AAAA-MM-DD" | null; forma: FormaDaBase }
+FormaDaBase =                                  // as três formas de §5.2, com os mesmos campos
+  | { tipo: "valorFixo"; valor; dataFixacao; indiceReajuste; mesReajuste }
+  | { tipo: "percentualSalarioMinimo"; percentual }
+  | { tipo: "percentualRendimentos"; percentual; rendimentoPadrao }
+```
+
+- Os períodos são seguidos, sem buraco nem sobreposição: cada um começa no dia seguinte ao fim do anterior. O primeiro não tem começo (`de: null`) e vale para qualquer vencimento anterior à primeira divisão; o último não tem fim (`ate: null`) e vale para qualquer vencimento posterior à última, inclusive vincendas. A pessoa não digita "de" e "até": informa só a data em que a base muda ("Dividir em"), e o Apura fecha o período anterior na véspera.
+- O cálculo novo nasce com um período só, de `null` a `null`, com a base de antes (valor fixo, sem reajuste, fixado hoje, valor em branco; D7 da fase 5). Quem nunca divide não vê diferença.
+- **Sem retrocompatibilidade** (decisão do responsável: o Apura ainda não foi publicado e só ele o usou): o formato continua `apura/calculo@1`, já com a base por períodos; arquivo ou recente com a base antiga é recusado na abertura com a frase de campo inválido (os recentes dos testes do responsável saem por "Limpar recentes"). Os doze casos de referência têm só o campo `calculo.base` reescrito como um período de `null` a `null` com a mesma forma (e o id e o nome da metodologia, §17.3), por script; o `esperado` de cada um fica intocado, e os resultados continuam idênticos.
+
+**Regra do motor.** A prestação sem valor informado usa o período em que cai o **vencimento** (`de ≤ vencimento ≤ ate`). Dentro do período, a conta é a de §6.3, sem mudança: o reajuste do valor fixo conta da data de fixação do próprio período (que pode ser anterior ao início do período), e a prestação anterior à fixação entra pelo valor fixado, com o aviso de sempre. O valor informado à mão (célula ou lápis) prevalece e nunca é tocado pela base. O motor nunca lança erro: um vencimento que nenhum período cobre (só possível com dado fora do padrão) fica `ignorado`, com o aviso "Nenhum período da base cobre o vencimento de dd/mm/aaaa: a prestação ficou sem valor; informe o valor à mão."; base sem períodos, o mesmo aviso em cada prestação; períodos sobrepostos, vale o primeiro, em ordem cronológica, que contém o vencimento. A abertura de arquivo recusa base sem períodos, com buraco, com sobreposição, com o primeiro `de` ou o último `ate` preenchidos, ou fora de ordem.
+
+**Memória da linha.** Com um período só, a frase de §6.3, sem mudança. Com dois ou mais, ela começa dizendo qual período valeu: "Base até 31/12/2024: …", "Base de 01/01/2025 a 30/06/2025: …", "Base desde 01/07/2025: …".
+
+**Exemplo numérico** (salário mínimo de R$ 1.412,00 em 2024 e R$ 1.518,00 em 2025). Base "até 31/12/2024: R$ 500,00 fixados em 10/03/2024, sem reajuste" e "desde 01/01/2025: 30% do salário mínimo":
+
+| Vencimento | Período | Valor-base | Memória |
+|---|---|---|---|
+| 05/02/2024 | 1º | R$ 500,00 | "Base até 31/12/2024: Valor fixado em 10/03/2024: R$ 500,00 (prestação anterior à fixação, sem reajuste)", com o aviso de prestação anterior à fixação |
+| 05/12/2024 | 1º | R$ 500,00 | "Base até 31/12/2024: Valor fixado em 10/03/2024: R$ 500,00 (sem reajuste)" |
+| 31/12/2024 | 1º | R$ 500,00 | último dia do 1º período |
+| 01/01/2025 | 2º | R$ 455,40 | "Base desde 01/01/2025: 30% do salário mínimo de jan/2025 (R$ 1.518,00) = R$ 455,40" |
+| 05/01/2025, com R$ 600,00 digitado | — | R$ 600,00 | "Valor informado: R$ 600,00" (a base não o toca) |
+
+Corrigido o percentual do 2º período para 35%, só as prestações de 2025 em diante mudam: 35% × 1.518,00 = R$ 531,30; as de 2024 continuam em R$ 500,00.
+
+**Seção 2 na tela.**
+
+- Com um período, igual à da fase 5, mais uma linha no pé: "A base mudou ao longo do tempo?", o campo de data "Dividir em" e o botão "Dividir", com o balão ⓘ: "A data informada passa a iniciar um período novo da base, com as mesmas regras do anterior; depois ajuste a forma e os valores de cada um. Ex.: valor fixo até 2024 e % do salário mínimo desde 2025."
+- Com dois ou mais, um bloco por período, na própria seção (não num painel), com o título "Até 31/12/2024", "De 01/01/2025 a 30/06/2025" ou "Desde 01/07/2025", a escolha da forma e os campos dela; todos, menos o primeiro, com "Remover divisão". O padrão é o do editor de períodos dos encargos, para a pessoa o reconhecer.
+- Dividir: o período novo nasce como cópia do dividido. Data que já é início de período não divide ("Já existe uma divisão em 01/01/2025.", embaixo do campo); data inválida mostra o erro de data de sempre. Trocar a forma de um período e voltar recupera o que foi digitado naquele período. Ao passar para "valor fixo" um período que não é o primeiro, "Fixado em" vem com a data de início do período.
+- Remover divisão: o período some, e o anterior se estende até o fim dele, com as regras do anterior; não há "desfazer" (como no editor dos encargos).
+
+**Base incompleta (D29), por período.** Com um período, o texto da fase 5. Com dois ou mais, o aviso diz qual: "Falta o percentual do salário mínimo no período desde 01/01/2025 (seção 2 · Base dos alimentos): as prestações desse período ficam sem valor até ele ser informado." Só avisa o período em que vence alguma prestação pela base; o campo fica em vermelho no bloco daquele período. No rendimento padrão, como antes, só conta a prestação do período sem rendimento próprio ("as prestações desse período sem rendimento próprio").
+
+**Lápis e linha nova.**
+
+- "Rendimento deste mês" aparece no lápis quando o período da prestação é "% dos rendimentos".
+- "Aplicar este rendimento daqui em diante" passa a **dividir a base** no vencimento da linha: o período novo copia o período da linha, com o rendimento informado como rendimento padrão; se o vencimento já é início de período, só o rendimento padrão dele muda. O efeito vai até o fim daquele período (uma divisão posterior fica com a regra dela). A linha de onde se aplicou perde o rendimento próprio e passa a seguir a regra; as demais linhas com rendimento próprio (13º, férias, um mês específico) ficam como estão; nenhuma linha ganha a marca "ajustada" por isso. Exemplo: 30% dos rendimentos, padrão R$ 2.000,00; no lápis da prestação de 05/03/2025, R$ 2.500,00 e "Aplicar este rendimento daqui em diante" → seção 2 com "Até 04/03/2025: 30% dos rendimentos, padrão R$ 2.000,00" e "Desde 05/03/2025: 30% dos rendimentos, padrão R$ 2.500,00"; as prestações de março/2025 em diante dão 30% × 2.500,00 = R$ 750,00.
+- "+ Prestação" sugere o valor da base pelo período do vencimento sugerido.
+
+**Relatório (fase 6).** O parágrafo "Base" (§10.4) descreve cada período, sem nomes de sistema (regra 7 do CLAUDE.md): "Até 31/12/2024, valor fixo de R$ 500,00, fixado em 10/03/2024, sem reajuste; desde 01/01/2025, 30% do salário mínimo vigente no mês de cada vencimento." Com um período só, a frase não leva "até/desde".
+
+### 17.3 Escolha da metodologia padrão de encargos
+
+**Duas metodologias.** `src/metodologias/tjms-saj.v1.json` passa a `lei-14905-2024.v1.json` (id `lei-14905-2024`, nome "Lei 14.905/2024"): o nome diz de onde vem a regra (a lei que deu ao art. 406 do CC a sistemática atual), e não de que sistema ela foi copiada. Conteúdo sem mudança: até 29/08/2024, IGP-M e juros de 1% ao mês; desde 30/08/2024, IPCA e taxa legal. Entra `igpm-juros-1.v1.json` (id `igpm-juros-1`, nome "IGP-M e juros de 1% ao mês"): um período só, de `null` a `null`, IGP-M e juros de 1% ao mês, pro rata no mês inicial, deflação com piso e as mesmas casas de arredondamento. Os nomes ficam só no arquivo (a tela não menciona outros sistemas, D22).
+
+**Seção 5.**
+
+```
+Metodologia de encargos ⓘ
+ (•) Até 29/08/2024: IGP-M e juros de 1% ao mês. Desde 30/08/2024: IPCA e taxa legal.
+ ( ) IGP-M e juros de 1% ao mês em todo o período. ⓘ
+ [Ajustar]
+```
+
+- Clicar numa opção aplica-a ao cálculo atual e a grava como a opção padrão nas preferências do navegador (`apura.preferencias`); "Novo cálculo" nasce com ela. Abrir um arquivo com a outra opção a mostra marcada, sem mudar a preferência.
+- Balão ⓘ da segunda opção, **sem aviso** na caixa nem no motor (decisão do responsável: escolha deliberada; um aviso em todo cálculo vira ruído, e o relatório descreve só o que foi aplicado): "IGP-M e juros de 1% ao mês do vencimento até a data do cálculo, sem a mudança de 30/08/2024. Use quando a decisão ou o acordo fixou esses critérios, ou quando o juízo mantém o critério anterior à Lei 14.905/2024. Sem isso, a regra legal desde 30/08/2024 é IPCA e taxa legal (arts. 389 e 406 do CC)."
+- Metodologia igual a nenhuma das duas (depois de "Ajustar"): nenhuma opção marcada, o título "Metodologia de encargos (ajustada)" e, embaixo, "Ajustada:" com o resumo em uma frase. Clicar numa opção troca os ajustes por ela.
+- O reconhecimento é **pelo conteúdo** (períodos, índices, taxas comparadas como número, mês inicial, deflação, arredondamento), não pelo id nem pelo nome: "1.0" vale "1", e uma metodologia ajustada até ficar igual à segunda opção a acende. `ehPadrao` dá lugar a uma função que diz qual opção a metodologia é (ou nenhuma); `normalizar` grava o id e o nome da opção reconhecida e recalcula `ajustada`; a abertura de arquivo normaliza a metodologia global e as próprias em vez de confiar no `ajustada` gravado (duas pendências da fase 5 resolvidas).
+
+**Preferências.** Um campo novo guarda a opção (padrão de fábrica: Lei 14.905/2024). Sobrevive a "Esquecer" e a desligar "Lembrar neste navegador", como o tema (não é dado pessoal); valor estranho no armazenamento vale o padrão de fábrica.
+
+**"Restaurar a metodologia padrão"** (editor de períodos, no "Ajustar" e nas regras próprias do lápis) volta à opção guardada nas preferências; continua aparecendo só quando a metodologia está ajustada.
+
+**Motor e relatório.** O motor não muda. A fase 6 descreve o que foi aplicado; na segunda opção, sem a frase da transição: "IGP-M e juros de 1% ao mês, simples, pro rata die, do vencimento até a data do cálculo".
+
+**Exemplo numérico.** Prestação de R$ 1.000,00 vencida em 10/01/2025, cálculo em 10/10/2026, pela segunda opção: correção pelo IGP-M (pro rata de jan/2025 e meses seguintes até o último divulgado) e juros de 1% ao mês rateados por mês-calendário contando as duas pontas: 22/31 + 20 meses inteiros (fev/2025 a set/2026) + 10/31 = 21,032258%. Pela primeira opção, a mesma prestação recebe IPCA e taxa legal (vencimento posterior a 30/08/2024). Os valores exatos ficam nos testes, com a tabela fixa de 2024–2026.
+
+### 17.4 Etiquetas das linhas numa linha só
+
+A linha das tabelas nunca quebra. A célula do vencimento mostra a data, a descrição (13º, férias) e **uma etiqueta só**, a mais importante, na ordem "não computada"/"não computado" → "vincenda" → "valor informado" → "ajustada"/"ajustado", seguida de "+N" quando houver mais (ex.: "vincenda +2").
+
+- **A descrição encolhe até caber** (decisão de 13/10/2026, tomada depois da conferência no navegador): a coluna da direita tem cerca de 730 px numa tela de 1366 px, e as colunas de números ocupam quase tudo; com a descrição em largura fixa, a tabela passava 49 px da coluna e o lápis e o ✕ saíam da vista. A descrição fica com o espaço que sobra (de 1,5 a 9 letras de largura; com uma descrição na tabela, a primeira coluna prefere 18em, o que dá cerca de "13º salári…" em 1366 px), cortada com reticências e inteira no `title`; com as colunas empilhadas (abaixo de 1024 px), mostra o tamanho cheio, porque a tabela já rola sozinha no celular. O lápis e o ✕ nunca saem da vista por causa dela.
+- **A descrição e a etiqueta formam um botão só**, que abre o balão de `componentes/Ajuda.tsx` (clique, toque, Enter ou Espaço; Esc, clique fora ou rolar a página fecham; no celular, faixa no pé da tela), com a descrição inteira e todas as etiquetas, cada uma com a sua explicação (os textos das explicações da fase 5). O balão flutua em posição fixa junto do botão, para não ficar preso na rolagem da tabela. O componente ganha a opção de outro conteúdo e outro nome no botão e o modo flutuante.
+- Nome acessível do botão: "Situação da prestação de 05/09/2026: vincenda, valor informado, ajustada" ("Situação do pagamento de …" nos pagamentos); numa linha só com descrição, sem etiqueta, o botão é a própria descrição: "Descrição da prestação de 20/07/2026: Férias de 2026, conforme o acordo homologado". Linha sem descrição e sem etiqueta: sem botão.
+- Sem rolagem dentro da célula, sem dependência nova e sem `popover` ou `<dialog>` nativos (o jsdom não os implementa).
+- Na memória da linha, quando a frase do motor já começa por "Base até/desde …" (base por períodos), a tela não repete o rótulo "Base:".
+- Testes: os que procuravam as etiquetas pelo texto passam a procurar o botão pelo nome; testes novos para a ordem, o "+N", o balão com tudo, o `title` da descrição e a linha só com descrição. "Uma linha só" e a largura da tabela são conferidas no navegador (o jsdom não mede).
+
+### 17.5 Registro
+
+Fase "5b · Ajustes da interface depois do uso" na tabela do roteiro, entre a 5 e a 6, com plano próprio em `docs/superpowers/plans/2026-10-13-fase-5b-ajustes-da-interface.md`. A fase 5 continua concluída; a 6 continua com plano a escrever.
 
 ---
 

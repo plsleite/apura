@@ -11,7 +11,7 @@
     "atualizadoEm": "2026-10-11T00:00:00.000Z",
     "dataElaboracao": "2026-10-11",
     "cabecalho": {"defensor": "", "orgao": "", "processo": "", "exequente": "", "executado": ""},
-    "base": {"tipo": "valorFixo", "valor": "10000.00", "dataFixacao": "2026-10-11", "indiceReajuste": "nenhum", "mesReajuste": 1},
+    "base": {"periodos": [{"de": null, "ate": null, "forma": {"tipo": "valorFixo", "valor": "10000.00", "dataFixacao": "2026-10-11", "indiceReajuste": "nenhum", "mesReajuste": 1}}]},
     "lotes": {},
     "lancamentos": [
       {"id": "p-2024-03-10", "tipo": "prestacao", "data": "2024-03-10", "competencia": "2024-03", "valorInformado": "10000.00", "origem": "avulso", "editado": true},
@@ -22,9 +22,9 @@
       {"id": "a-2024-05-10", "tipo": "amortizacao", "data": "2024-05-10", "descricao": "Pagamento parcial", "valorInformado": "5000.00", "origem": "avulso", "editado": false}
     ],
     "metodologia": {
-      "id": "tjms-saj",
+      "id": "lei-14905-2024",
       "versao": 1,
-      "nome": "TJMS/SAJ",
+      "nome": "Lei 14.905/2024",
       "ajustada": false,
       "periodos": [
         {"de": null, "ate": "2024-08-29", "correcao": {"indice": "IGP-M"}, "juros": {"tipo": "percentualMensal", "taxaMensal": "1"}},

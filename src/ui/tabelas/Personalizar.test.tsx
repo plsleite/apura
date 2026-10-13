@@ -42,8 +42,12 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
       .getAllByRole("cell")
       .map((c) => c.textContent);
     expect(celulas[1]).toBe("R$ 1.200,00");
-    expect(celulas[0]).toContain("valor informado");
-    expect(celulas[0]).toContain("ajustada");
+    expect(celulas[0]).toContain("valor informado +1");
+    expect(
+      within(linha).getByRole("button", {
+        name: "Situação da prestação de 05/09/2026: valor informado, ajustada",
+      }),
+    ).toBeDefined();
     expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(
       "Prestações com valor informado à mão, não apurado pela base dos alimentos: set/2026.",
     );
@@ -151,7 +155,7 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
     expect(memoria.textContent).toContain("juros de 1% de 07/10/2026 a 11/10/2026");
   });
 
-  it("base em % dos rendimentos: rendimento do mês e 'aplicar daqui em diante'", async () => {
+  it("base em % dos rendimentos: rendimento do mês e 'aplicar daqui em diante', que divide a base (§17.2)", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);
     await user.click(screen.getByLabelText("% dos rendimentos"));
@@ -168,22 +172,46 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
         .slice(1, 4)
         .map((r) => within(r).getAllByRole("cell")[1]?.textContent);
     expect(valores()).toEqual(["R$ 300,00", "R$ 300,00", "R$ 300,00"]);
+    // rendimento só deste mês: a linha fica com o rendimento próprio
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/08/2026" }));
+    let painel = within(screen.getByRole("dialog", { name: "Personalizar prestação" }));
+    await user.type(painel.getByLabelText("Rendimento deste mês (opcional)"), "1.500,00");
+    await user.click(painel.getByRole("button", { name: "Aplicar" }));
+    expect(valores()).toEqual(["R$ 450,00", "R$ 300,00", "R$ 300,00"]);
+    // daqui em diante: a base se divide no vencimento, com o novo rendimento padrão
     await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
-    const painel = within(screen.getByRole("dialog", { name: "Personalizar prestação" }));
+    painel = within(screen.getByRole("dialog", { name: "Personalizar prestação" }));
     await user.type(painel.getByLabelText("Rendimento deste mês (opcional)"), "2.000,00");
     await user.click(
       painel.getByRole("button", { name: "Aplicar este rendimento daqui em diante" }),
     );
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(valores()).toEqual(["R$ 300,00", "R$ 600,00", "R$ 600,00"]);
+    expect(valores()).toEqual(["R$ 450,00", "R$ 600,00", "R$ 600,00"]);
+    const antes = within(screen.getByRole("group", { name: "Até 04/09/2026" }));
+    const depois = within(screen.getByRole("group", { name: "Desde 05/09/2026" }));
+    expect(
+      (antes.getByLabelText("Rendimento mensal padrão (obrigatório)") as HTMLInputElement).value,
+    ).toBe("1.000,00");
+    expect(
+      (depois.getByLabelText("Rendimento mensal padrão (obrigatório)") as HTMLInputElement).value,
+    ).toBe("2.000,00");
+    // as linhas seguem a regra: nenhuma ganha a marca de ajustada por isso
+    const outubro = screen
+      .getByRole("button", { name: "Memória da prestação de 05/10/2026" })
+      .closest("tr") as HTMLElement;
+    expect(outubro.textContent).not.toContain("ajustada");
     // em outra forma de base, o painel não mostra o rendimento, e "Aplicar" não o apaga
-    await user.click(screen.getByLabelText("Valor fixo em reais"));
-    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
+    await user.click(antes.getByLabelText("Valor fixo em reais"));
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/08/2026" }));
     const outroPainel = within(screen.getByRole("dialog", { name: "Personalizar prestação" }));
     expect(outroPainel.queryByLabelText("Rendimento deste mês (opcional)")).toBeNull();
     await user.click(outroPainel.getByRole("button", { name: "Aplicar" }));
-    await user.click(screen.getByLabelText("% dos rendimentos"));
-    expect(valores()).toEqual(["R$ 300,00", "R$ 600,00", "R$ 600,00"]);
+    await user.click(
+      within(screen.getByRole("group", { name: "Até 04/09/2026" })).getByLabelText(
+        "% dos rendimentos",
+      ),
+    );
+    expect(valores()).toEqual(["R$ 450,00", "R$ 600,00", "R$ 600,00"]);
     cleanup();
     render(<App ambiente={ambienteDeTeste()} />);
     expect(screen.queryByLabelText("Rendimento deste mês (opcional)")).toBeNull();

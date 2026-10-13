@@ -1,4 +1,4 @@
-import { competenciaValida, dataValida } from "../compartilhado/datas.ts";
+import { competenciaValida, dataValida, diaSeguinte } from "../compartilhado/datas.ts";
 import { textoDecimalValido } from "../compartilhado/decimal.ts";
 import { NOME_DA_SERIE } from "../compartilhado/tipos.ts";
 import type {
@@ -8,16 +8,19 @@ import type {
   Calculo,
   CodigoSerie,
   EncargosProprios,
+  FormaDaBase,
   IndiceUsado,
   Lancamento,
   LoteAmortizacoes,
   LotePrestacoes,
   Metodologia,
+  PeriodoDaBase,
   PeriodoMetodologia,
   RegraJuros,
   Resultado,
 } from "../compartilhado/tipos.ts";
 import { DATA_MAXIMA } from "./entrada.ts";
+import { normalizar } from "./estado/metodologia.ts";
 
 /**
  * Salvar e abrir o cálculo como arquivo (§5.1, §9.1). A leitura trata o conteúdo como `unknown` e
@@ -138,10 +141,14 @@ function lerJuros(valor: unknown, caminho: string): RegraJuros {
   return { tipo };
 }
 
+/**
+ * A metodologia do arquivo, conferida campo a campo e normalizada: a marca `ajustada` (e o id e o
+ * nome, quando as regras são as de uma opção pré-carregada) é recalculada, não lida (§17.3).
+ */
 function lerMetodologia(valor: unknown, caminho: string): Metodologia {
   const m = objeto(valor, caminho);
   const arredondamento = objeto(m.arredondamento, `${caminho}.arredondamento`);
-  return {
+  return normalizar({
     id: texto(m.id, `${caminho}.id`),
     versao: inteiro(m.versao, `${caminho}.versao`, 0, 1_000_000),
     nome: texto(m.nome, `${caminho}.nome`),
@@ -187,34 +194,63 @@ function lerMetodologia(valor: unknown, caminho: string): Metodologia {
       valorCasas: inteiro(arredondamento.valorCasas, `${caminho}.arredondamento.valorCasas`, 0, 20),
       modo: umDe(arredondamento.modo, ["comercial"] as const, `${caminho}.arredondamento.modo`),
     },
-  };
+  });
 }
 
-function lerBase(valor: unknown): Base {
-  const b = objeto(valor, "base");
+function lerForma(valor: unknown, caminho: string): FormaDaBase {
+  const b = objeto(valor, caminho);
   const tipo = umDe(
     b.tipo,
     ["valorFixo", "percentualSalarioMinimo", "percentualRendimentos"] as const,
-    "base.tipo",
+    `${caminho}.tipo`,
   );
   switch (tipo) {
     case "valorFixo":
       return {
         tipo,
-        valor: texto(b.valor, "base.valor"),
-        dataFixacao: data(b.dataFixacao, "base.dataFixacao"),
-        indiceReajuste: umDe(b.indiceReajuste, INDICES_DE_REAJUSTE, "base.indiceReajuste"),
-        mesReajuste: inteiro(b.mesReajuste, "base.mesReajuste", 1, 12),
+        valor: texto(b.valor, `${caminho}.valor`),
+        dataFixacao: data(b.dataFixacao, `${caminho}.dataFixacao`),
+        indiceReajuste: umDe(b.indiceReajuste, INDICES_DE_REAJUSTE, `${caminho}.indiceReajuste`),
+        mesReajuste: inteiro(b.mesReajuste, `${caminho}.mesReajuste`, 1, 12),
       };
     case "percentualSalarioMinimo":
-      return { tipo, percentual: texto(b.percentual, "base.percentual") };
+      return { tipo, percentual: texto(b.percentual, `${caminho}.percentual`) };
     case "percentualRendimentos":
       return {
         tipo,
-        percentual: texto(b.percentual, "base.percentual"),
-        rendimentoPadrao: texto(b.rendimentoPadrao, "base.rendimentoPadrao"),
+        percentual: texto(b.percentual, `${caminho}.percentual`),
+        rendimentoPadrao: texto(b.rendimentoPadrao, `${caminho}.rendimentoPadrao`),
       };
   }
+}
+
+/**
+ * Base por períodos (§17.2): ao menos um período, em ordem; o primeiro sem começo, o último sem
+ * fim, cada um começando no dia seguinte ao fim do anterior (sem buraco nem sobreposição). A base
+ * antiga, de um item só, não é aceita (sem retrocompatibilidade, decisão de 13/10/2026).
+ */
+function lerBase(valor: unknown): Base {
+  const b = objeto(valor, "base");
+  const brutos = lista(b.periodos, "base.periodos");
+  if (brutos.length === 0) falhar("base.periodos");
+  const periodos = brutos.map((p, i): PeriodoDaBase => {
+    const caminho = `base.periodos[${i}]`;
+    const periodo = objeto(p, caminho);
+    const de = dataOuNula(periodo.de, `${caminho}.de`);
+    const ate = dataOuNula(periodo.ate, `${caminho}.ate`);
+    if (i === 0 && de !== null) falhar(`${caminho}.de`);
+    if (i === brutos.length - 1 && ate !== null) falhar(`${caminho}.ate`);
+    if (i < brutos.length - 1 && ate === null) falhar(`${caminho}.ate`);
+    if (de !== null && ate !== null && de > ate) falhar(caminho);
+    return { de, ate, forma: lerForma(periodo.forma, `${caminho}.forma`) };
+  });
+  periodos.forEach((p, i) => {
+    const anterior = periodos[i - 1];
+    if (anterior?.ate != null && p.de !== diaSeguinte(anterior.ate)) {
+      falhar(`base.periodos[${i}].de`);
+    }
+  });
+  return { periodos };
 }
 
 function lerEncargos(valor: unknown, caminho: string): EncargosProprios {

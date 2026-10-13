@@ -120,7 +120,8 @@ export interface Cabecalho {
   executado: string;
 }
 
-export type Base =
+/** Uma das três formas da base dos alimentos (§5.2, §6.3), com os seus campos. */
+export type FormaDaBase =
   | {
       tipo: "valorFixo";
       valor: TextoDecimal;
@@ -131,6 +132,24 @@ export type Base =
     }
   | { tipo: "percentualSalarioMinimo"; percentual: TextoDecimal }
   | { tipo: "percentualRendimentos"; percentual: TextoDecimal; rendimentoPadrao: TextoDecimal };
+
+/**
+ * Um período da base (§17.2): vale para as prestações cujo vencimento cai de `de` a `ate`,
+ * inclusive. `de` nulo: sem começo (o primeiro período); `ate` nulo: sem fim (o último).
+ */
+export interface PeriodoDaBase {
+  de: DataISO | null;
+  ate: DataISO | null;
+  forma: FormaDaBase;
+}
+
+/**
+ * Base dos alimentos por períodos (§17.2, fase 5b): seguidos, sem buraco nem sobreposição, o
+ * primeiro sem começo e o último sem fim. O cálculo comum tem um período só, de `null` a `null`.
+ */
+export interface Base {
+  periodos: PeriodoDaBase[];
+}
 
 export interface LotePrestacoes {
   diaVencimento: number;

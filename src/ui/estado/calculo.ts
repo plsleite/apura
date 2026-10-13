@@ -12,7 +12,9 @@ import type {
   TextoDecimal,
 } from "../../compartilhado/tipos.ts";
 import type { SituacaoIndices } from "../../indices/congelar.ts";
-import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { metodologiaDaOpcao, type OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
+import { baseUnica } from "../../motor/base.ts";
+import { aplicarRendimentoNaBase } from "./base.ts";
 import { gerarLoteAmortizacoes, gerarLotePrestacoes, idLivre } from "../../motor/lote.ts";
 
 /**
@@ -76,16 +78,19 @@ export type Acao =
   | { tipo: "excluirLancamento"; id: string; em: string };
 
 /**
- * Cálculo novo em branco (§5.2): data de elaboração de hoje, base em valor fixo sem reajuste com a
- * data de fixação de hoje (o único campo da base que o motor exige válido) e o valor a preencher,
- * metodologia padrão, multa e honorários de 10% cada (decisão de 13/10/2026, D26). Defensor e
- * órgão vêm das preferências.
+ * Cálculo novo em branco (§5.2): data de elaboração de hoje, base de um período só (§17.2) em
+ * valor fixo sem reajuste com a data de fixação de hoje (o único campo da base que o motor exige
+ * válido) e o valor a preencher, a metodologia escolhida como padrão nas preferências (§17.3),
+ * multa e honorários de 10% cada (decisão de 13/10/2026, D26). Defensor e órgão vêm das
+ * preferências.
  */
 export function novoCalculo(p: {
   id: string;
   agora: string;
   hoje: DataISO;
   cabecalho?: Partial<Cabecalho>;
+  /** a metodologia padrão escolhida nas preferências (§17.3); sem ela, a da Lei 14.905/2024 */
+  metodologia?: OpcaoDeMetodologia;
 }): Calculo {
   return {
     formato: "apura/calculo@1",
@@ -102,16 +107,16 @@ export function novoCalculo(p: {
       executado: "",
       ...p.cabecalho,
     },
-    base: {
+    base: baseUnica({
       tipo: "valorFixo",
       valor: "",
       dataFixacao: p.hoje,
       indiceReajuste: "nenhum",
       mesReajuste: decompor(p.hoje).mes,
-    },
+    }),
     lotes: {},
     lancamentos: [],
-    metodologia: metodologiaPadrao(),
+    metodologia: metodologiaDaOpcao(p.metodologia ?? "lei14905"),
     acrescimos: { multaPercentual: "10", honorariosPercentual: "10" },
     observacoes: "",
   };
@@ -251,21 +256,19 @@ export function reduzir(estado: Estado, acao: Acao): Estado {
         acao.em,
       );
     case "aplicarRendimentoDaquiEmDiante": {
+      // divide a base no vencimento da linha, com o novo rendimento padrão (§17.2); a linha de
+      // onde se aplicou passa a seguir a regra, e as demais ficam como estão
       const origem = estado.calculo.lancamentos.find((l) => l.id === acao.id);
       if (origem === undefined) return estado;
-      return comLancamentos(
-        estado,
-        // as prestações com descrição (13º, férias) não entram, como no lote (D1); a própria
-        // linha de onde se aplicou entra sempre
-        estado.calculo.lancamentos.map((l) =>
-          l.tipo === "prestacao" &&
-          l.data >= origem.data &&
-          (l.id === origem.id || !l.descricao?.trim())
-            ? { ...l, rendimento: acao.rendimento, editado: true }
-            : l,
-        ),
-        acao.em,
-      );
+      const base = aplicarRendimentoNaBase(estado.calculo.base, origem.data, acao.rendimento);
+      if (base === estado.calculo.base) return estado;
+      const lancamentos = estado.calculo.lancamentos.map((l) => {
+        if (l.id !== origem.id) return l;
+        const semRendimento = { ...l };
+        delete semRendimento.rendimento;
+        return semRendimento;
+      });
+      return comCalculo(estado, { base, lancamentos }, acao.em);
     }
     case "excluirLancamento":
       return comLancamentos(

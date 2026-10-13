@@ -102,6 +102,9 @@ export function formatarNumeroParaCampo(texto: TextoDecimal): string {
  * 9999, faria o cálculo percorrer milhares de meses. Os campos de data levam `max` com este valor.
  */
 export const DATA_MAXIMA: DataISO = "2199-12-31";
+
+/** Primeira data aceita na tela e nos arquivos (o motor começa em jan/1900). */
+export const DATA_MINIMA: DataISO = "1900-01-01";
 const DEPOIS_DO_TETO: Leitura<never> = {
   ok: false,
   erro: "A data não pode ser posterior a 31/12/2199.",

@@ -17,13 +17,13 @@
       "exequente": "",
       "executado": ""
     },
-    "base": {
+    "base": {"periodos": [{"de": null, "ate": null, "forma": {
       "tipo": "valorFixo",
       "valor": "500.00",
       "dataFixacao": "2024-03-15",
       "indiceReajuste": "IPCA",
       "mesReajuste": 3
-    },
+    }}]},
     "lotes": {},
     "lancamentos": [
       {"id": "p-2024-01", "tipo": "prestacao", "data": "2024-01-15", "competencia": "2024-01", "descricao": "Anterior à fixação", "origem": "avulso", "editado": false},
@@ -38,9 +38,9 @@
       {"id": "a-2026-10-20", "tipo": "amortizacao", "data": "2026-10-20", "descricao": "Pagamento posterior ao cálculo", "valorInformado": "100.00", "origem": "avulso", "editado": false}
     ],
     "metodologia": {
-      "id": "tjms-saj",
+      "id": "lei-14905-2024",
       "versao": 1,
-      "nome": "TJMS/SAJ",
+      "nome": "Lei 14.905/2024",
       "ajustada": false,
       "periodos": [
         {"de": null, "ate": "2024-08-29", "correcao": {"indice": "IGP-M"}, "juros": {"tipo": "percentualMensal", "taxaMensal": "1"}},

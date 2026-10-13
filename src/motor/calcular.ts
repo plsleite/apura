@@ -25,7 +25,7 @@ import type {
   TextoDecimal,
   Totais,
 } from "../compartilhado/tipos.ts";
-import { apurarValorBase, type MesSemIndice } from "./base.ts";
+import { apurarPelaBase, type MesSemIndice } from "./base.ts";
 import { fatorCorrecao, resolverIndicesMensais } from "./correcao.ts";
 import { aindaNaoDivulgado, divulgacaoPrevista } from "../compartilhado/divulgacao.ts";
 import { jurosSimples } from "./juros.ts";
@@ -129,7 +129,7 @@ function resolverValor(
     avisos.push("Pagamento sem valor informado: não computado nos totais.");
     return { valorBase: ZERO, memoriaBase: "Valor não informado", editado: false, semValor: true };
   }
-  const base = apurarValorBase(lancamento, calculo.base, indices, valorCasas);
+  const base = apurarPelaBase(lancamento, calculo.base, indices, valorCasas);
   avisos.push(...base.avisos);
   rastro.indicesDaBase = base.indicesUsados;
   rastro.mesesSemIndiceNaBase = base.mesesSemIndice;

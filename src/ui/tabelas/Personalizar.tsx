@@ -7,6 +7,8 @@ import type {
   Lancamento,
   Metodologia,
 } from "../../compartilhado/tipos.ts";
+import type { OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
+import { periodoDaData } from "../../motor/base.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import { CampoTexto, Opcao } from "../componentes/Campo.tsx";
 import {
@@ -21,8 +23,8 @@ import { EditorDePeriodos } from "../secoes/EditorDePeriodos.tsx";
 
 /**
  * "Personalizar" (§9.3, §6.5), o lápis da linha, para os ajustes finos: valor, data (vencimento
- * ou pagamento) e descrição; rendimento do mês (base em % dos rendimentos), com "aplicar daqui em
- * diante"; termos inicial e final da correção e dos juros; metodologia própria no mesmo editor de
+ * ou pagamento) e descrição; rendimento do mês (período da base em % dos rendimentos), com
+ * "aplicar daqui em diante", que divide a base no vencimento (§17.2); termos inicial e final da correção e dos juros; metodologia própria no mesmo editor de
  * períodos. Vencimento e valor também se corrigem na própria tabela, e a linha nova de
  * "+ Prestação"/"+ Pagamento" nasce na tabela (decisões de 13/10/2026). Validação ao aplicar,
  * erro embaixo de cada campo; termo final posterior à data de elaboração é recusado aqui (o motor
@@ -45,12 +47,15 @@ function lerOpcional<T>(texto: string, ler: (t: string) => Leitura<T>): Leitura<
 export function Personalizar({
   lancamento,
   calculo,
+  opcaoPadrao,
   aoEditar,
   aoAplicarRendimento,
   aoFechar,
 }: {
   lancamento: Lancamento;
   calculo: Calculo;
+  /** a opção de metodologia escolhida como padrão: o "Restaurar" das regras próprias (§17.3) */
+  opcaoPadrao?: OpcaoDeMetodologia;
   aoEditar: (id: string, mudancas: MudancasDoLancamento) => void;
   aoAplicarRendimento: (id: string, rendimento: string) => void;
   aoFechar: () => void;
@@ -76,7 +81,11 @@ export function Personalizar({
     lancamento.encargos?.metodologia ?? null,
   );
   const [erros, setErros] = useState<Partial<Record<Campo, string>>>({});
-  const comRendimento = calculo.base.tipo === "percentualRendimentos" && prestacao;
+  // o rendimento do mês aparece quando o período da base em que a prestação vence é "% dos
+  // rendimentos" (§17.2)
+  const comRendimento =
+    prestacao &&
+    periodoDaData(calculo.base, lancamento.data)?.forma.tipo === "percentualRendimentos";
 
   const aplicar = (evento: FormEvent) => {
     evento.preventDefault();
@@ -196,7 +205,7 @@ export function Personalizar({
             inputMode="decimal"
             classe="medio"
             placeholder="usa o rendimento padrão"
-            ajuda="Para 13º ou férias, informe o rendimento do evento; quando o salário mudou, informe o novo rendimento e aplique às prestações seguintes."
+            ajuda="Para 13º ou férias, informe o rendimento do evento. Quando o salário mudou, informe o novo rendimento e use “Aplicar este rendimento daqui em diante”: a base ganha um período novo, desde este vencimento, com esse rendimento padrão (seção 2)."
           />
           <button
             type="button"
@@ -248,6 +257,7 @@ export function Personalizar({
           metodologia={metodologiaPropria}
           aoMudar={setMetodologiaPropria}
           prefixoDosIds="proprio"
+          opcaoPadrao={opcaoPadrao}
         />
       ) : null}
       <div className="dialogo-acoes">

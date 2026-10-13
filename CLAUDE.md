@@ -51,9 +51,19 @@ ocupada a competência das prestações de lote e das avulsas sem descrição (1
 ocupam), e os avisos do lote falam em mês de vencimento. Rodada de correções antes da integração
 (13/10/2026): os recentes guardam só o cálculo e os índices usados (JSON compacto), com aviso no
 "Abrir" quando não dá para guardar; o erro de formato de um campo aparece ao sair dele, não enquanto
-se digita; datas de 1900 a 2199 na tela e no arquivo (809 testes passando e 9 pulados). "Relatório
-/ PDF" está na barra, desligado, até a fase 6. Próxima: fase 6 (relatório e PDF), com plano a
-escrever. A tabela de fases do roteiro é a referência; atualize-a e esta seção ao concluir cada
+se digita; datas de 1900 a 2199 na tela e no arquivo. Fase 5b (ajustes depois do uso, §17 do
+design) concluída em 2026-10-13: "+ Pagamento" sugere o mês seguinte ao do último pagamento; a base
+dos alimentos é uma lista de períodos (`base: { periodos: [{ de, ate, forma }] }`, o primeiro sem
+começo e o último sem fim), cada prestação apurada pelo período do vencimento (`apurarPelaBase`),
+editada na seção 2 com "Dividir em" e "Remover divisão" (`estado/base.ts`), e "Aplicar este
+rendimento daqui em diante" divide a base; sem retrocompatibilidade de arquivos (a base antiga é
+recusada na abertura); a metodologia de encargos se escolhe entre "Lei 14.905/2024"
+(`lei-14905-2024.v1.json`, a padrão) e "IGP-M e juros de 1% ao mês" (`igpm-juros-1.v1.json`),
+reconhecidas pelo conteúdo, e a escolha fica nas preferências (sobrevive a "Esquecer"; "Restaurar"
+volta a ela); as linhas das tabelas ficam numa linha só, com a etiqueta mais importante e "+N", e a
+descrição, que encolhe até caber, abre com a etiqueta um balão flutuante (`tabelas/etiquetas.ts`)
+(861 testes passando e 10 pulados). "Relatório / PDF" está na barra, desligado, até a fase 6.
+Próxima: fase 6 (relatório e PDF), com plano a escrever. A tabela de fases do roteiro é a referência; atualize-a e esta seção ao concluir cada
 fase.
 
 ## Comandos
@@ -94,8 +104,8 @@ src/motor/                periodos.ts · correcao.ts · juros.ts · lote.ts · b
 src/motor/testes/         dados de teste: IGP-M e salário mínimo de 2017–2018 e as seis séries de 2024–2026 usadas pelos testes unitários
 src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
 src/indices/testes/       respostas reais do SGS gravadas em 10 e 11/10/2026 e execuções sintéticas da rotina
-src/metodologias/         tjms-saj.v1.json · padrao.ts
-src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ (calculo.ts · metodologia.ts · novaLinha.ts) · secoes/ · tabelas/ · componentes/ · testes/ (ambiente de teste)
+src/metodologias/         lei-14905-2024.v1.json · igpm-juros-1.v1.json · padrao.ts
+src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ (calculo.ts · base.ts · faltas.ts · metodologia.ts · novaLinha.ts) · secoes/ · tabelas/ · componentes/ · testes/ (ambiente de teste)
 src/relatorio/            relatório e impressão (fase 6)
 ```
 
@@ -154,7 +164,8 @@ Um caso é um arquivo JSON em `src/motor/casos/AAAA-MM-DD-<origem>-<tema>.json` 
 
 - `nome` e `fonte` (de onde vieram os valores: relatório do SAJ, Calculadora do Cidadão, contadoria);
 - `calculo`: o `Calculo` completo de entrada (prestações sem `valorInformado` quando o caso prova
-  a apuração pela base);
+  a apuração pela base; a base é uma lista de períodos, `{"periodos": [{"de": null, "ate": null,
+  "forma": {…}}]}` no caso comum);
 - `indices`: a `TabelaIndices` congelada **como estava na data do cálculo** (só os meses que a
   fonte usou; incluir um mês posterior muda o resultado); quando a fonte usa um valor diferente do
   BCB (ex.: IGP-M de dez/2025 no SAJ), o caso congela o valor da fonte e explica em `observacoes`.

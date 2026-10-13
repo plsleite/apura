@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Calculo } from "../../compartilhado/tipos.ts";
 import { novoCalculo } from "../estado/calculo.ts";
+import { metodologiaDaOpcao } from "../../metodologias/padrao.ts";
 import { dividirPeriodo } from "../estado/metodologia.ts";
+import App from "../App.tsx";
+import { CHAVE_PREFERENCIAS } from "../armazenamento.ts";
+import { ambienteDeTeste, armazenamentoEmMemoria } from "../testes/ambiente-de-teste.ts";
 import { Encargos } from "./Encargos.tsx";
 
 afterEach(cleanup);
@@ -25,6 +29,9 @@ function Harness({ inicial, espiao }: { inicial: Calculo; espiao: (c: Calculo) =
       aoMudarDataElaboracao={(data) => mudar({ ...calculo, dataElaboracao: data })}
       aoMudarObservacoes={(texto) => mudar({ ...calculo, observacoes: texto })}
       aoAjustar={() => espiao({ ...calculo, observacoes: "ajustar!" })}
+      aoEscolherMetodologia={(opcao) =>
+        mudar({ ...calculo, metodologia: metodologiaDaOpcao(opcao) })
+      }
     />
   );
 }
@@ -32,24 +39,50 @@ function Harness({ inicial, espiao }: { inicial: Calculo; espiao: (c: Calculo) =
 const inicial = novoCalculo({ id: "c", agora: "2026-10-11T15:00:00-03:00", hoje: "2026-10-11" });
 
 describe("5 · Encargos e data do cálculo (§9.2)", () => {
-  it("resume a metodologia em uma frase, com '(padrão)' quando é a padrão (sem citar outro sistema) e 'ajustada' quando não é", () => {
-    render(<Harness inicial={inicial} espiao={vi.fn()} />);
-    expect(screen.getByText(/Metodologia de encargos/).textContent).toBe(
-      "Metodologia de encargos (padrão)",
+  it("a metodologia se escolhe entre as duas opções; ajustada, nenhuma fica marcada e o resumo aparece (§17.3, sem citar outro sistema)", async () => {
+    const user = userEvent.setup();
+    const espiao = vi.fn();
+    render(<Harness inicial={inicial} espiao={espiao} />);
+    expect(screen.getByText(/^Metodologia de encargos/).textContent).toBe(
+      "Metodologia de encargos",
     );
-    expect(screen.getByText(/Até 29\/08\/2024/).textContent).toBe(
+    const transicao = screen.getByLabelText(
       "Até 29/08/2024: IGP-M e juros de 1% ao mês. Desde 30/08/2024: IPCA e taxa legal.",
+    ) as HTMLInputElement;
+    const semTransicao = screen.getByLabelText(
+      "IGP-M e juros de 1% ao mês em todo o período.",
+    ) as HTMLInputElement;
+    expect([transicao.checked, semTransicao.checked]).toEqual([true, false]);
+    expect(screen.queryByText(/^Ajustada:/)).toBeNull();
+    await user.click(
+      screen.getByRole("button", { name: "Ajuda: IGP-M e juros de 1% ao mês em todo o período" }),
     );
+    expect(
+      screen.getByText(/Use quando a decisão ou o acordo fixou esses critérios/).textContent,
+    ).toBe(
+      "IGP-M e juros de 1% ao mês do vencimento até a data do cálculo, sem a mudança de 30/08/2024. Use quando a decisão ou o acordo fixou esses critérios, ou quando o juízo mantém o critério anterior à Lei 14.905/2024. Sem isso, a regra legal desde 30/08/2024 é IPCA e taxa legal (arts. 389 e 406 do CC).",
+    );
+    await user.click(semTransicao);
+    expect(espiao.mock.lastCall?.[0].metodologia).toEqual(metodologiaDaOpcao("igpmJuros1"));
+    expect([transicao.checked, semTransicao.checked]).toEqual([false, true]);
     cleanup();
     const ajustada = {
       ...inicial,
       metodologia: dividirPeriodo(inicial.metodologia, "2023-01-01").metodologia,
     };
     render(<Harness inicial={ajustada} espiao={vi.fn()} />);
-    expect(screen.getByText(/Metodologia de encargos/).textContent).toBe(
+    expect(screen.getByText(/^Metodologia de encargos/).textContent).toBe(
       "Metodologia de encargos (ajustada)",
     );
-    expect(screen.getByText(/Até 31\/12\/2022/)).toBeDefined();
+    expect(
+      screen
+        .getAllByRole("radio")
+        .filter((r) => (r as HTMLInputElement).name === "metodologia")
+        .map((r) => (r as HTMLInputElement).checked),
+    ).toEqual([false, false]);
+    expect(screen.getByText(/^Ajustada:/).textContent).toBe(
+      "Ajustada: Até 31/12/2022: IGP-M e juros de 1% ao mês. De 01/01/2023 a 29/08/2024: IGP-M e juros de 1% ao mês. Desde 30/08/2024: IPCA e taxa legal.",
+    );
   });
 
   it("multa e honorários vêm com 10% cada (decisão de 13/10/2026), aceitam vírgula e recusam negativos; a data de elaboração é validada; observações livres", async () => {
@@ -87,5 +120,37 @@ describe("5 · Encargos e data do cálculo (§9.2)", () => {
     expect(espiao.mock.lastCall?.[0].observacoes).toBe("Conforme a sentença.");
     await user.click(screen.getByRole("button", { name: "Ajustar" }));
     expect(espiao.mock.lastCall?.[0].observacoes).toBe("ajustar!");
+  });
+
+  it("no App: a opção escolhida vale para o cálculo, fica guardada, vem nos cálculos novos, sobrevive a 'Esquecer' e é o que 'Restaurar' restaura", async () => {
+    const user = userEvent.setup();
+    const armazenamento = armazenamentoEmMemoria();
+    render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
+    const opcao = (rotulo: RegExp) => screen.getByLabelText(rotulo) as HTMLInputElement;
+    const semTransicao = /^IGP-M e juros de 1% ao mês em todo o período/;
+    const guardada = () =>
+      (JSON.parse(armazenamento.getItem(CHAVE_PREFERENCIAS) ?? "{}") as { metodologia?: string })
+        .metodologia;
+    await user.click(opcao(semTransicao));
+    expect(guardada()).toBe("igpmJuros1");
+    await user.click(screen.getByRole("button", { name: "Novo cálculo" }));
+    expect(opcao(semTransicao).checked).toBe(true);
+    await user.click(screen.getByRole("button", { name: "Esquecer" }));
+    expect(guardada()).toBe("igpmJuros1");
+    // ajustada no editor, "Restaurar" volta à opção guardada
+    await user.click(screen.getByRole("button", { name: "Ajustar" }));
+    const painel = within(
+      screen.getByRole("dialog", { name: "Ajustar a metodologia de encargos" }),
+    );
+    await user.selectOptions(painel.getByLabelText("Índice de correção"), "INPC");
+    expect(screen.getByText(/^Metodologia de encargos/).textContent).toBe(
+      "Metodologia de encargos (ajustada)",
+    );
+    await user.click(painel.getByRole("button", { name: "Restaurar a metodologia padrão" }));
+    await user.keyboard("{Escape}");
+    expect(opcao(semTransicao).checked).toBe(true);
+    // a outra opção também se guarda
+    await user.click(opcao(/^Até 29\/08\/2024: IGP-M/));
+    expect(guardada()).toBe("lei14905");
   });
 });

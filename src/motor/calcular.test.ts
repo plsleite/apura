@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { competenciasEntre } from "../compartilhado/datas.ts";
 import type {
-  Base,
   Calculo,
   CodigoSerie,
   Competencia,
+  FormaDaBase,
   Lancamento,
   TabelaIndices,
 } from "../compartilhado/tipos.ts";
-import { metodologiaPadrao } from "../metodologias/padrao.ts";
+import { metodologiaDaOpcao, metodologiaPadrao } from "../metodologias/padrao.ts";
+import { baseUnica } from "./base.ts";
 import { calcular } from "./calcular.ts";
 import { tabelaIgpm } from "./testes/indices-igpm-2017-2018.ts";
 import { metodologiaSelicUnica, tabelaRegimeNovo } from "./testes/regime-novo.ts";
@@ -22,13 +23,13 @@ function calculoCom(lancamentos: Lancamento[], dataElaboracao = "2018-05-25"): C
     atualizadoEm: "2026-10-10T00:00:00.000Z",
     dataElaboracao,
     cabecalho: { defensor: "", orgao: "", processo: "", exequente: "", executado: "" },
-    base: {
+    base: baseUnica({
       tipo: "valorFixo",
       valor: "451.91",
       dataFixacao: "2017-01-10",
       indiceReajuste: "nenhum",
       mesReajuste: 1,
-    },
+    }),
     lotes: {},
     lancamentos,
     metodologia: metodologiaPadrao(),
@@ -294,6 +295,34 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
     encargos?: Lancamento["encargos"],
   ): Lancamento => ({ id, tipo, data, valorInformado, origem: "avulso", editado: true, encargos });
 
+  it("as duas metodologias pré-carregadas (§17.3): R$ 1.000,00 de 10/01/2025 até 10/10/2026, IGP-M e 1% ao mês em todo o período contra IPCA e taxa legal", () => {
+    const calculo = calculoCom(
+      [lancamento("p", "prestacao", "2025-01-10", "1000.00")],
+      "2026-10-10",
+    );
+    const semTransicao = calcular(
+      { ...calculo, metodologia: metodologiaDaOpcao("igpmJuros1") },
+      tabelaRegimeNovo(),
+    ).lancamentos[0];
+    // juros de 1% ao mês rateados por mês-calendário, contando as duas pontas:
+    // 22/31 + 20 meses inteiros (fev/2025 a set/2026) + 10/31 = 21,032258%
+    expect(semTransicao).toMatchObject({
+      correcao: { fator: "1.022857" },
+      corrigido: "1022.86",
+      juros: { percentual: "21.032258" },
+      atualizado: "1237.99",
+    });
+    expect(semTransicao?.correcao.indices.every((i) => i.serie === "189")).toBe(true);
+    expect(semTransicao?.juros.detalhe.every((d) => d.regime === "percentualMensal")).toBe(true);
+    const comTransicao = calcular(calculo, tabelaRegimeNovo()).lancamentos[0];
+    expect(comTransicao).toMatchObject({
+      correcao: { fator: "1.083283" },
+      juros: { percentual: "15.779661" },
+      atualizado: "1254.22",
+    });
+    expect(comTransicao?.juros.detalhe.every((d) => d.regime === "taxaLegal")).toBe(true);
+  });
+
   it("regime novo de ponta a ponta: IPCA e taxa legal conferidos na Calculadora do Cidadão", () => {
     const r = calcular(
       calculoCom([lancamento("p", "prestacao", "2024-09-30", "1000.00")], hoje),
@@ -547,9 +576,13 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
     editado: false,
     ...extra,
   });
-  const comBase = (base: Base, lancamentos: Lancamento[], dataElaboracao = hoje): Calculo => ({
+  const comBase = (
+    forma: FormaDaBase,
+    lancamentos: Lancamento[],
+    dataElaboracao = hoje,
+  ): Calculo => ({
     ...calculoCom(lancamentos, dataElaboracao),
-    base,
+    base: baseUnica(forma),
   });
 
   it("pagamento posterior à data de elaboração fica fora dos totais, com aviso no lançamento e no resumo", () => {
@@ -690,7 +723,7 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
   });
 
   it("base em % do salário mínimo: valor apurado, salário mínimo em indicesUsados e séries em ordem numérica", () => {
-    const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+    const base: FormaDaBase = { tipo: "percentualSalarioMinimo", percentual: "30" };
     const r = calcular(
       comBase(base, [
         semValorInformado("p-2025-01", "2025-01-10"),
@@ -724,7 +757,7 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
   });
 
   it("prestação vincenda em % do salário mínimo de mês ainda sem salário mínimo publicado: último publicado, nominal, avisos e resumos", () => {
-    const base: Base = { tipo: "percentualSalarioMinimo", percentual: "30" };
+    const base: FormaDaBase = { tipo: "percentualSalarioMinimo", percentual: "30" };
     const r = calcular(
       comBase(base, [semValorInformado("p-2027-01", "2027-01-10")]),
       tabelaRegimeNovo(),
@@ -756,7 +789,7 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
   });
 
   it("valor fixo reajustado pelo IPCA: os 12 meses do acumulado entram em indicesUsados mesmo fora do período de correção", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "500.00",
       dataFixacao: "2024-03-15",
@@ -818,9 +851,13 @@ describe("calcular (fase 4: meses ainda não divulgados na data da consulta)", (
     origem: "lote",
     editado: false,
   });
-  const comBase = (base: Base, lancamentos: Lancamento[], dataElaboracao = hoje): Calculo => ({
+  const comBase = (
+    forma: FormaDaBase,
+    lancamentos: Lancamento[],
+    dataElaboracao = hoje,
+  ): Calculo => ({
     ...calculoCom(lancamentos, dataElaboracao),
-    base,
+    base: baseUnica(forma),
   });
 
   it("IPCA do mês da consulta ainda não divulgado: aviso próprio no lançamento e resumo próprio, sem o genérico; valores inalterados", () => {
@@ -1005,7 +1042,7 @@ describe("calcular (fase 4: meses ainda não divulgados na data da consulta)", (
   });
 
   it("reajuste pelo IPCA ainda não divulgado: aviso próprio no lançamento e resumo próprio da base", () => {
-    const base: Base = {
+    const base: FormaDaBase = {
       tipo: "valorFixo",
       valor: "500.00",
       dataFixacao: "2025-11-15",

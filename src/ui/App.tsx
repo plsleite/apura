@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { Lancamento, LancamentoCalculado } from "../compartilhado/tipos.ts";
 import { compararIndicesUsados } from "../indices/congelar.ts";
+import { metodologiaDaOpcao } from "../metodologias/padrao.ts";
 import { calcular } from "../motor/calcular.ts";
 import { Abrir } from "./Abrir.tsx";
 import { ambientePadrao, type Ambiente } from "./ambiente.ts";
@@ -70,6 +71,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
       agora: ambiente.agora(),
       hoje: ambiente.hoje(),
       cabecalho: p.lembrar ? { defensor: p.defensor, orgao: p.orgao } : {},
+      metodologia: p.metodologia,
     });
   // A tabela de índices é congelada quando o app abre (§8.2); "Novo cálculo" congela outra.
   const [estado, despachar] = useReducer(reduzir, undefined, () =>
@@ -230,6 +232,14 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             }
             aoMudarObservacoes={(texto) => despachar({ tipo: "observacoes", texto, em: agora() })}
             aoAjustar={() => setEditorAberto(true)}
+            aoEscolherMetodologia={(opcao) => {
+              despachar({
+                tipo: "metodologia",
+                metodologia: metodologiaDaOpcao(opcao),
+                em: agora(),
+              });
+              mudarPreferencias({ metodologia: opcao });
+            }}
           />
         </div>
         <div className="coluna-direita" key={`direita-${estado.calculo.id}-${aberturas}`}>
@@ -272,6 +282,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
       >
         <EditorDePeriodos
           metodologia={estado.calculo.metodologia}
+          opcaoPadrao={preferencias.metodologia}
           aoMudar={(metodologia) => despachar({ tipo: "metodologia", metodologia, em: agora() })}
         />
         <div className="dialogo-acoes">
@@ -315,6 +326,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
           <Personalizar
             lancamento={personalizando}
             calculo={estado.calculo}
+            opcaoPadrao={preferencias.metodologia}
             aoEditar={editar}
             aoAplicarRendimento={(id, rendimento) =>
               despachar({ tipo: "aplicarRendimentoDaquiEmDiante", id, rendimento, em: agora() })

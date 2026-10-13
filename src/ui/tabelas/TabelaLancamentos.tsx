@@ -36,6 +36,7 @@ import {
 import type { MudancasDoLancamento } from "../estado/calculo.ts";
 import type { RascunhoDeLancamento } from "../estado/novaLinha.ts";
 import { CelulaEditavel } from "./CelulaEditavel.tsx";
+import { etiquetasDaLinha, nomeDaSituacao } from "./etiquetas.ts";
 
 /**
  * Tabelas de prestações e de amortizações (§9.3), com as mesmas colunas: vencimento (ou data do
@@ -225,7 +226,13 @@ export function TabelaLancamentos({
         </Ajuda>
       </div>
       <div className="rolagem">
-        <table>
+        {/* com alguma descrição (13º, férias), a primeira coluna prefere ser mais larga, para a
+            descrição aparecer, sem empurrar o lápis e o ✕ para fora (§17.4) */}
+        <table
+          className={
+            linhas.some((l) => l.lancamento.descricao?.trim()) ? "com-descricao" : undefined
+          }
+        >
           <thead>
             <tr>
               <th scope="col">{prestacoes ? "Vencimento" : "Data"}</th>
@@ -448,35 +455,10 @@ function Linha({
   const feminino = lancamento.tipo === "prestacao";
   const nome = nomeDoLancamento(lancamento);
   const artigo = feminino ? "da" : "do";
-  // Etiquetas com a explicação no `title` (§9.4: nenhum rótulo sem explicação).
-  const etiquetas: Array<{ texto: string; explicacao: string }> = [];
-  if (calculado.situacao === "vincenda") {
-    etiquetas.push({
-      texto: "vincenda",
-      explicacao:
-        "Vence depois da data de elaboração: entra pelo valor nominal, sem correção e sem juros.",
-    });
-  }
-  if (calculado.situacao === "ignorado") {
-    etiquetas.push({
-      texto: feminino ? "não computada" : "não computado",
-      explicacao: "Fora dos totais: abra a memória da linha (▸) para ver o motivo.",
-    });
-  }
-  if (calculado.editado) {
-    etiquetas.push({
-      texto: "valor informado",
-      explicacao: feminino
-        ? "Valor digitado à mão, não apurado pela base dos alimentos; apagado, volta à base."
-        : "Valor digitado à mão.",
-    });
-  }
-  if (lancamento.editado) {
-    etiquetas.push({
-      texto: feminino ? "ajustada" : "ajustado",
-      explicacao: `${feminino ? "Alterada" : "Alterado"} depois de ${feminino ? "lançada" : "lançado"} (${feminino ? "vencimento" : "data"}, valor, descrição, rendimento, termos ou regras próprias).`,
-    });
-  }
+  // Etiquetas (§17.4): a linha mostra só a mais importante e "+N"; o balão, todas, com a
+  // explicação de cada uma (§9.4: nenhum rótulo sem explicação), e a descrição inteira.
+  const etiquetas = etiquetasDaLinha(lancamento, calculado);
+  const descricao = lancamento.descricao?.trim() ?? "";
   const moeda = (texto: string) => formatarMoeda(decimal(texto));
   // o campo do valor abre com o valor informado à mão ou, na prestação pela base, com o valor
   // apurado (gravá-lo sem mudar nada não o transforma em informado)
@@ -489,38 +471,64 @@ function Linha({
   return (
     <tr>
       <td className="texto">
-        <button
-          type="button"
-          className="botao-expandir"
-          aria-expanded={expandida}
-          aria-label={`Memória ${artigo} ${nome}`}
-          title="Memória do cálculo"
-          onClick={aoAlternar}
-        >
-          {expandida ? "▾" : "▸"}
-        </button>
-        <CelulaEditavel
-          nome={feminino ? `Vencimento da ${nome}` : `Data do ${nome}`}
-          exibido={formatarData(lancamento.data)}
-          textoInicial={formatarDataParaCampo(lancamento.data)}
-          inputMode="numeric"
-          placeholder="dd/mm/aaaa"
-          mascara={mascaraData}
-          aoGravar={(texto) => {
-            const data = lerDataTexto(texto);
-            if (!data.ok) return data.erro;
-            aoEditar({ data: data.valor });
-            return null;
-          }}
-        />
-        {lancamento.descricao?.trim() ? (
-          <span className="descricao">{lancamento.descricao.trim()}</span>
-        ) : null}
-        {etiquetas.map((etiqueta) => (
-          <span key={etiqueta.texto} className="etiqueta" title={etiqueta.explicacao}>
-            {etiqueta.texto}
-          </span>
-        ))}
+        <div className="celula-vencimento">
+          <button
+            type="button"
+            className="botao-expandir"
+            aria-expanded={expandida}
+            aria-label={`Memória ${artigo} ${nome}`}
+            title="Memória do cálculo"
+            onClick={aoAlternar}
+          >
+            {expandida ? "▾" : "▸"}
+          </button>
+          <CelulaEditavel
+            nome={feminino ? `Vencimento da ${nome}` : `Data do ${nome}`}
+            exibido={formatarData(lancamento.data)}
+            textoInicial={formatarDataParaCampo(lancamento.data)}
+            inputMode="numeric"
+            placeholder="dd/mm/aaaa"
+            mascara={mascaraData}
+            aoGravar={(texto) => {
+              const data = lerDataTexto(texto);
+              if (!data.ok) return data.erro;
+              aoEditar({ data: data.valor });
+              return null;
+            }}
+          />
+          {descricao !== "" || etiquetas.length > 0 ? (
+            // a descrição (que encolhe até caber) e a etiqueta mais importante, com "+N", formam um
+            // botão só, que abre o balão com a descrição inteira e todas as etiquetas (§17.4)
+            <Ajuda
+              assunto={`situação ${artigo} ${nome}`}
+              nome={nomeDaSituacao(lancamento, etiquetas)}
+              classe="situacao"
+              flutuante
+              conteudoDoBotao={
+                <>
+                  {descricao !== "" ? (
+                    <span className="descricao" title={descricao}>
+                      {descricao}
+                    </span>
+                  ) : null}
+                  {etiquetas.length > 0 ? (
+                    <span className="etiqueta">
+                      {etiquetas[0]?.texto}
+                      {etiquetas.length > 1 ? ` +${etiquetas.length - 1}` : ""}
+                    </span>
+                  ) : null}
+                </>
+              }
+            >
+              {descricao !== "" ? <span className="balao-descricao">{descricao}</span> : null}
+              {etiquetas.map((etiqueta) => (
+                <span key={etiqueta.texto} className="balao-etiqueta">
+                  <strong>{etiqueta.texto}</strong>: {etiqueta.explicacao}
+                </span>
+              ))}
+            </Ajuda>
+          ) : null}
+        </div>
       </td>
       <td>
         <CelulaEditavel
@@ -600,7 +608,12 @@ function Memoria({ linha }: { linha: LinhaDaTabela }) {
         <p>
           <strong>Memória · {nomeDoLancamento(linha.lancamento)}</strong>
         </p>
-        <p>Base: {calculado.memoriaBase}</p>
+        {/* com a base por períodos, a frase do motor já começa por "Base até/desde …" (§17.2) */}
+        <p>
+          {calculado.memoriaBase.startsWith("Base ")
+            ? calculado.memoriaBase
+            : `Base: ${calculado.memoriaBase}`}
+        </p>
         <p>
           Correção (fator {formatarFator(decimal(calculado.correcao.fator))}
           {calculado.correcao.pisoAplicado ? ", com piso no valor original" : ""}):

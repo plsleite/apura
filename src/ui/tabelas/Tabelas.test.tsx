@@ -4,10 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { decimal } from "../../compartilhado/decimal.ts";
 import { formatarMoeda } from "../../compartilhado/formatacao.ts";
+import { baseUnica } from "../../motor/base.ts";
 import { calcular } from "../../motor/calcular.ts";
 import { gerarLoteAmortizacoes, gerarLotePrestacoes } from "../../motor/lote.ts";
 import App from "../App.tsx";
 import { novoCalculo } from "../estado/calculo.ts";
+import { TabelaLancamentos } from "./TabelaLancamentos.tsx";
 import { ambienteDeTeste, AGORA_DE_TESTE, HOJE_DE_TESTE } from "../testes/ambiente-de-teste.ts";
 
 afterEach(cleanup);
@@ -20,13 +22,13 @@ const multaEHonorarios = (r: ReturnType<typeof calcular>) =>
 /** O que o motor devolve para o mesmo caso montado na tela: valor fixo R$ 1.000,00, dia 5, 2 meses. */
 function esperado() {
   const calculo = novoCalculo({ id: "x", agora: AGORA_DE_TESTE, hoje: HOJE_DE_TESTE });
-  calculo.base = {
+  calculo.base = baseUnica({
     tipo: "valorFixo",
     valor: "1000.00",
     dataFixacao: HOJE_DE_TESTE,
     indiceReajuste: "nenhum",
     mesReajuste: 10,
-  };
+  });
   calculo.lancamentos = gerarLotePrestacoes(
     { diaVencimento: 5, mesesEmAtraso: 2 },
     HOJE_DE_TESTE,
@@ -54,6 +56,13 @@ async function montarCaso(user: ReturnType<typeof userEvent.setup>) {
   await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
   await user.type(prestacoes.getByLabelText("Quantos meses"), "2");
   await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+}
+
+/** O nome do botão das etiquetas da linha ("Situação da prestação de …: …"; §17.4). */
+function situacao(linha: HTMLElement): string | null {
+  return within(linha)
+    .getByRole("button", { name: /^Situação / })
+    .getAttribute("aria-label");
 }
 
 describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
@@ -289,8 +298,11 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     await user.clear(screen.getByLabelText("Valor da prestação de 05/09/2026"));
     await user.type(screen.getByLabelText("Valor da prestação de 05/09/2026"), "1.200,00{Enter}");
     expect(within(primeira()).getAllByRole("cell")[1]?.textContent).toBe("R$ 1.200,00");
-    expect(primeira().textContent).toContain("valor informado");
-    expect(primeira().textContent).toContain("ajustada");
+    // uma etiqueta só na linha, a mais importante, e "+N"; todas no nome do botão (§17.4)
+    expect(primeira().textContent).toContain("valor informado +1");
+    expect(situacao(primeira())).toBe(
+      "Situação da prestação de 05/09/2026: valor informado, ajustada",
+    );
     // texto inválido fica no campo, em vermelho, e não é gravado; Esc desiste
     await user.click(
       screen.getByRole("button", { name: "Editar valor da prestação de 05/09/2026 (R$ 1.200,00)" }),
@@ -505,8 +517,12 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     const setembro = screen
       .getByRole("button", { name: "Memória da prestação de 05/09/2026" })
       .closest("tr") as HTMLElement;
-    expect(within(setembro).getByText("não computada").getAttribute("title")).toBe(
-      "Fora dos totais: abra a memória da linha (▸) para ver o motivo.",
+    const etiqueta = within(setembro).getByRole("button", {
+      name: "Situação da prestação de 05/09/2026: não computada",
+    });
+    await user.click(etiqueta);
+    expect(etiqueta.nextElementSibling?.textContent).toBe(
+      "não computada: Fora dos totais: abra a memória da linha (▸) para ver o motivo.",
     );
     await user.click(screen.getByRole("button", { name: "Memória da prestação de 05/09/2026" }));
     expect(
@@ -537,5 +553,90 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(
       "igualam ou superam as prestações atualizadas",
     );
+  });
+
+  it('etiquetas numa linha só: a mais importante e "+N"; o balão traz a descrição inteira e todas as etiquetas, com a explicação (§17.4)', async () => {
+    const user = userEvent.setup();
+    await montarCaso(user);
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/10/2026" }));
+    const painel = within(screen.getByRole("dialog", { name: "Personalizar prestação" }));
+    fireEvent.change(painel.getByLabelText("Vencimento"), { target: { value: "2026-11-05" } });
+    await user.type(painel.getByLabelText("Valor informado à mão (opcional)"), "1.200,00");
+    const descricao = "13º salário 2026, pago em dobro conforme o acordo homologado";
+    await user.type(painel.getByLabelText("Descrição (opcional)"), descricao);
+    await user.click(painel.getByRole("button", { name: "Aplicar" }));
+    const linha = screen
+      .getByRole("button", { name: `Memória da prestação de 05/11/2026 (${descricao})` })
+      .closest("tr") as HTMLElement;
+    const celula = within(linha).getAllByRole("cell")[0] as HTMLElement;
+    const botao = within(celula).getByRole("button", {
+      name: "Situação da prestação de 05/11/2026: vincenda, valor informado, ajustada",
+    });
+    // o botão leva a descrição (que encolhe até caber, inteira no title) e a etiqueta mais
+    // importante, com "+N" (decisão de 13/10/2026)
+    expect(within(botao).getByText("vincenda +2").className).toBe("etiqueta");
+    expect(within(botao).getByText(descricao).getAttribute("title")).toBe(descricao);
+    expect(celula.textContent).not.toContain("ajustada");
+    await user.click(botao);
+    // o balão (a região de status ao lado do botão)
+    const balao = botao.nextElementSibling?.textContent ?? "";
+    for (const trecho of [
+      descricao,
+      "vincenda: Vence depois da data de elaboração",
+      "valor informado: Valor digitado à mão",
+      "ajustada: Alterada depois de lançada",
+    ]) {
+      expect(balao).toContain(trecho);
+    }
+    await user.keyboard("{Escape}");
+    expect(screen.queryByText(/Vence depois da data de elaboração/)).toBeNull();
+    // linha sem etiqueta e sem descrição não tem o botão
+    const setembro = screen
+      .getByRole("button", { name: "Memória da prestação de 05/09/2026" })
+      .closest("tr") as HTMLElement;
+    expect(within(setembro).queryByRole("button", { name: /^(Situação|Descrição) / })).toBeNull();
+  });
+
+  it("linha só com descrição, sem etiqueta: a descrição é o botão e abre o balão com ela inteira (decisão de 13/10/2026)", async () => {
+    const user = userEvent.setup();
+    const calculo = novoCalculo({ id: "x", agora: AGORA_DE_TESTE, hoje: HOJE_DE_TESTE });
+    calculo.base = baseUnica({
+      tipo: "valorFixo",
+      valor: "1000.00",
+      dataFixacao: "2026-01-10",
+      indiceReajuste: "nenhum",
+      mesReajuste: 1,
+    });
+    const descricao = "Férias de 2026, conforme o acordo homologado";
+    calculo.lancamentos = [
+      {
+        id: "p-2026-07",
+        tipo: "prestacao",
+        data: "2026-07-20",
+        competencia: "2026-07",
+        descricao,
+        origem: "lote",
+        editado: false,
+      },
+    ];
+    const resultado = calcular(calculo, ambienteDeTeste().congelar().tabela);
+    render(
+      <TabelaLancamentos
+        tipo="prestacao"
+        linhas={[{ lancamento: calculo.lancamentos[0]!, calculado: resultado.lancamentos[0]! }]}
+        aoPersonalizar={vi.fn()}
+        aoExcluir={vi.fn()}
+        aoEditar={vi.fn()}
+        aoSugerir={vi.fn()}
+        valorDaBase={() => ""}
+        aoIncluir={vi.fn()}
+      />,
+    );
+    const botao = screen.getByRole("button", {
+      name: `Descrição da prestação de 20/07/2026: ${descricao}`,
+    });
+    expect(botao.textContent).toBe(descricao);
+    await user.click(botao);
+    expect(botao.nextElementSibling?.textContent).toBe(descricao);
   });
 });

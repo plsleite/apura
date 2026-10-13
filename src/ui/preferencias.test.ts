@@ -13,6 +13,7 @@ describe("preferências no navegador (§5.5)", () => {
     expect(lerPreferencias(armazenamentoEmMemoria())).toEqual(PREFERENCIAS_PADRAO);
     expect(lerPreferencias(null)).toEqual(PREFERENCIAS_PADRAO);
     expect(PREFERENCIAS_PADRAO.tema).toBe("sistema");
+    expect(PREFERENCIAS_PADRAO.metodologia).toBe("lei14905");
   });
 
   it("grava e lê de volta; com 'lembrar' desligado, grava os nomes vazios mas mantém as opções e o tema", () => {
@@ -23,6 +24,7 @@ describe("preferências no navegador (§5.5)", () => {
       lembrar: true,
       guardarRecentes: false,
       tema: "escuro" as const,
+      metodologia: "igpmJuros1" as const,
     };
     expect(gravarPreferencias(armazenamento, p)).toBe(true);
     expect(lerPreferencias(armazenamento)).toEqual(p);
@@ -33,6 +35,7 @@ describe("preferências no navegador (§5.5)", () => {
       lembrar: false,
       guardarRecentes: false,
       tema: "escuro",
+      metodologia: "igpmJuros1",
     });
     expect(lerPreferencias(armazenamento)).toEqual({
       defensor: "",
@@ -40,10 +43,11 @@ describe("preferências no navegador (§5.5)", () => {
       lembrar: false,
       guardarRecentes: false,
       tema: "escuro",
+      metodologia: "igpmJuros1",
     });
   });
 
-  it("conteúdo corrompido ou de outro formato volta aos padrões campo a campo (tema desconhecido vira 'sistema')", () => {
+  it("conteúdo corrompido ou de outro formato volta aos padrões campo a campo (tema desconhecido vira 'sistema'; metodologia desconhecida, a da Lei 14.905/2024)", () => {
     expect(lerPreferencias(armazenamentoEmMemoria({ [CHAVE_PREFERENCIAS]: "{nada" }))).toEqual(
       PREFERENCIAS_PADRAO,
     );
@@ -56,6 +60,7 @@ describe("preferências no navegador (§5.5)", () => {
         orgao: "Órgão",
         guardarRecentes: "sim",
         tema: "roxo",
+        metodologia: "tjms-saj",
       }),
     });
     expect(lerPreferencias(parcial)).toEqual({
@@ -64,10 +69,16 @@ describe("preferências no navegador (§5.5)", () => {
       lembrar: true,
       guardarRecentes: true,
       tema: "sistema",
+      metodologia: "lei14905",
     });
     expect(
       lerPreferencias(armazenamentoEmMemoria({ [CHAVE_PREFERENCIAS]: '{"tema":"claro"}' })).tema,
     ).toBe("claro");
+    expect(
+      lerPreferencias(
+        armazenamentoEmMemoria({ [CHAVE_PREFERENCIAS]: '{"metodologia":"igpmJuros1"}' }),
+      ).metodologia,
+    ).toBe("igpmJuros1");
   });
 
   it("armazenamento bloqueado: ler devolve os padrões, gravar devolve false, esquecer não lança", () => {

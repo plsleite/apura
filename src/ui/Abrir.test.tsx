@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ArquivoCalculo } from "../compartilhado/tipos.ts";
+import { baseUnica } from "../motor/base.ts";
 import { calcular } from "../motor/calcular.ts";
 import { gerarLotePrestacoes } from "../motor/lote.ts";
 import App from "./App.tsx";
@@ -31,13 +32,13 @@ function arquivoSalvo(): ArquivoCalculo {
   calculo.cabecalho.exequente = "A. B.";
   calculo.cabecalho.executado = "C. D.";
   calculo.dataElaboracao = HOJE_DE_TESTE;
-  calculo.base = {
+  calculo.base = baseUnica({
     tipo: "valorFixo",
     valor: "1000.00",
     dataFixacao: "2026-01-10",
     indiceReajuste: "nenhum",
     mesReajuste: 1,
-  };
+  });
   calculo.lancamentos = gerarLotePrestacoes(
     { diaVencimento: 5, mesesEmAtraso: 2 },
     HOJE_DE_TESTE,
