@@ -23,9 +23,9 @@
       {"id": "a-2025-06-30", "tipo": "amortizacao", "data": "2025-06-30", "descricao": "Pagamento parcial", "valorInformado": "500.00", "origem": "avulso", "editado": false}
     ],
     "metodologia": {
-      "id": "tjms-saj",
+      "id": "lei-14905-2024",
       "versao": 1,
-      "nome": "TJMS/SAJ",
+      "nome": "Lei 14.905/2024",
       "ajustada": false,
       "periodos": [
         {"de": null, "ate": "2024-08-29", "correcao": {"indice": "IGP-M"}, "juros": {"tipo": "percentualMensal", "taxaMensal": "1"}},

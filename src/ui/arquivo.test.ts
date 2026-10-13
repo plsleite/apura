@@ -3,6 +3,7 @@ import type { Calculo } from "../compartilhado/tipos.ts";
 import { calcular } from "../motor/calcular.ts";
 import { gerarLotePrestacoes } from "../motor/lote.ts";
 import { tabelaRegimeNovo } from "../motor/testes/regime-novo.ts";
+import { metodologiaDaOpcao, metodologiaPadrao } from "../metodologias/padrao.ts";
 import { lerArquivo, montarArquivo, nomeDoArquivo, serializarArquivo } from "./arquivo.ts";
 import { novoCalculo } from "./estado/calculo.ts";
 import { dividirPeriodo } from "./estado/metodologia.ts";
@@ -107,6 +108,27 @@ describe("lerArquivo (validação do arquivo aberto, §5.1)", () => {
     expect(leitura.ok).toBe(true);
     if (!leitura.ok) return;
     expect(leitura.calculo).toEqual({ ...calculo, lotes: {} });
+  });
+
+  it("recalcula a marca de metodologia ajustada em vez de confiar no arquivo, e põe o nome da opção reconhecida (§17.3)", () => {
+    const calculo = calculoCompleto();
+    const resultado = calcular(calculo, tabelaRegimeNovo());
+    const arquivo = structuredClone({ formato: "apura/calculo@1", calculo, resultado });
+    // a global com o nome de antes e marcada "ajustada" sem estar; a própria, igual à segunda opção
+    Object.assign(arquivo.calculo.metodologia, {
+      id: "tjms-saj",
+      nome: "TJMS/SAJ",
+      ajustada: true,
+    });
+    const pagamento = arquivo.calculo.lancamentos[2]!;
+    pagamento.encargos = { metodologia: { ...metodologiaDaOpcao("igpmJuros1"), ajustada: true } };
+    const leitura = lerArquivo(JSON.stringify(arquivo));
+    expect(leitura.ok).toBe(true);
+    if (!leitura.ok) return;
+    expect(leitura.calculo.metodologia).toEqual(metodologiaPadrao());
+    expect(leitura.calculo.lancamentos[2]?.encargos?.metodologia).toEqual(
+      metodologiaDaOpcao("igpmJuros1"),
+    );
     expect("cpf" in leitura.calculo.cabecalho).toBe(false);
   });
 

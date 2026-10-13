@@ -20,6 +20,7 @@ import type {
   Resultado,
 } from "../compartilhado/tipos.ts";
 import { DATA_MAXIMA } from "./entrada.ts";
+import { normalizar } from "./estado/metodologia.ts";
 
 /**
  * Salvar e abrir o cálculo como arquivo (§5.1, §9.1). A leitura trata o conteúdo como `unknown` e
@@ -140,10 +141,14 @@ function lerJuros(valor: unknown, caminho: string): RegraJuros {
   return { tipo };
 }
 
+/**
+ * A metodologia do arquivo, conferida campo a campo e normalizada: a marca `ajustada` (e o id e o
+ * nome, quando as regras são as de uma opção pré-carregada) é recalculada, não lida (§17.3).
+ */
 function lerMetodologia(valor: unknown, caminho: string): Metodologia {
   const m = objeto(valor, caminho);
   const arredondamento = objeto(m.arredondamento, `${caminho}.arredondamento`);
-  return {
+  return normalizar({
     id: texto(m.id, `${caminho}.id`),
     versao: inteiro(m.versao, `${caminho}.versao`, 0, 1_000_000),
     nome: texto(m.nome, `${caminho}.nome`),
@@ -189,7 +194,7 @@ function lerMetodologia(valor: unknown, caminho: string): Metodologia {
       valorCasas: inteiro(arredondamento.valorCasas, `${caminho}.arredondamento.valorCasas`, 0, 20),
       modo: umDe(arredondamento.modo, ["comercial"] as const, `${caminho}.arredondamento.modo`),
     },
-  };
+  });
 }
 
 function lerForma(valor: unknown, caminho: string): FormaDaBase {

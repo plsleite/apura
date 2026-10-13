@@ -1,0 +1,17 @@
+{
+  "id": "igpm-juros-1",
+  "versao": 1,
+  "nome": "IGP-M e juros de 1% ao mês",
+  "ajustada": false,
+  "periodos": [
+    {
+      "de": null,
+      "ate": null,
+      "correcao": { "indice": "IGP-M" },
+      "juros": { "tipo": "percentualMensal", "taxaMensal": "1" }
+    }
+  ],
+  "incidenciaMesInicial": "proRata",
+  "deflacao": "aplicarComPiso",
+  "arredondamento": { "fatorCasas": 6, "percentualCasas": 6, "valorCasas": 2, "modo": "comercial" }
+}

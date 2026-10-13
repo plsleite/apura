@@ -23,9 +23,9 @@
       {"id": "p-2024-09", "tipo": "prestacao", "data": "2024-09-01", "competencia": "2024-09", "valorInformado": "10000.00", "origem": "avulso", "editado": true}
     ],
     "metodologia": {
-      "id": "tjms-saj",
+      "id": "lei-14905-2024",
       "versao": 1,
-      "nome": "TJMS/SAJ",
+      "nome": "Lei 14.905/2024",
       "ajustada": true,
       "periodos": [
         {"de": null, "ate": null, "correcao": {"indice": "nenhum"}, "juros": {"tipo": "selicUnica"}}

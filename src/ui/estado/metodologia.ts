@@ -8,31 +8,40 @@ import type {
   PeriodoMetodologia,
   RegraJuros,
 } from "../../compartilhado/tipos.ts";
-import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import {
+  metodologiaDaOpcao,
+  metodologiaPadrao,
+  OPCOES_DE_METODOLOGIA,
+  type OpcaoDeMetodologia,
+} from "../../metodologias/padrao.ts";
 import { periodosOrdenados } from "../../motor/periodos.ts";
+import { DATA_MINIMA } from "../entrada.ts";
 
 /**
  * Edição da metodologia por períodos (§6.5, §9.2): resumo em uma frase para a tela, divisão de um
  * período numa data, remoção de uma divisão, troca de índice e de regra de juros em cada período
  * ("SELIC única" é uma escolha só: juros `selicUnica` e correção "nenhum"), incidência no mês
  * inicial e deflação. Toda função devolve uma cópia nova com `ajustada` recalculada (true quando
- * difere da metodologia padrão). Módulo puro.
+ * as regras não são as de nenhuma opção pré-carregada, §17.3). Módulo puro.
  */
 
 export type EscolhaDeJuros = "percentualMensal" | "taxaLegal" | "selicUnica";
 
-/** Forma canônica (campos conhecidos, em ordem fixa, sem `ajustada`), para comparar metodologias. */
+/**
+ * Forma canônica das regras (períodos, índices, taxas, mês inicial, deflação, arredondamento),
+ * para comparar metodologias pelo conteúdo: id, versão, nome e `ajustada` não contam, e a taxa
+ * mensal vale como número ("1.0" = "1"; texto inválido fica como está).
+ */
 function canonico(m: Metodologia): string {
   return JSON.stringify({
-    id: m.id,
-    versao: m.versao,
-    nome: m.nome,
     periodos: periodosOrdenados(m).map((p) => [
       p.de,
       p.ate,
       p.correcao.indice,
       p.juros.tipo,
-      p.juros.tipo === "percentualMensal" ? p.juros.taxaMensal : null,
+      p.juros.tipo === "percentualMensal"
+        ? (decimalOuNulo(p.juros.taxaMensal)?.toString() ?? p.juros.taxaMensal)
+        : null,
     ]),
     incidenciaMesInicial: m.incidenciaMesInicial,
     deflacao: m.deflacao,
@@ -45,15 +54,22 @@ function canonico(m: Metodologia): string {
   });
 }
 
-/** True quando a metodologia é, campo a campo, a padrão "TJMS/SAJ v1" (a ordem das chaves não importa). */
-export function ehPadrao(m: Metodologia): boolean {
-  return canonico(m) === canonico(metodologiaPadrao());
+/** Qual opção pré-carregada a metodologia é, pelo conteúdo (§17.3), ou `null` (ajustada). */
+export function opcaoDaMetodologia(m: Metodologia): OpcaoDeMetodologia | null {
+  const regras = canonico(m);
+  return OPCOES_DE_METODOLOGIA.find((o) => canonico(metodologiaDaOpcao(o)) === regras) ?? null;
 }
 
-/** Cópia com `ajustada` recalculada e os períodos em ordem cronológica. */
+/**
+ * Cópia com os períodos em ordem cronológica e `ajustada` recalculada; quando as regras são as de
+ * uma opção pré-carregada, a cópia leva o id, a versão e o nome dela.
+ */
 export function normalizar(m: Metodologia): Metodologia {
   const ordenada: Metodologia = { ...structuredClone(m), periodos: periodosOrdenados(m) };
-  return { ...ordenada, ajustada: !ehPadrao(ordenada) };
+  const opcao = opcaoDaMetodologia(ordenada);
+  if (opcao === null) return { ...ordenada, ajustada: true };
+  const { id, versao, nome } = metodologiaDaOpcao(opcao);
+  return { ...ordenada, id, versao, nome, ajustada: false };
 }
 
 /** "Até 29/08/2024", "Desde 30/08/2024", "De 01/01/2020 a 31/12/2022" ou "Sempre". */
@@ -94,6 +110,13 @@ export function dividirPeriodo(
   m: Metodologia,
   data: DataISO,
 ): { metodologia: Metodologia; aviso?: string } {
+  // o período anterior acabaria em 1899, antes da primeira data que o arquivo aceita
+  if (data <= DATA_MINIMA) {
+    return {
+      metodologia: m,
+      aviso: `A data precisa ser posterior a ${formatarData(DATA_MINIMA)}.`,
+    };
+  }
   const periodos = periodosOrdenados(m);
   const indice = periodos.findIndex(
     (p) => (p.de === null || p.de <= data) && (p.ate === null || data <= p.ate),
@@ -193,7 +216,7 @@ export function escolherOpcoes(
   return normalizar({ ...m, ...opcoes });
 }
 
-/** De volta à metodologia padrão "TJMS/SAJ v1". */
+/** De volta à metodologia padrão de fábrica, a da Lei 14.905/2024. */
 export function restaurarPadrao(): Metodologia {
   return metodologiaPadrao();
 }
