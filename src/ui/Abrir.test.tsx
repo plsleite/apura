@@ -9,11 +9,12 @@ import App from "./App.tsx";
 import { montarArquivo, serializarArquivo } from "./arquivo.ts";
 import { CHAVE_RECENTES } from "./armazenamento.ts";
 import { novoCalculo } from "./estado/calculo.ts";
-import { lerRecentes } from "./recentes.ts";
+import { guardarRecente, lerRecentes } from "./recentes.ts";
 import {
   ambienteDeTeste,
   AGORA_DE_TESTE,
   armazenamentoEmMemoria,
+  armazenamentoQueFalha,
   HOJE_DE_TESTE,
 } from "./testes/ambiente-de-teste.ts";
 
@@ -232,6 +233,85 @@ describe("Salvar e Abrir (§5.1, §5.5, §9.1)", () => {
     expect(
       within(screen.getByRole("dialog")).getByText(/Nenhum cálculo recente ainda/),
     ).toBeDefined();
+  });
+
+  it("recente enxuto (só o cálculo e os índices usados) abre, recalcula e avisa do índice que mudou; recente antigo, com o envelope inteiro, também abre", async () => {
+    const user = userEvent.setup();
+    const salvo = arquivoSalvo();
+    const armazenamento = armazenamentoEmMemoria();
+    guardarRecente(armazenamento, salvo.calculo, salvo.resultado);
+    expect(lerRecentes(armazenamento)[0]?.texto).not.toContain("memoriaBase");
+    render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
+    const aviso =
+      "IPCA de set/2026 mudou de 0,80% para 0,82% desde a atualização dos índices de 20/09/2026.";
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: /^Abrir 0800001-31\.2026\.8\.12\.0001/,
+      }),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      within(screen.getByRole("region", { name: "Prestações" })).getAllByRole("row"),
+    ).toHaveLength(4);
+    expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(aviso);
+    cleanup();
+    // recente gravado antes desta decisão: o texto é o arquivo inteiro, como "Salvar" grava
+    const antigo = armazenamentoEmMemoria({
+      [CHAVE_RECENTES]: JSON.stringify([
+        {
+          id: salvo.calculo.id,
+          atualizadoEm: salvo.calculo.atualizadoEm,
+          processo: salvo.calculo.cabecalho.processo,
+          exequente: salvo.calculo.cabecalho.exequente,
+          executado: salvo.calculo.cabecalho.executado,
+          texto: serializarArquivo(salvo),
+        },
+      ]),
+    });
+    render(<App ambiente={ambienteDeTeste({ armazenamento: antigo })} />);
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: /^Abrir 0800001-31\.2026\.8\.12\.0001/,
+      }),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(aviso);
+  });
+
+  it("se o cálculo atual não pôde ser guardado nos recentes (cota cheia, armazenamento bloqueado), o painel 'Abrir' avisa", async () => {
+    const user = userEvent.setup();
+    const frase =
+      "O cálculo atual não pôde ser guardado nos recentes deste navegador (o armazenamento está cheio ou bloqueado): salve o arquivo para não perdê-lo.";
+    // cota cheia: os recentes antigos continuam lá, mas o atual não entra
+    const cheio = armazenamentoEmMemoria();
+    const guardado = arquivoSalvo();
+    guardarRecente(cheio, guardado.calculo, guardado.resultado);
+    cheio.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+    render(<App ambiente={ambienteDeTeste({ armazenamento: cheio })} />);
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    // o cálculo em branco não vai para os recentes: nada a avisar
+    expect(within(screen.getByRole("dialog")).queryByText(frase)).toBeNull();
+    await user.keyboard("{Escape}");
+    await user.type(screen.getByLabelText("Nº do processo"), "0800002-16.2026.8.12.0001");
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    const painel = within(screen.getByRole("dialog"));
+    expect(painel.getByText(frase)).toBeDefined();
+    expect(painel.getAllByRole("listitem")).toHaveLength(1);
+    // "Novo cálculo": o cálculo em branco não tem o que guardar, e o aviso some
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Novo cálculo" }));
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    expect(within(screen.getByRole("dialog")).queryByText(frase)).toBeNull();
+    cleanup();
+    // armazenamento bloqueado
+    render(<App ambiente={ambienteDeTeste({ armazenamento: armazenamentoQueFalha() })} />);
+    await user.type(screen.getByLabelText("Nº do processo"), "0800002-16.2026.8.12.0001");
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    expect(within(screen.getByRole("dialog")).getByText(frase)).toBeDefined();
   });
 
   it("com a guarda de recentes desligada nada é guardado e o painel explica; recente corrompido mostra erro", async () => {

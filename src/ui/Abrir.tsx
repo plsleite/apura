@@ -5,13 +5,14 @@ import type { Recente } from "./recentes.ts";
 
 /**
  * Conteúdo do painel "Abrir" (§5.5, §9.1): os cálculos recentes deste navegador, por data,
- * processo e partes, com "Abrir" e "Remover" em cada um e "Limpar recentes"; e a escolha de um
- * arquivo salvo. O arquivo é lido aqui (texto) e entregue a quem valida e recalcula.
+ * processo e partes, com "Abrir" e "Remover" em cada um e "Limpar recentes" (e um aviso quando o
+ * cálculo atual não pôde ser guardado neles); e a escolha de um arquivo salvo. O arquivo é lido aqui (texto) e entregue a quem valida e recalcula.
  */
 export function Abrir({
   recentes,
   recentesLigados,
   erro,
+  naoGuardado,
   aoAbrirRecente,
   aoRemoverRecente,
   aoLimparRecentes,
@@ -22,6 +23,8 @@ export function Abrir({
   recentesLigados: boolean;
   /** frase de erro da última tentativa (arquivo inválido), ou nulo */
   erro: string | null;
+  /** o cálculo atual não pôde ser guardado nos recentes (cota cheia, armazenamento bloqueado) */
+  naoGuardado: boolean;
   aoAbrirRecente: (recente: Recente) => void;
   aoRemoverRecente: (id: string) => void;
   aoLimparRecentes: () => void;
@@ -45,6 +48,12 @@ export function Abrir({
   return (
     <div>
       <h3>Cálculos recentes neste navegador</h3>
+      {naoGuardado ? (
+        <p className="erro">
+          O cálculo atual não pôde ser guardado nos recentes deste navegador (o armazenamento está
+          cheio ou bloqueado): salve o arquivo para não perdê-lo.
+        </p>
+      ) : null}
       {!recentesLigados ? (
         <p className="nota">
           A opção "Guardar cálculos recentes neste navegador" está desligada na seção 1 · Processo.

@@ -1,13 +1,15 @@
 import type { Calculo, Resultado } from "../compartilhado/tipos.ts";
 import { compararInstantes } from "../indices/relogio.ts";
-import { montarArquivo, serializarArquivo } from "./arquivo.ts";
 import { CHAVE_RECENTES, gravarJson, lerJson, removerChave } from "./armazenamento.ts";
 
 /**
- * Cálculos recentes no navegador (§5.5): os cinco últimos, guardados a cada alteração, no mesmo
- * envelope do arquivo salvo (texto JSON), listados por data, processo e partes; "Remover" por item
- * e "Limpar recentes". A leitura confere só o que a lista mostra; o texto de cada um passa por
- * `lerArquivo` ao abrir. Nada é transmitido.
+ * Cálculos recentes no navegador (§5.5): os cinco últimos, guardados a cada alteração, listados
+ * por data, processo e partes; "Remover" por item e "Limpar recentes". Cada recente guarda só o
+ * necessário para reabrir (decisão de 13/10/2026): o cálculo e, do resultado, só os índices usados
+ * e a data da consulta (o que `lerArquivo` usa para avisar dos índices que mudaram), em JSON
+ * compacto; a memória do cálculo fica de fora (o arquivo de "Salvar" continua completo). Recentes
+ * antigos, gravados com o envelope inteiro, continuam abrindo. A leitura confere só o que a lista
+ * mostra; o texto de cada um passa por `lerArquivo` ao abrir. Nada é transmitido.
  */
 
 export const MAXIMO_DE_RECENTES = 5;
@@ -18,7 +20,10 @@ export interface Recente {
   processo: string;
   exequente: string;
   executado: string;
-  /** o arquivo de cálculo serializado, como "Salvar" gravaria */
+  /**
+   * `{ formato, calculo, resultado: { indicesUsados, consultaIndices } }` em JSON compacto, lido
+   * por `lerArquivo` (os recentes antigos trazem o arquivo inteiro, como "Salvar" grava)
+   */
   texto: string;
 }
 
@@ -46,12 +51,27 @@ export function lerRecentes(armazenamento: Storage | null): Recente[] {
   return ordenar(lido.filter(ehRecente)).slice(0, MAXIMO_DE_RECENTES);
 }
 
-/** Guarda (ou atualiza, pelo id) o cálculo; devolve a lista nova, ou a antiga se não deu para gravar. */
+/** O texto de um recente: o cálculo e, do resultado, só o que `lerArquivo` usa para comparar índices. */
+function textoDoRecente(calculo: Calculo, resultado: Resultado): string {
+  return JSON.stringify({
+    formato: "apura/calculo@1",
+    calculo,
+    resultado: {
+      indicesUsados: resultado.indicesUsados,
+      consultaIndices: resultado.consultaIndices,
+    },
+  });
+}
+
+/**
+ * Guarda (ou atualiza, pelo id) o cálculo; devolve a lista nova, ou a antiga se não deu para
+ * gravar (cota cheia, armazenamento bloqueado), com `gravado` dizendo qual.
+ */
 export function guardarRecente(
   armazenamento: Storage | null,
   calculo: Calculo,
   resultado: Resultado,
-): Recente[] {
+): { recentes: Recente[]; gravado: boolean } {
   const atuais = lerRecentes(armazenamento);
   const recente: Recente = {
     id: calculo.id,
@@ -59,19 +79,22 @@ export function guardarRecente(
     processo: calculo.cabecalho.processo,
     exequente: calculo.cabecalho.exequente,
     executado: calculo.cabecalho.executado,
-    texto: serializarArquivo(montarArquivo(calculo, resultado)),
+    texto: textoDoRecente(calculo, resultado),
   };
   const novos = ordenar([recente, ...atuais.filter((r) => r.id !== calculo.id)]).slice(
     0,
     MAXIMO_DE_RECENTES,
   );
-  return gravarJson(armazenamento, CHAVE_RECENTES, novos) ? novos : atuais;
+  return gravarJson(armazenamento, CHAVE_RECENTES, novos)
+    ? { recentes: novos, gravado: true }
+    : { recentes: atuais, gravado: false };
 }
 
+/** Remove um recente; devolve a lista nova, ou a antiga se não deu para gravar. */
 export function removerRecente(armazenamento: Storage | null, id: string): Recente[] {
-  const novos = lerRecentes(armazenamento).filter((r) => r.id !== id);
-  gravarJson(armazenamento, CHAVE_RECENTES, novos);
-  return novos;
+  const atuais = lerRecentes(armazenamento);
+  const novos = atuais.filter((r) => r.id !== id);
+  return gravarJson(armazenamento, CHAVE_RECENTES, novos) ? novos : atuais;
 }
 
 export function limparRecentes(armazenamento: Storage | null): void {

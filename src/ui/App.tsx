@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { Lancamento, LancamentoCalculado } from "../compartilhado/tipos.ts";
 import { compararIndicesUsados } from "../indices/congelar.ts";
 import { calcular } from "../motor/calcular.ts";
@@ -149,10 +149,15 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
     setAbrirAberto(false);
   };
 
-  // Recentes (§5.5): o cálculo é guardado a cada alteração (nunca o cálculo em branco).
+  // Recentes (§5.5): o cálculo é guardado a cada alteração (nunca o cálculo em branco). Se a
+  // gravação falha (cota cheia, armazenamento bloqueado), o painel "Abrir" avisa (13/10/2026):
+  // a última tentativa fica guardada aqui e é lida quando o painel abre.
+  const ultimaGravacaoFalhou = useRef(false);
+  const [naoGuardado, setNaoGuardado] = useState(false);
   useEffect(() => {
-    if (!preferencias.guardarRecentes || armazenamento === null || !estado.tocado) return;
-    guardarRecente(armazenamento, estado.calculo, resultado);
+    const guardar = preferencias.guardarRecentes && armazenamento !== null && estado.tocado;
+    ultimaGravacaoFalhou.current =
+      guardar && !guardarRecente(armazenamento, estado.calculo, resultado).gravado;
   }, [armazenamento, estado.calculo, estado.tocado, preferencias.guardarRecentes, resultado]);
 
   const mudarPreferencias = (mudancas: Partial<Preferencias>) => {
@@ -181,6 +186,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
         aoAbrir={() => {
           setErroDeAbertura(null);
           setRecentes(lerRecentes(armazenamento));
+          setNaoGuardado(ultimaGravacaoFalhou.current);
           setAbrirAberto(true);
         }}
         aoSalvar={salvar}
@@ -278,6 +284,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
           recentes={recentes}
           recentesLigados={preferencias.guardarRecentes && armazenamento !== null}
           erro={erroDeAbertura}
+          naoGuardado={naoGuardado}
           aoAbrirRecente={(recente) => abrirTexto(recente.texto)}
           aoRemoverRecente={(id) => setRecentes(removerRecente(armazenamento, id))}
           aoLimparRecentes={() => {
