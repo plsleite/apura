@@ -39,7 +39,7 @@ export function serializarArquivo(arquivo: ArquivoCalculo): string {
 export function nomeDoArquivo(calculo: Calculo): string {
   const processo = calculo.cabecalho.processo
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^0-9A-Za-z.-]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return `apura-${processo === "" ? "" : `${processo}-`}${calculo.dataElaboracao}.json`;

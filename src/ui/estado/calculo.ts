@@ -41,10 +41,10 @@ export interface Indices {
   situacao: SituacaoIndices;
 }
 
-/** Campos de um lançamento que a tela edita em "Personalizar"; `undefined` apaga o campo. */
 /**
- * A competência não é editável na tela (decisão de 13/10/2026): ela acompanha o mês do
- * vencimento, que é a referência de cada linha, e serve por dentro para o lote não repetir meses.
+ * Campos de um lançamento que a tela edita em "Personalizar"; `undefined` apaga o campo. A
+ * competência não é editável na tela (decisão de 13/10/2026): ela acompanha o mês do vencimento,
+ * que é a referência de cada linha, e serve por dentro para o lote não repetir meses.
  */
 export type MudancasDoLancamento = Partial<
   Pick<Lancamento, "data" | "descricao" | "valorInformado" | "rendimento" | "encargos">
@@ -78,7 +78,8 @@ export type Acao =
 /**
  * Cálculo novo em branco (§5.2): data de elaboração de hoje, base em valor fixo sem reajuste com a
  * data de fixação de hoje (o único campo da base que o motor exige válido) e o valor a preencher,
- * metodologia padrão, multa e honorários a zero. Defensor e órgão vêm das preferências.
+ * metodologia padrão, multa e honorários de 10% cada (decisão de 13/10/2026, D26). Defensor e
+ * órgão vêm das preferências.
  */
 export function novoCalculo(p: {
   id: string;
