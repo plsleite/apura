@@ -1,7 +1,10 @@
-import { useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import type { Lancamento, LancamentoCalculado } from "../compartilhado/tipos.ts";
+import { compararIndicesUsados } from "../indices/congelar.ts";
 import { calcular } from "../motor/calcular.ts";
+import { Abrir } from "./Abrir.tsx";
 import { ambientePadrao, type Ambiente } from "./ambiente.ts";
+import { lerArquivo, montarArquivo, nomeDoArquivo, serializarArquivo } from "./arquivo.ts";
 import { CHAVE_RECENTES, removerChave } from "./armazenamento.ts";
 import { BarraSuperior } from "./BarraSuperior.tsx";
 import { Avisos } from "./componentes/Avisos.tsx";
@@ -21,6 +24,13 @@ import {
   lerPreferencias,
   type Preferencias,
 } from "./preferencias.ts";
+import {
+  guardarRecente,
+  lerRecentes,
+  limparRecentes,
+  removerRecente,
+  type Recente,
+} from "./recentes.ts";
 import { Rodape } from "./Rodape.tsx";
 import { Indicadores } from "./tabelas/Indicadores.tsx";
 import { Personalizar } from "./tabelas/Personalizar.tsx";
@@ -74,8 +84,54 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
   const personalizar = (id: string) =>
     setPersonalizando(estado.calculo.lancamentos.find((l) => l.id === id) ?? null);
 
-  const novo = () =>
+  // Cada "Novo cálculo" ou "Abrir" remonta as duas colunas: os formulários, a linha nova e as
+  // células em edição recomeçam (nada digitado para um cálculo vai parar no outro).
+  const [aberturas, setAberturas] = useState(0);
+  const novo = () => {
     despachar({ tipo: "novo", calculo: calculoNovo(preferencias), ...ambiente.congelar() });
+    setAberturas(aberturas + 1);
+  };
+
+  // Salvar (§5.1): o arquivo leva o cálculo e o resultado, com o nome apura-<processo>-<data>.json.
+  const salvar = () =>
+    ambiente.baixar(
+      nomeDoArquivo(estado.calculo),
+      serializarArquivo(montarArquivo(estado.calculo, resultado)),
+    );
+
+  // Abrir (§5.1, §8.2): valida o arquivo, congela a tabela de hoje, recalcula e compara os
+  // índices usados pelo cálculo salvo com os do recálculo.
+  const [abrirAberto, setAbrirAberto] = useState(false);
+  const [erroDeAbertura, setErroDeAbertura] = useState<string | null>(null);
+  const [recentes, setRecentes] = useState<Recente[]>([]);
+  const abrirTexto = (texto: string) => {
+    const leitura = lerArquivo(texto);
+    if (!leitura.ok) {
+      setErroDeAbertura(leitura.erro);
+      return;
+    }
+    const indices = ambiente.congelar();
+    const recalculado = calcular(leitura.calculo, indices.tabela);
+    const avisos = [
+      ...leitura.avisos,
+      ...(leitura.anterior === null
+        ? []
+        : compararIndicesUsados(leitura.anterior, {
+            indicesUsados: recalculado.indicesUsados,
+            consultadoEm: recalculado.consultaIndices.em,
+          })),
+    ];
+    despachar({ tipo: "abrir", calculo: leitura.calculo, ...indices, avisos });
+    setAberturas(aberturas + 1);
+    setErroDeAbertura(null);
+    setAbrirAberto(false);
+  };
+
+  // Recentes (§5.5): o cálculo é guardado a cada alteração (nunca o cálculo em branco).
+  useEffect(() => {
+    if (!preferencias.guardarRecentes || armazenamento === null || !estado.tocado) return;
+    guardarRecente(armazenamento, estado.calculo, resultado);
+  }, [armazenamento, estado.calculo, estado.tocado, preferencias.guardarRecentes, resultado]);
 
   const mudarPreferencias = (mudancas: Partial<Preferencias>) => {
     const novas = { ...preferencias, ...mudancas };
@@ -98,9 +154,17 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
 
   return (
     <div className="app">
-      <BarraSuperior aoNovo={novo} />
+      <BarraSuperior
+        aoNovo={novo}
+        aoAbrir={() => {
+          setErroDeAbertura(null);
+          setRecentes(lerRecentes(armazenamento));
+          setAbrirAberto(true);
+        }}
+        aoSalvar={salvar}
+      />
       <main className="principal">
-        <div className="coluna-esquerda" key={`esquerda-${estado.calculo.id}`}>
+        <div className="coluna-esquerda" key={`esquerda-${estado.calculo.id}-${aberturas}`}>
           <Processo
             cabecalho={estado.calculo.cabecalho}
             aoMudar={mudarCabecalho}
@@ -137,7 +201,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             aoAjustar={() => setEditorAberto(true)}
           />
         </div>
-        <div className="coluna-direita" key={`direita-${estado.calculo.id}`}>
+        <div className="coluna-direita" key={`direita-${estado.calculo.id}-${aberturas}`}>
           <Indicadores totais={resultado.totais} dataElaboracao={estado.calculo.dataElaboracao} />
           <TabelaLancamentos
             tipo="prestacao"
@@ -182,6 +246,25 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
         <div className="dialogo-acoes">
           <button type="button" className="botao" onClick={() => setEditorAberto(false)}>
             Fechar
+          </button>
+        </div>
+      </Dialogo>
+      <Dialogo titulo="Abrir cálculo" aberto={abrirAberto} aoFechar={() => setAbrirAberto(false)}>
+        <Abrir
+          recentes={recentes}
+          recentesLigados={preferencias.guardarRecentes && armazenamento !== null}
+          erro={erroDeAbertura}
+          aoAbrirRecente={(recente) => abrirTexto(recente.texto)}
+          aoRemoverRecente={(id) => setRecentes(removerRecente(armazenamento, id))}
+          aoLimparRecentes={() => {
+            limparRecentes(armazenamento);
+            setRecentes([]);
+          }}
+          aoAbrirTexto={abrirTexto}
+        />
+        <div className="dialogo-acoes">
+          <button type="button" className="botao secundario" onClick={() => setAbrirAberto(false)}>
+            Cancelar
           </button>
         </div>
       </Dialogo>

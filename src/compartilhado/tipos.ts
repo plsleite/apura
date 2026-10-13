@@ -294,3 +294,18 @@ export interface CasoDeReferencia {
   /** `avisos` (do Resultado) são comparados por inteiro quando o caso os informa */
   esperado: { lancamentos: LancamentoEsperado[]; totais: Totais; avisos?: string[] };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Arquivo de cálculo (§5.1): o que "Salvar" grava e "Abrir" lê
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Arquivo `apura-<processo>-<data>.json`: as entradas e o resultado derivado (para auditoria). Ao
+ * reabrir, o Apura recalcula com os índices atuais e compara `resultado.indicesUsados` com o do
+ * recálculo. O mesmo envelope guarda os cálculos recentes no navegador (§5.5).
+ */
+export interface ArquivoCalculo {
+  formato: "apura/calculo@1";
+  calculo: Calculo;
+  resultado: Resultado;
+}
