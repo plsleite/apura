@@ -314,6 +314,19 @@ describe("Salvar e Abrir (§5.1, §5.5, §9.1)", () => {
     expect(within(screen.getByRole("dialog")).getByText(frase)).toBeDefined();
   });
 
+  it("navegador que não permite guardar nada: o painel 'Abrir' diz isso (e não que a opção está desligada)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste({ armazenamento: null })} />);
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    const painel = within(screen.getByRole("dialog"));
+    expect(
+      painel.getByText(
+        "Este navegador não permite guardar dados (por exemplo, numa janela anônima com bloqueio): os cálculos recentes não ficam guardados aqui. Salve o arquivo para não perder o cálculo.",
+      ),
+    ).toBeDefined();
+    expect(painel.queryByText(/está desligada/)).toBeNull();
+  });
+
   it("com a guarda de recentes desligada nada é guardado e o painel explica; recente corrompido mostra erro", async () => {
     const user = userEvent.setup();
     const armazenamento = armazenamentoEmMemoria();

@@ -120,14 +120,15 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
   const [erroDeAbertura, setErroDeAbertura] = useState<string | null>(null);
   const [recentes, setRecentes] = useState<Recente[]>([]);
   const abrirTexto = (texto: string) => {
-    const leitura = lerArquivo(texto);
-    if (!leitura.ok) {
-      setErroDeAbertura(leitura.erro);
-      return;
-    }
+    let leitura: ReturnType<typeof lerArquivo>;
     let indices: ReturnType<Ambiente["congelar"]>;
     let avisos: string[];
     try {
+      leitura = lerArquivo(texto);
+      if (!leitura.ok) {
+        setErroDeAbertura(leitura.erro);
+        return;
+      }
       indices = ambiente.congelar();
       const recalculado = calcular(leitura.calculo, indices.tabela);
       avisos = [
@@ -282,7 +283,8 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
       <Dialogo titulo="Abrir cálculo" aberto={abrirAberto} aoFechar={() => setAbrirAberto(false)}>
         <Abrir
           recentes={recentes}
-          recentesLigados={preferencias.guardarRecentes && armazenamento !== null}
+          recentesLigados={preferencias.guardarRecentes}
+          armazenamentoDisponivel={armazenamento !== null}
           erro={erroDeAbertura}
           naoGuardado={naoGuardado}
           aoAbrirRecente={(recente) => abrirTexto(recente.texto)}
