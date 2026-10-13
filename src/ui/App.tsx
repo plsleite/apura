@@ -13,6 +13,7 @@ import {
   type Preferencias,
 } from "./preferencias.ts";
 import { Rodape } from "./Rodape.tsx";
+import { BaseDosAlimentos } from "./secoes/Base.tsx";
 import { Processo } from "./secoes/Processo.tsx";
 
 /**
@@ -74,6 +75,11 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             aoMudarPreferencias={mudarPreferencias}
             aoEsquecer={esquecerTudo}
             armazenamentoDisponivel={armazenamento !== null}
+          />
+          <BaseDosAlimentos
+            base={estado.calculo.base}
+            hoje={ambiente.hoje()}
+            aoMudar={(base) => despachar({ tipo: "base", base, em: agora() })}
           />
         </div>
         <div className="coluna-direita">
