@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "./App.tsx";
 import { ambienteDeTeste } from "./testes/ambiente-de-teste.ts";
@@ -23,7 +24,9 @@ describe("App (fundação da tela)", () => {
     );
     expect(rodape).toMatch(/Apura v\d+\.\d+\.\d+ · Defensoria Pública de Mato Grosso do Sul/);
     // com a tabela em dia, não há aviso do calendário
-    expect(screen.queryByRole("region", { name: "Avisos" })).toBeNull();
+    expect(screen.getByRole("region", { name: "Avisos" }).textContent).not.toContain(
+      "ainda não chegou ao Apura",
+    );
   });
 
   it("mostra na caixa de avisos os meses já divulgados que ainda não chegaram ao Apura", () => {
@@ -32,6 +35,17 @@ describe("App (fundação da tela)", () => {
     expect(avisos.textContent).toContain(
       "IPCA de ago/2026, divulgado por volta de 10/09/2026, ainda não chegou ao Apura: o cálculo usa os índices disponíveis em 11/10/2026.",
     );
+  });
+
+  it("congela a tabela ao abrir e de novo em 'Novo cálculo'; o cálculo em branco mostra 'Nenhum lançamento.'", async () => {
+    const ambiente = ambienteDeTeste();
+    render(<App ambiente={ambiente} />);
+    expect(ambiente.congelamentos()).toBe(1);
+    expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(
+      "Nenhum lançamento.",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Novo cálculo" }));
+    expect(ambiente.congelamentos()).toBe(2);
   });
 
   it("abre com a cópia publicada quando nenhum ambiente é injetado (sem rede)", () => {
