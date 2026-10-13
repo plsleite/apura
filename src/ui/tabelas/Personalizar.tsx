@@ -7,6 +7,7 @@ import type {
   Lancamento,
   Metodologia,
 } from "../../compartilhado/tipos.ts";
+import type { OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
 import { periodoDaData } from "../../motor/base.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import { CampoTexto, Opcao } from "../componentes/Campo.tsx";
@@ -46,12 +47,15 @@ function lerOpcional<T>(texto: string, ler: (t: string) => Leitura<T>): Leitura<
 export function Personalizar({
   lancamento,
   calculo,
+  opcaoPadrao,
   aoEditar,
   aoAplicarRendimento,
   aoFechar,
 }: {
   lancamento: Lancamento;
   calculo: Calculo;
+  /** a opção de metodologia escolhida como padrão: o "Restaurar" das regras próprias (§17.3) */
+  opcaoPadrao?: OpcaoDeMetodologia;
   aoEditar: (id: string, mudancas: MudancasDoLancamento) => void;
   aoAplicarRendimento: (id: string, rendimento: string) => void;
   aoFechar: () => void;
@@ -253,6 +257,7 @@ export function Personalizar({
           metodologia={metodologiaPropria}
           aoMudar={setMetodologiaPropria}
           prefixoDosIds="proprio"
+          opcaoPadrao={opcaoPadrao}
         />
       ) : null}
       <div className="dialogo-acoes">

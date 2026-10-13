@@ -10,7 +10,6 @@ import type {
 } from "../../compartilhado/tipos.ts";
 import {
   metodologiaDaOpcao,
-  metodologiaPadrao,
   OPCOES_DE_METODOLOGIA,
   type OpcaoDeMetodologia,
 } from "../../metodologias/padrao.ts";
@@ -216,7 +215,7 @@ export function escolherOpcoes(
   return normalizar({ ...m, ...opcoes });
 }
 
-/** De volta à metodologia padrão de fábrica, a da Lei 14.905/2024. */
-export function restaurarPadrao(): Metodologia {
-  return metodologiaPadrao();
+/** De volta à opção escolhida como padrão nas preferências (§17.3); sem ela, a da Lei 14.905/2024. */
+export function restaurarPadrao(opcao: OpcaoDeMetodologia = "lei14905"): Metodologia {
+  return metodologiaDaOpcao(opcao);
 }

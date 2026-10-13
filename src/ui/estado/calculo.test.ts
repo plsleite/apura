@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Lancamento } from "../../compartilhado/tipos.ts";
 import { descreverSituacao } from "../../indices/congelar.ts";
-import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { metodologiaDaOpcao, metodologiaPadrao } from "../../metodologias/padrao.ts";
 import { baseUnica } from "../../motor/base.ts";
 import { tabelaRegimeNovo } from "../../motor/testes/regime-novo.ts";
 import { estadoInicial, novoCalculo, reduzir, type Estado } from "./calculo.ts";
@@ -20,6 +20,15 @@ function estadoNovo(): Estado {
 }
 
 describe("novoCalculo", () => {
+  it("nasce com a metodologia escolhida como padrão nas preferências (§17.3)", () => {
+    expect(novoCalculo({ id: "c", agora: AGORA, hoje: HOJE }).metodologia).toEqual(
+      metodologiaPadrao(),
+    );
+    expect(
+      novoCalculo({ id: "c", agora: AGORA, hoje: HOJE, metodologia: "igpmJuros1" }).metodologia,
+    ).toEqual(metodologiaDaOpcao("igpmJuros1"));
+  });
+
   it("nasce em branco, com a data de hoje, valor fixo sem reajuste fixado hoje e a metodologia padrão", () => {
     const calculo = novoCalculo({
       id: "c-1",

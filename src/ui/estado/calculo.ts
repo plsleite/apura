@@ -12,7 +12,7 @@ import type {
   TextoDecimal,
 } from "../../compartilhado/tipos.ts";
 import type { SituacaoIndices } from "../../indices/congelar.ts";
-import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { metodologiaDaOpcao, type OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
 import { baseUnica } from "../../motor/base.ts";
 import { aplicarRendimentoNaBase } from "./base.ts";
 import { gerarLoteAmortizacoes, gerarLotePrestacoes, idLivre } from "../../motor/lote.ts";
@@ -79,15 +79,18 @@ export type Acao =
 
 /**
  * Cálculo novo em branco (§5.2): data de elaboração de hoje, base de um período só (§17.2) em
- * valor fixo sem reajuste com a data de fixação de hoje (o único campo da base que o motor exige válido) e o valor a preencher,
- * metodologia padrão, multa e honorários de 10% cada (decisão de 13/10/2026, D26). Defensor e
- * órgão vêm das preferências.
+ * valor fixo sem reajuste com a data de fixação de hoje (o único campo da base que o motor exige
+ * válido) e o valor a preencher, a metodologia escolhida como padrão nas preferências (§17.3),
+ * multa e honorários de 10% cada (decisão de 13/10/2026, D26). Defensor e órgão vêm das
+ * preferências.
  */
 export function novoCalculo(p: {
   id: string;
   agora: string;
   hoje: DataISO;
   cabecalho?: Partial<Cabecalho>;
+  /** a metodologia padrão escolhida nas preferências (§17.3); sem ela, a da Lei 14.905/2024 */
+  metodologia?: OpcaoDeMetodologia;
 }): Calculo {
   return {
     formato: "apura/calculo@1",
@@ -113,7 +116,7 @@ export function novoCalculo(p: {
     }),
     lotes: {},
     lancamentos: [],
-    metodologia: metodologiaPadrao(),
+    metodologia: metodologiaDaOpcao(p.metodologia ?? "lei14905"),
     acrescimos: { multaPercentual: "10", honorariosPercentual: "10" },
     observacoes: "",
   };

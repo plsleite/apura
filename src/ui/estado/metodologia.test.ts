@@ -164,6 +164,7 @@ describe("índice, juros, taxa e opções de cada período", () => {
         .ajustada,
     ).toBe(false);
     expect(restaurarPadrao()).toEqual(metodologiaPadrao());
+    expect(restaurarPadrao("igpmJuros1")).toEqual(metodologiaDaOpcao("igpmJuros1"));
     expect(opcaoDaMetodologia({ ...metodologiaPadrao(), ajustada: true })).toBe("lei14905");
   });
 });

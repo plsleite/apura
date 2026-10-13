@@ -4,17 +4,30 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Metodologia } from "../../compartilhado/tipos.ts";
-import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import {
+  metodologiaDaOpcao,
+  metodologiaPadrao,
+  type OpcaoDeMetodologia,
+} from "../../metodologias/padrao.ts";
 import { Dialogo } from "../componentes/Dialogo.tsx";
 import { EditorDePeriodos } from "./EditorDePeriodos.tsx";
 
 afterEach(cleanup);
 
-function Harness({ inicial, espiao }: { inicial: Metodologia; espiao: (m: Metodologia) => void }) {
+function Harness({
+  inicial,
+  espiao,
+  opcaoPadrao,
+}: {
+  inicial: Metodologia;
+  espiao: (m: Metodologia) => void;
+  opcaoPadrao?: OpcaoDeMetodologia;
+}) {
   const [metodologia, setMetodologia] = useState(inicial);
   return (
     <EditorDePeriodos
       metodologia={metodologia}
+      opcaoPadrao={opcaoPadrao}
       aoMudar={(m) => {
         setMetodologia(m);
         espiao(m);
@@ -91,6 +104,18 @@ describe("Editor de períodos (§6.5)", () => {
     expect(screen.getAllByLabelText("Taxa mensal (%)")).toHaveLength(2);
     await user.click(screen.getByRole("button", { name: /Restaurar a metodologia padrão/ }));
     expect(espiao.mock.lastCall?.[0]).toEqual(metodologiaPadrao());
+  });
+
+  it("'Restaurar a metodologia padrão' volta à opção escolhida como padrão nas preferências (§17.3)", async () => {
+    const user = userEvent.setup();
+    const espiao = vi.fn();
+    render(<Harness inicial={metodologiaPadrao()} espiao={espiao} opcaoPadrao="igpmJuros1" />);
+    await user.selectOptions(
+      screen.getAllByLabelText("Índice de correção")[0] as HTMLElement,
+      "INPC",
+    );
+    await user.click(screen.getByRole("button", { name: "Restaurar a metodologia padrão" }));
+    expect(espiao.mock.lastCall?.[0]).toEqual(metodologiaDaOpcao("igpmJuros1"));
   });
 
   it("'SELIC única' é uma escolha só: zera o índice, trava o seletor e explica", async () => {

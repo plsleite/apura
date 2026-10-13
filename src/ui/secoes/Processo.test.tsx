@@ -86,6 +86,7 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
       lembrar: true,
       guardarRecentes: true,
       tema: "sistema",
+      metodologia: "lei14905",
     });
     await user.type(screen.getByLabelText("Nº do processo"), "08000004620268120001");
     await user.click(screen.getByRole("button", { name: "Novo cálculo" }));
@@ -118,6 +119,7 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
       lembrar: false,
       guardarRecentes: true,
       tema: "sistema",
+      metodologia: "lei14905",
     });
     await user.type(defensor, " e mais");
     expect(defensor.value).toBe("Quem ficou gravado e mais");
@@ -138,6 +140,7 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
       lembrar: false,
       guardarRecentes: true,
       tema: "sistema",
+      metodologia: "lei14905",
     });
     expect((screen.getByLabelText("Lembrar neste navegador") as HTMLInputElement).checked).toBe(
       false,
@@ -218,6 +221,7 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
       lembrar: true,
       guardarRecentes: true,
       tema: "escuro",
+      metodologia: "lei14905",
     });
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
   });

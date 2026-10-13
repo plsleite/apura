@@ -434,6 +434,30 @@ textarea {
   align-items: center;
 }
 
+/* metodologia de encargos (§17.3): cada opção numa linha, o balão ⓘ ao lado da segunda */
+.metodologia-de-encargos {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.metodologia-de-encargos label {
+  align-items: flex-start;
+}
+
+.metodologia-de-encargos label input {
+  margin-top: 3px;
+}
+
+.opcao-com-ajuda {
+  display: inline-flex;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.metodologia-de-encargos > .linha {
+  margin: 4px 0 0;
+}
+
 .nota {
   font-size: 13px;
   color: var(--discreto);

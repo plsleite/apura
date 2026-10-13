@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { IndiceCorrecao, Metodologia, PeriodoMetodologia } from "../../compartilhado/tipos.ts";
+import type { OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
 import { periodosOrdenados, validarMetodologia } from "../../motor/periodos.ts";
 import { Avisos } from "../componentes/Avisos.tsx";
 import { CampoSelecao, CampoTexto, Opcao, useCampoValidado } from "../componentes/Campo.tsx";
@@ -41,9 +42,12 @@ export function EditorDePeriodos({
   metodologia,
   aoMudar,
   prefixoDosIds = "periodo",
+  opcaoPadrao = "lei14905",
 }: {
   metodologia: Metodologia;
   aoMudar: (metodologia: Metodologia) => void;
+  /** a opção escolhida como padrão nas preferências: o que "Restaurar" restaura (§17.3) */
+  opcaoPadrao?: OpcaoDeMetodologia;
   /** prefixo dos ids dos campos, para dois editores não colidirem */
   prefixoDosIds?: string;
 }) {
@@ -142,7 +146,7 @@ export function EditorDePeriodos({
           <button
             type="button"
             className="botao discreto"
-            onClick={() => aoMudar(restaurarPadrao())}
+            onClick={() => aoMudar(restaurarPadrao(opcaoPadrao))}
           >
             Restaurar a metodologia padrão
           </button>
