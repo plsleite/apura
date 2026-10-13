@@ -1,11 +1,19 @@
 import { useMemo, useReducer, useState } from "react";
+import type { Lancamento, LancamentoCalculado } from "../compartilhado/tipos.ts";
 import { calcular } from "../motor/calcular.ts";
 import { ambientePadrao, type Ambiente } from "./ambiente.ts";
 import { CHAVE_RECENTES, removerChave } from "./armazenamento.ts";
 import { BarraSuperior } from "./BarraSuperior.tsx";
 import { Avisos } from "./componentes/Avisos.tsx";
 import { Dialogo } from "./componentes/Dialogo.tsx";
-import { estadoInicial, novoCalculo, reduzir } from "./estado/calculo.ts";
+import {
+  estadoInicial,
+  novoCalculo,
+  reduzir,
+  type MudancasDoLancamento,
+} from "./estado/calculo.ts";
+import { faltasDaBase } from "./estado/faltas.ts";
+import { sugerirPagamento, sugerirPrestacao, valorPelaBase } from "./estado/novaLinha.ts";
 import "./estilos.css";
 import {
   esquecer,
@@ -14,6 +22,8 @@ import {
   type Preferencias,
 } from "./preferencias.ts";
 import { Rodape } from "./Rodape.tsx";
+import { Indicadores } from "./tabelas/Indicadores.tsx";
+import { TabelaLancamentos, type LinhaDaTabela } from "./tabelas/TabelaLancamentos.tsx";
 import { BaseDosAlimentos } from "./secoes/Base.tsx";
 import { EditorDePeriodos } from "./secoes/EditorDePeriodos.tsx";
 import { Encargos } from "./secoes/Encargos.tsx";
@@ -45,7 +55,20 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
     [estado.calculo, estado.tabela],
   );
   const agora = () => ambiente.agora();
+  // o que falta na base para apurar as prestações lançadas: aviso no topo e campo em vermelho
+  const faltas = faltasDaBase(estado.calculo);
   const [editorAberto, setEditorAberto] = useState(false);
+  // Uma linha por lançamento, na ordem do cálculo (o motor devolve os calculados na mesma ordem).
+  const linhas: LinhaDaTabela[] = estado.calculo.lancamentos.map((lancamento, i) => ({
+    lancamento,
+    calculado: resultado.lancamentos[i] as LancamentoCalculado,
+  }));
+  const excluir = (id: string) => despachar({ tipo: "excluirLancamento", id, em: agora() });
+  const editar = (id: string, mudancas: MudancasDoLancamento) =>
+    despachar({ tipo: "editarLancamento", id, mudancas, em: agora() });
+  const incluir = (lancamento: Omit<Lancamento, "id" | "origem" | "editado">) =>
+    despachar({ tipo: "incluirLancamento", lancamento, em: agora() });
+  const valorDaBase = (data: string) => valorPelaBase(estado.calculo, estado.tabela, data);
 
   const novo = () =>
     despachar({ tipo: "novo", calculo: calculoNovo(preferencias), ...ambiente.congelar() });
@@ -73,7 +96,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
     <div className="app">
       <BarraSuperior aoNovo={novo} />
       <main className="principal">
-        <div className="coluna-esquerda" key={estado.calculo.id}>
+        <div className="coluna-esquerda" key={`esquerda-${estado.calculo.id}`}>
           <Processo
             cabecalho={estado.calculo.cabecalho}
             aoMudar={mudarCabecalho}
@@ -85,6 +108,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
           <BaseDosAlimentos
             base={estado.calculo.base}
             hoje={ambiente.hoje()}
+            faltas={faltas}
             aoMudar={(base) => despachar({ tipo: "base", base, em: agora() })}
           />
           <LotePrestacoesSecao
@@ -109,8 +133,36 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             aoAjustar={() => setEditorAberto(true)}
           />
         </div>
-        <div className="coluna-direita">
-          <Avisos avisos={[...estado.situacao.avisos, ...resultado.avisos]} />
+        <div className="coluna-direita" key={`direita-${estado.calculo.id}`}>
+          <Indicadores totais={resultado.totais} dataElaboracao={estado.calculo.dataElaboracao} />
+          <TabelaLancamentos
+            tipo="prestacao"
+            linhas={linhas.filter((l) => l.lancamento.tipo === "prestacao")}
+            aoPersonalizar={() => undefined}
+            aoExcluir={excluir}
+            aoEditar={editar}
+            aoSugerir={() => sugerirPrestacao(estado.calculo, estado.tabela)}
+            valorDaBase={valorDaBase}
+            aoIncluir={incluir}
+          />
+          <TabelaLancamentos
+            tipo="amortizacao"
+            linhas={linhas.filter((l) => l.lancamento.tipo === "amortizacao")}
+            aoPersonalizar={() => undefined}
+            aoExcluir={excluir}
+            aoEditar={editar}
+            aoSugerir={() => sugerirPagamento(estado.calculo)}
+            valorDaBase={valorDaBase}
+            aoIncluir={incluir}
+          />
+          <Avisos
+            avisos={[
+              ...faltas.map((f) => f.aviso),
+              ...estado.situacao.avisos,
+              ...estado.avisosDaAbertura,
+              ...resultado.avisos,
+            ]}
+          />
         </div>
       </main>
       <Rodape situacaoDosIndices={estado.situacao.rodape} />
