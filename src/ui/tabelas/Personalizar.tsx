@@ -117,7 +117,8 @@ export function Personalizar({
       data: dataLida.valor,
       descricao: descricao.trim() === "" ? undefined : descricao.trim(),
       valorInformado: valorLido.valor,
-      rendimento: comRendimento ? rendimentoLido.valor : undefined,
+      // sem o campo no painel (outra forma de base), o rendimento da linha fica como está
+      rendimento: comRendimento ? rendimentoLido.valor : lancamento.rendimento,
       encargos: Object.keys(encargos).length > 0 ? encargos : undefined,
     });
     aoFechar();

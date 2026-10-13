@@ -176,6 +176,14 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
     );
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(valores()).toEqual(["R$ 300,00", "R$ 600,00", "R$ 600,00"]);
+    // em outra forma de base, o painel não mostra o rendimento, e "Aplicar" não o apaga
+    await user.click(screen.getByLabelText("Valor fixo em reais"));
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
+    const outroPainel = within(screen.getByRole("dialog", { name: "Personalizar prestação" }));
+    expect(outroPainel.queryByLabelText("Rendimento deste mês (opcional)")).toBeNull();
+    await user.click(outroPainel.getByRole("button", { name: "Aplicar" }));
+    await user.click(screen.getByLabelText("% dos rendimentos"));
+    expect(valores()).toEqual(["R$ 300,00", "R$ 600,00", "R$ 600,00"]);
     cleanup();
     render(<App ambiente={ambienteDeTeste()} />);
     expect(screen.queryByLabelText("Rendimento deste mês (opcional)")).toBeNull();
