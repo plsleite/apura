@@ -5884,7 +5884,15 @@ Sem código novo, salvo correção de CSS que a conferência exija (nesse caso, 
 
 ## Estado
 
-Plano escrito em 13/10/2026, a partir do ensaio e da reconstrução descritos em "Para o responsável". Execução: a fazer (o responsável escolhe o modo).
+Plano escrito em 13/10/2026, a partir do ensaio e da reconstrução descritos em "Para o responsável". Executado no mesmo dia, por decisão do responsável, direto na sessão (superpowers:executing-plans, Claude Opus 5.5), na branch `claude/apura-interface-adjustments-5f4501`, a partir de `bf36ce8`. Em cada tarefa, o patch dos testes falhou exatamente como o passo previa e o do código deixou `npm run verificar` verde, com as contagens do plano: 1 → 810 passando e 9 pulados (819), 44 arquivos; 2 → 830 (840), 44; 3 → 844 (854), 45; 4 → 845 (855), 45; 5 → 848 (858), 45; 6 → 851 (861), 45; 7 → 859 (869), 46. A Task 8 (conferência no navegador integrado) confirmou tudo o que o passo pedia, sem ajuste de CSS; `npm run build` gerou `dist/`.
+
+**Revisão final da branch** (agente independente, Claude Opus 5.5, antes desta Task 9): nenhum problema crítico; um importante e quatro menores. Corrigidos com teste (commit "motor, ui: correções da revisão final da fase 5b"): faltava o exemplo numérico da §17.3 no motor (teste novo em `calcular.test.ts`: R$ 1.000,00 de 10/01/2025 até 10/10/2026, pela segunda opção fator 1,022857, juros 21,032258% e R$ 1.237,99; pela primeira, fator 1,083283, taxa legal 15,779661% e R$ 1.254,22); o balão flutuante fechava quando se rolava dentro dele (subido a importante: a altura máxima com rolagem própria prometida não funcionava); e o motor lançava erro com uma base fora do formato, sem a lista de períodos (subido a importante: regra 4 do `CLAUDE.md`; agora as prestações ficam sem valor, com o aviso). Ao fim: 861 passando e 10 pulados (871), em 46 arquivos. Ficaram para depois dois menores: o limite de 1900 ainda escrito à mão (`min="1900-01-01"`) em `Base.tsx` e `Personalizar.tsx`, apesar de `DATA_MINIMA`; e um comentário de `src/ui/preferencias.ts` com mais de 100 colunas. Os pontos que o revisor deixou de julgar (nome acessível do botão das etiquetas sem o texto visível inteiro, fixado pela §17.4; troca da metodologia pelas setas do teclado sem confirmação, decidida na §17.3; metodologia dividida sem mudar regras aparecendo como ajustada; rendimento do lápis pelo período da data original da linha; "+ Pagamento" depois de dez/2199) ficaram como estão, por decisão do executor, registrada no ledger da execução.
+
+## Notas para a fase 6
+
+- O parágrafo "Base" do relatório descreve cada período da base (§17.2), e o de encargos descreve a metodologia aplicada, sem a frase da transição quando for "IGP-M e juros de 1% ao mês" (§17.3).
+- Uma metodologia ajustada continua com o `id` e o `nome` da opção de onde partiu (por exemplo, "Lei 14.905/2024" com `ajustada: true`): o relatório não pode usar esse nome (regra 7 do `CLAUDE.md`); descreve as regras.
+- A memória de cada linha com a base dividida começa por "Base até/de/desde …" (§17.2), o que já serve ao relatório.
 
 ## Auto-revisão do plano
 
