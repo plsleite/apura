@@ -4,6 +4,7 @@ import { ambientePadrao, type Ambiente } from "./ambiente.ts";
 import { CHAVE_RECENTES, removerChave } from "./armazenamento.ts";
 import { BarraSuperior } from "./BarraSuperior.tsx";
 import { Avisos } from "./componentes/Avisos.tsx";
+import { Dialogo } from "./componentes/Dialogo.tsx";
 import { estadoInicial, novoCalculo, reduzir } from "./estado/calculo.ts";
 import "./estilos.css";
 import {
@@ -14,6 +15,7 @@ import {
 } from "./preferencias.ts";
 import { Rodape } from "./Rodape.tsx";
 import { BaseDosAlimentos } from "./secoes/Base.tsx";
+import { EditorDePeriodos } from "./secoes/EditorDePeriodos.tsx";
 import { Encargos } from "./secoes/Encargos.tsx";
 import { Processo } from "./secoes/Processo.tsx";
 
@@ -41,6 +43,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
     [estado.calculo, estado.tabela],
   );
   const agora = () => ambiente.agora();
+  const [editorAberto, setEditorAberto] = useState(false);
 
   const novo = () =>
     despachar({ tipo: "novo", calculo: calculoNovo(preferencias), ...ambiente.congelar() });
@@ -91,7 +94,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
               despachar({ tipo: "dataElaboracao", data, em: agora() })
             }
             aoMudarObservacoes={(texto) => despachar({ tipo: "observacoes", texto, em: agora() })}
-            aoAjustar={() => undefined}
+            aoAjustar={() => setEditorAberto(true)}
           />
         </div>
         <div className="coluna-direita">
@@ -99,6 +102,21 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
         </div>
       </main>
       <Rodape situacaoDosIndices={estado.situacao.rodape} />
+      <Dialogo
+        titulo="Ajustar a metodologia de encargos"
+        aberto={editorAberto}
+        aoFechar={() => setEditorAberto(false)}
+      >
+        <EditorDePeriodos
+          metodologia={estado.calculo.metodologia}
+          aoMudar={(metodologia) => despachar({ tipo: "metodologia", metodologia, em: agora() })}
+        />
+        <div className="dialogo-acoes">
+          <button type="button" className="botao" onClick={() => setEditorAberto(false)}>
+            Fechar
+          </button>
+        </div>
+      </Dialogo>
     </div>
   );
 }

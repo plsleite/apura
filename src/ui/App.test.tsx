@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "./App.tsx";
@@ -46,6 +46,26 @@ describe("App (fundação da tela)", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Novo cálculo" }));
     expect(ambiente.congelamentos()).toBe(2);
+  });
+
+  it("'Ajustar' abre o editor de períodos num painel; a mudança reflete no resumo; Esc fecha", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await user.click(screen.getByRole("button", { name: "Ajustar" }));
+    const painel = screen.getByRole("dialog", { name: "Ajustar a metodologia de encargos" });
+    expect(painel).toBeDefined();
+    await user.selectOptions(
+      within(painel).getAllByLabelText("Índice de correção")[0] as HTMLElement,
+      "INPC",
+    );
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByText(/Até 29\/08\/2024/).textContent).toBe(
+      "Até 29/08/2024: INPC e juros de 1% ao mês. Desde 30/08/2024: IPCA e taxa legal.",
+    );
+    expect(screen.getByText(/Metodologia de encargos/).textContent).toBe(
+      "Metodologia de encargos (ajustada)",
+    );
   });
 
   it("abre com a cópia publicada quando nenhum ambiente é injetado (sem rede)", () => {
