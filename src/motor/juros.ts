@@ -1,5 +1,5 @@
 import { diaAnterior, ratearPorMesCalendario } from "../compartilhado/datas.ts";
-import { decimal, paraTexto, ZERO, type Decimal } from "../compartilhado/decimal.ts";
+import { decimal, decimalOuNulo, paraTexto, ZERO, type Decimal } from "../compartilhado/decimal.ts";
 import { formatarCompetencia, formatarData } from "../compartilhado/formatacao.ts";
 import { CODIGO_DA_SERIE } from "../compartilhado/tipos.ts";
 import type {
@@ -57,7 +57,13 @@ export function jurosSimples(p: ParametrosJuros): ResultadoJuros {
   for (const trecho of dividirPorPeriodos(p.metodologia, p.termoInicial, p.termoFinal)) {
     const regra = trecho.periodo.juros;
     if (regra.tipo === "percentualMensal") {
-      const taxa = decimal(regra.taxaMensal);
+      const taxa = decimalOuNulo(regra.taxaMensal);
+      if (taxa === null) {
+        avisos.push(
+          `Taxa mensal de juros inválida ("${regra.taxaMensal}") no trecho de ${formatarData(trecho.de)} a ${formatarData(trecho.ate)}: esses dias ficaram sem juros.`,
+        );
+        continue;
+      }
       for (const mes of ratearPorMesCalendario(trecho.de, trecho.ate)) {
         const parcela = taxa.times(mes.dias).div(mes.diasDoMes);
         percentual = percentual.plus(parcela);

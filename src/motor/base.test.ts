@@ -74,6 +74,20 @@ describe("base em percentual do salário mínimo (§6.3)", () => {
     expect(apurarValorBase(prestacao("2024-03-10"), base, semSerie, 2).valor).toBeNull();
   });
 
+  it("percentual em branco: sem valor, com aviso próprio (decisão de 13/10/2026)", () => {
+    const r = apurarValorBase(
+      prestacao("2024-03-10"),
+      { tipo: "percentualSalarioMinimo", percentual: "" },
+      tabelaRegimeNovo(),
+      2,
+    );
+    expect(r.valor).toBeNull();
+    expect(r.memoria).toBe("Percentual do salário mínimo não informado");
+    expect(r.avisos).toEqual([
+      "Percentual do salário mínimo não informado: a prestação ficou sem valor.",
+    ]);
+  });
+
   it("percentual inválido: sem valor, com aviso, sem erro", () => {
     const r = apurarValorBase(
       prestacao("2024-03-10"),
@@ -172,9 +186,14 @@ describe("base em percentual dos rendimentos (§6.3)", () => {
       tabela,
       2,
     );
+    // em branco (a tela ainda não recebeu o campo): aviso próprio, sem "não é um número válido"
     expect(padraoInvalido.avisos).toEqual([
-      'Rendimento padrão ("") não é um número válido: a prestação ficou sem valor; informe o rendimento ou o valor à mão.',
+      "Rendimento padrão não informado: a prestação ficou sem valor.",
     ]);
+    expect(padraoInvalido.memoria).toBe("Rendimento padrão não informado");
+    expect(
+      apurarValorBase(prestacao("2024-03-10"), { ...base, percentual: " " }, tabela, 2).avisos,
+    ).toEqual(["Percentual dos rendimentos não informado: a prestação ficou sem valor."]);
     expect(
       apurarValorBase(
         prestacao("2024-03-10"),
@@ -253,6 +272,9 @@ describe("base em valor fixo (§6.3)", () => {
     expect(r.avisos).toEqual([
       'Valor fixado ("1.500,00") não é um número válido: a prestação ficou sem valor; informe o valor à mão.',
     ]);
+    expect(
+      apurarValorBase(prestacao("2024-04-15"), { ...base, valor: "" }, tabela, 2).avisos,
+    ).toEqual(["Valor fixado não informado: a prestação ficou sem valor."]);
   });
 
   describe("reajuste pelo salário mínimo (proporção entre o SM do vencimento e o da fixação)", () => {

@@ -25,8 +25,8 @@ Este arquivo diz em que ponto o projeto está e como retomar o trabalho em qualq
 | 2 · Regime novo e transição | taxa legal, IPCA, transição 30/08/2024, SELIC única capitalizada, deflação com piso, encargos próprios, multa e honorários; gabaritos do SAJ de 2026 e casos conferidos na Calculadora do Cidadão | concluída em 2026-10-11 · plano: `docs/superpowers/plans/2026-10-11-fase-2-regime-novo-e-transicao.md` |
 | 3 · Bases e lotes | valor fixo com reajuste, % do salário mínimo, % dos rendimentos; lotes cumulativos de prestações e amortizações; casos-limite | concluída em 2026-10-11 · plano: `docs/superpowers/plans/2026-10-11-fase-3-bases-e-lotes.md` |
 | 4 · Índices: rotina central e monitoramento | rotina central diária no repositório, congelamento por cálculo, calendário de divulgação, monitoramento gratuito | concluída em 2026-10-12 · plano: `docs/superpowers/plans/2026-10-12-fase-4-indices-rotina-central.md` |
-| 5 · Interface | layout em duas colunas, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas | plano a escrever |
-| 6 · Relatório e PDF | componente, metodologia gerada, matriz de índices, marca, fontes, impressão | pendente |
+| 5 · Interface | layout em duas colunas, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-12-fase-5-interface.md` |
+| 6 · Relatório e PDF | componente, metodologia gerada, matriz de índices, marca, fontes, impressão | plano a escrever |
 | 7 · Publicação | GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores | pendente |
 
 Depois do MVP: ver a seção 6 da visão do produto (art. 524, servidor e usuários, cálculo livre, honorários, danos morais, integrações).

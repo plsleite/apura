@@ -1,0 +1,61 @@
+import type { DataISO } from "../compartilhado/tipos.ts";
+import { congelarIndices, type SituacaoIndices } from "../indices/congelar.ts";
+import { agoraEmBrasilia, hojeEmBrasilia } from "../indices/relogio.ts";
+import type { TabelaIndices } from "../compartilhado/tipos.ts";
+
+/**
+ * Tudo o que a tela precisa do mundo exterior, num objeto só, para que os testes de componente
+ * troquem cada peça por uma versão falsa: a cópia publicada dos índices (congelada por cálculo),
+ * o relógio, a geração de ids, o armazenamento do navegador e o download de arquivos. A tela
+ * nunca acessa a rede (§14 do design).
+ */
+export interface Ambiente {
+  /** congela a tabela de índices de um cálculo (síncrono, sem rede), ao abrir o app e em "Novo cálculo" */
+  congelar: () => { tabela: TabelaIndices; situacao: SituacaoIndices };
+  /** data de hoje em Brasília, para a data de elaboração padrão */
+  hoje: () => DataISO;
+  /** data-hora ISO de agora em Brasília, para `criadoEm` e `atualizadoEm` */
+  agora: () => string;
+  /** id novo para cálculos */
+  novoId: () => string;
+  /**
+   * o `localStorage` do navegador, ou nulo quando ele não existe ou está bloqueado (janela anônima
+   * com bloqueio, política do navegador): quem usa trata nulo como "não guardar"
+   */
+  armazenamento: () => Storage | null;
+  /** entrega ao usuário um arquivo de texto com o nome dado (download) */
+  baixar: (nome: string, conteudo: string) => void;
+}
+
+function armazenamentoDoNavegador(): Storage | null {
+  try {
+    const armazenamento = globalThis.localStorage;
+    // Em navegadores com o armazenamento bloqueado, só acessar a propriedade já lança.
+    return armazenamento ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function baixarPeloNavegador(nome: string, conteudo: string): void {
+  const url = URL.createObjectURL(new Blob([conteudo], { type: "application/json" }));
+  const ancora = document.createElement("a");
+  ancora.href = url;
+  ancora.download = nome;
+  document.body.append(ancora);
+  ancora.click();
+  ancora.remove();
+  URL.revokeObjectURL(url);
+}
+
+/** O ambiente real do navegador. */
+export function ambientePadrao(): Ambiente {
+  return {
+    congelar: () => congelarIndices(),
+    hoje: () => hojeEmBrasilia(),
+    agora: () => agoraEmBrasilia(),
+    novoId: () => crypto.randomUUID(),
+    armazenamento: armazenamentoDoNavegador,
+    baixar: baixarPeloNavegador,
+  };
+}

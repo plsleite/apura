@@ -256,6 +256,31 @@ describe("calcular", () => {
       "As amortizações atualizadas (R$ 519,35) igualam ou superam as prestações atualizadas (R$ 0,00): não há valor devido na data do cálculo.",
     );
     expect(calcular(calculoCom([]), tabelaIgpm()).avisos).toEqual(["Nenhum lançamento."]);
+    // sem pagamento lançado, o total zerado vem de prestações sem valor: nada de "igualam ou
+    // superam" nem de multa não aplicada (decisão de 13/10/2026)
+    const semValor: Lancamento = {
+      id: "p-2017-01",
+      tipo: "prestacao",
+      data: "2017-01-10",
+      competencia: "2017-01",
+      valorInformado: "1,5",
+      origem: "avulso",
+      editado: true,
+    };
+    const soPrestacaoSemValor = calcular(
+      {
+        ...calculoCom([semValor]),
+        acrescimos: { multaPercentual: "10", honorariosPercentual: "10" },
+      },
+      tabelaIgpm(),
+    );
+    expect(soPrestacaoSemValor.totais.totalDevido).toBe("0.00");
+    expect(soPrestacaoSemValor.avisos).not.toContainEqual(
+      expect.stringContaining("igualam ou superam"),
+    );
+    expect(soPrestacaoSemValor.avisos).not.toContainEqual(
+      expect.stringContaining("Multa e honorários não foram aplicados"),
+    );
   });
 });
 
@@ -360,6 +385,31 @@ describe("calcular (regime novo, multa e honorários, validações)", () => {
     expect(r.avisos).toContain(
       "Multa e honorários não foram aplicados porque não há valor devido.",
     );
+  });
+
+  it("percentual de multa ou honorários inválido ou negativo não derruba o motor: aviso e percentual tratado como zero", () => {
+    const calculo = calculoCom(
+      [lancamento("p-2026-01", "prestacao", "2026-01-10", "1000.00")],
+      hoje,
+    );
+    calculo.acrescimos = { multaPercentual: "10,5", honorariosPercentual: "-10" };
+    const r = calcular(calculo, tabelaRegimeNovo());
+    expect(r.totais.multa).toBe("0.00");
+    expect(r.totais.honorarios).toBe("0.00");
+    expect(r.totais.totalGeral).toBe(r.totais.totalDevido);
+    expect(r.avisos).toContain('Percentual de multa inválido ("10,5"): a multa não foi aplicada.');
+    expect(r.avisos).toContain(
+      'Percentual de honorários negativo ("-10"): os honorários não foram aplicados.',
+    );
+    // percentual vazio também é inválido; percentuais válidos não geram aviso algum
+    calculo.acrescimos = { multaPercentual: "", honorariosPercentual: "10" };
+    expect(calcular(calculo, tabelaRegimeNovo()).avisos).toContain(
+      'Percentual de multa inválido (""): a multa não foi aplicada.',
+    );
+    calculo.acrescimos = { multaPercentual: "10", honorariosPercentual: "0" };
+    expect(
+      calcular(calculo, tabelaRegimeNovo()).avisos.filter((a) => a.startsWith("Percentual")),
+    ).toEqual([]);
   });
 
   it("termo final próprio posterior à data de elaboração é limitado a ela, com aviso", () => {
@@ -564,7 +614,7 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
       atualizado: "0.00",
     });
     expect(r.lancamentos[1]?.avisos).toEqual([
-      'Valor informado ("1,5") não é um número válido (use ponto decimal, como 451.91): o lançamento não foi computado nos totais.',
+      'Valor informado ("1,5") não é um número válido: o lançamento não foi computado nos totais; corrija o valor.',
     ]);
     expect(r.totais.prestacoes).toBe("533.40");
     // base com texto inválido tampouco derruba
