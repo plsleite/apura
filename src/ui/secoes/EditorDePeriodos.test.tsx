@@ -5,6 +5,7 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Metodologia } from "../../compartilhado/tipos.ts";
 import { metodologiaPadrao } from "../../metodologias/padrao.ts";
+import { Dialogo } from "../componentes/Dialogo.tsx";
 import { EditorDePeriodos } from "./EditorDePeriodos.tsx";
 
 afterEach(cleanup);
@@ -19,6 +20,16 @@ function Harness({ inicial, espiao }: { inicial: Metodologia; espiao: (m: Metodo
         espiao(m);
       }}
     />
+  );
+}
+
+function NoPainel() {
+  const [metodologia, setMetodologia] = useState(metodologiaPadrao());
+  const [aberto, setAberto] = useState(true);
+  return (
+    <Dialogo titulo="Períodos de teste" aberto={aberto} aoFechar={() => setAberto(false)}>
+      <EditorDePeriodos metodologia={metodologia} aoMudar={setMetodologia} />
+    </Dialogo>
   );
 }
 
@@ -126,5 +137,28 @@ describe("Editor de períodos (§6.5)", () => {
     expect(espiao.mock.lastCall?.[0].deflacao).toBe("zerarNegativos");
     await user.click(screen.getByLabelText("aplicar sem piso"));
     expect(espiao.mock.lastCall?.[0].deflacao).toBe("aplicarSemPiso");
+  });
+
+  it("no painel, depois de 'Remover divisão' e de 'Restaurar a metodologia padrão' (o botão some), Tab fica dentro e Esc fecha", async () => {
+    const user = userEvent.setup();
+    render(<NoPainel />);
+    const dialogo = screen.getByRole("dialog", { name: "Períodos de teste" });
+    fireEvent.change(screen.getByLabelText("Dividir em uma data"), {
+      target: { value: "2023-01-01" },
+    });
+    await user.click(screen.getByRole("button", { name: "Dividir" }));
+    await user.click(screen.getByRole("button", { name: "Remover a divisão de 01/01/2023" }));
+    expect(dialogo.contains(document.activeElement)).toBe(true);
+    await user.tab({ shift: true });
+    expect(dialogo.contains(document.activeElement)).toBe(true);
+    await user.selectOptions(
+      screen.getAllByLabelText("Índice de correção")[0] as HTMLElement,
+      "INPC",
+    );
+    await user.click(screen.getByRole("button", { name: /Restaurar a metodologia padrão/ }));
+    expect(screen.queryByRole("button", { name: /Restaurar/ })).toBeNull();
+    expect(dialogo.contains(document.activeElement)).toBe(true);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
