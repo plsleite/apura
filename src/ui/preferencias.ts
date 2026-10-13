@@ -8,15 +8,21 @@ import {
 
 /**
  * Preferências do usuário neste navegador (§5.5): defensor(a) e órgão, com "Lembrar neste
- * navegador" (ligado por padrão), e a opção "Guardar cálculos recentes neste navegador" (ligada
- * por padrão; para desligar em computador compartilhado). "Esquecer" apaga preferências e
- * recentes. Nada é transmitido.
+ * navegador" (ligado por padrão); a opção "Guardar cálculos recentes neste navegador" (ligada
+ * por padrão; para desligar em computador compartilhado); e o tema da tela (do sistema, claro ou
+ * escuro; padrão: do sistema; decisão de 12/10/2026). "Esquecer" apaga preferências e recentes;
+ * o App regrava em seguida as opções e o tema, que não são dados pessoais. Nada é transmitido.
  */
+export type Tema = "sistema" | "claro" | "escuro";
+
+export const TEMAS: readonly Tema[] = ["sistema", "claro", "escuro"];
+
 export interface Preferencias {
   defensor: string;
   orgao: string;
   lembrar: boolean;
   guardarRecentes: boolean;
+  tema: Tema;
 }
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -24,6 +30,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   orgao: "",
   lembrar: true,
   guardarRecentes: true,
+  tema: "sistema",
 };
 
 function texto(valor: unknown): string {
@@ -32,6 +39,12 @@ function texto(valor: unknown): string {
 
 function booleano(valor: unknown, padrao: boolean): boolean {
   return typeof valor === "boolean" ? valor : padrao;
+}
+
+function tema(valor: unknown): Tema {
+  return typeof valor === "string" && (TEMAS as string[]).includes(valor)
+    ? (valor as Tema)
+    : PREFERENCIAS_PADRAO.tema;
 }
 
 /** As preferências gravadas, campo a campo conferido; o padrão para o que falta ou está estranho. */
@@ -45,12 +58,14 @@ export function lerPreferencias(armazenamento: Storage | null): Preferencias {
     orgao: lembrar ? texto(dados.orgao) : "",
     lembrar,
     guardarRecentes: booleano(dados.guardarRecentes, PREFERENCIAS_PADRAO.guardarRecentes),
+    tema: tema(dados.tema),
   };
 }
 
 /**
  * Grava as preferências. Com "Lembrar" desligado, defensor e órgão são gravados vazios (as duas
- * opções continuam gravadas, para valerem na próxima visita). Devolve false se não deu para gravar.
+ * opções e o tema continuam gravados, para valerem na próxima visita). Devolve false se não deu
+ * para gravar.
  */
 export function gravarPreferencias(armazenamento: Storage | null, p: Preferencias): boolean {
   const gravadas: Preferencias = p.lembrar ? p : { ...p, defensor: "", orgao: "" };

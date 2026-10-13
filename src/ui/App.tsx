@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react";
 import type { Lancamento, LancamentoCalculado } from "../compartilhado/tipos.ts";
 import { compararIndicesUsados } from "../indices/congelar.ts";
 import { calcular } from "../motor/calcular.ts";
@@ -50,6 +50,14 @@ import { Processo } from "./secoes/Processo.tsx";
 export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambiente }) {
   const armazenamento = ambiente.armazenamento();
   const [preferencias, setPreferencias] = useState(() => lerPreferencias(armazenamento));
+  // Tema (decisão de 12/10/2026): "sistema" deixa o CSS seguir prefers-color-scheme; "claro" e
+  // "escuro" vão para data-theme na raiz. Na carga da página, um script do index.html já marcou o
+  // tema guardado antes do CSS (sem piscar); aqui o atributo acompanha cada troca no seletor.
+  useLayoutEffect(() => {
+    const raiz = document.documentElement;
+    if (preferencias.tema === "sistema") raiz.removeAttribute("data-theme");
+    else raiz.setAttribute("data-theme", preferencias.tema === "claro" ? "light" : "dark");
+  }, [preferencias.tema]);
   const calculoNovo = (p: Preferencias) =>
     novoCalculo({
       id: ambiente.novoId(),
@@ -162,6 +170,8 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
           setAbrirAberto(true);
         }}
         aoSalvar={salvar}
+        tema={preferencias.tema}
+        aoMudarTema={(tema) => mudarPreferencias({ tema })}
       />
       <main className="principal">
         <div className="coluna-esquerda" key={`esquerda-${estado.calculo.id}-${aberturas}`}>
