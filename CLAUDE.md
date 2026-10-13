@@ -51,7 +51,7 @@ ocupada a competência das prestações de lote e das avulsas sem descrição (1
 ocupam), e os avisos do lote falam em mês de vencimento. Rodada de correções antes da integração
 (13/10/2026): os recentes guardam só o cálculo e os índices usados (JSON compacto), com aviso no
 "Abrir" quando não dá para guardar; o erro de formato de um campo aparece ao sair dele, não enquanto
-se digita; datas de 1900 a 2199 na tela e no arquivo (807 testes passando e 9 pulados). "Relatório
+se digita; datas de 1900 a 2199 na tela e no arquivo (809 testes passando e 9 pulados). "Relatório
 / PDF" está na barra, desligado, até a fase 6. Próxima: fase 6 (relatório e PDF), com plano a
 escrever. A tabela de fases do roteiro é a referência; atualize-a e esta seção ao concluir cada
 fase.
