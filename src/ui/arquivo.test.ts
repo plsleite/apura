@@ -210,6 +210,17 @@ describe("lerArquivo (validação do arquivo aberto, §5.1)", () => {
       ok: false,
       erro: 'O arquivo traz um dado inválido em "dataElaboracao" (nome interno do campo, para quem for corrigir o arquivo); o cálculo atual não foi alterado.',
     });
+    // datas depois de 31/12/2199 (o teto de datas do Apura) também são recusadas
+    expect(lerArquivo(com((c) => (c.dataElaboracao = "9999-12-01")))).toEqual({
+      ok: false,
+      erro: 'O arquivo traz um dado inválido em "dataElaboracao" (nome interno do campo, para quem for corrigir o arquivo); o cálculo atual não foi alterado.',
+    });
+    expect(
+      lerArquivo(
+        com((c) => ((c.lancamentos as Array<Record<string, unknown>>)[0]!.data = "2200-01-05")),
+      ),
+    ).toMatchObject({ ok: false, erro: expect.stringContaining('"lancamentos[0].data"') });
+    expect(lerArquivo(com((c) => (c.dataElaboracao = "2199-12-31"))).ok).toBe(true);
     // textos decimais da base e dos acréscimos são aceitos como texto (o motor avisa se inválidos)
     const leitura = lerArquivo(com((c) => ((c.base as Record<string, unknown>).valor = "1,5")));
     expect(leitura.ok).toBe(true);

@@ -9,7 +9,13 @@ import type {
 } from "../../compartilhado/tipos.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import { CampoTexto, Opcao } from "../componentes/Campo.tsx";
-import { formatarMoedaParaCampo, lerData, lerValorPositivo, type Leitura } from "../entrada.ts";
+import {
+  DATA_MAXIMA,
+  formatarMoedaParaCampo,
+  lerData,
+  lerValorPositivo,
+  type Leitura,
+} from "../entrada.ts";
 import type { MudancasDoLancamento } from "../estado/calculo.ts";
 import { EditorDePeriodos } from "../secoes/EditorDePeriodos.tsx";
 
@@ -133,6 +139,7 @@ export function Personalizar({
       aoMudar={(v) => setTermos({ ...termos, [campo]: v })}
       erro={erros[campo]}
       min="1900-01-01"
+      max={DATA_MAXIMA}
     />
   );
 
@@ -147,6 +154,7 @@ export function Personalizar({
           aoMudar={setData}
           erro={erros.data}
           min="1900-01-01"
+          max={DATA_MAXIMA}
         />
         <CampoTexto
           id="personalizar-valor"

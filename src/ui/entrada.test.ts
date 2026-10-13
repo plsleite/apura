@@ -114,6 +114,15 @@ describe("competências e formatação para os campos", () => {
     expect(lerData("05/10/2026")).toEqual(erro);
   });
 
+  it("recusa datas depois de 31/12/2199 (o teto de datas do Apura)", () => {
+    const erro = { ok: false, erro: "A data não pode ser posterior a 31/12/2199." };
+    expect(lerData("2199-12-31")).toEqual({ ok: true, valor: "2199-12-31" });
+    expect(lerData("2200-01-01")).toEqual(erro);
+    expect(lerData("9999-12-01")).toEqual(erro);
+    expect(lerDataTexto("31/12/2199")).toEqual({ ok: true, valor: "2199-12-31" });
+    expect(lerDataTexto("01/01/2200")).toEqual(erro);
+  });
+
   it("formata de volta para os campos", () => {
     expect(formatarCompetenciaParaCampo("2026-10")).toBe("10/2026");
     expect(formatarMoedaParaCampo("1234.5")).toBe("1.234,50");

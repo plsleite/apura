@@ -139,6 +139,54 @@ describe("Salvar e Abrir (§5.1, §5.5, §9.1)", () => {
     );
   });
 
+  it("falha ao ler o arquivo ou ao recalculá-lo: o painel fica aberto com a frase do erro e o cálculo atual não muda", async () => {
+    const user = userEvent.setup();
+    const ambiente = ambienteDeTeste();
+    const congelar = ambiente.congelar;
+    let falharAoCongelar = false;
+    ambiente.congelar = () => {
+      if (falharAoCongelar) throw new Error("falha inesperada no recálculo");
+      return congelar();
+    };
+    render(<App ambiente={ambiente} />);
+    await user.type(screen.getByLabelText("Nº do processo"), "0800002-16.2026.8.12.0001");
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    const painel = within(screen.getByRole("dialog", { name: "Abrir cálculo" }));
+    const frase =
+      "O arquivo está danificado ou não é um arquivo de cálculo do Apura: não pôde ser lido.";
+    // o navegador não consegue ler o arquivo (removido, sem permissão)
+    const ilegivel = arquivo(serializarArquivo(arquivoSalvo()));
+    ilegivel.text = () => Promise.reject(new Error("NotReadableError"));
+    await user.upload(painel.getByLabelText("Abrir arquivo do Apura (.json)"), ilegivel);
+    expect(painel.getByRole("alert").textContent).toBe(frase);
+    expect(
+      (painel.getByLabelText("Abrir arquivo do Apura (.json)") as HTMLInputElement).disabled,
+    ).toBe(false);
+    // o arquivo é válido, mas o recálculo lança um erro
+    await user.click(painel.getByRole("button", { name: "Cancelar" }));
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    falharAoCongelar = true;
+    await user.upload(
+      within(screen.getByRole("dialog")).getByLabelText("Abrir arquivo do Apura (.json)"),
+      arquivo(serializarArquivo(arquivoSalvo())),
+    );
+    expect(within(screen.getByRole("dialog")).getByRole("alert").textContent).toBe(frase);
+    // o mesmo com um cálculo recente
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: /^Abrir 0800002-16\.2026\.8\.12\.0001/,
+      }),
+    );
+    expect(within(screen.getByRole("dialog")).getByRole("alert").textContent).toBe(frase);
+    falharAoCongelar = false;
+    await user.keyboard("{Escape}");
+    expect((screen.getByLabelText("Nº do processo") as HTMLInputElement).value).toBe(
+      "0800002-16.2026.8.12.0001",
+    );
+  });
+
   it("recentes: guardados a cada alteração (não o cálculo em branco), listados por data, abertos, removidos e limpos", async () => {
     const user = userEvent.setup();
     const armazenamento = armazenamentoEmMemoria();

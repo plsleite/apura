@@ -4,7 +4,13 @@ import { compararIndicesUsados } from "../indices/congelar.ts";
 import { calcular } from "../motor/calcular.ts";
 import { Abrir } from "./Abrir.tsx";
 import { ambientePadrao, type Ambiente } from "./ambiente.ts";
-import { lerArquivo, montarArquivo, nomeDoArquivo, serializarArquivo } from "./arquivo.ts";
+import {
+  ERRO_ARQUIVO_ILEGIVEL,
+  lerArquivo,
+  montarArquivo,
+  nomeDoArquivo,
+  serializarArquivo,
+} from "./arquivo.ts";
 import { CHAVE_RECENTES, removerChave } from "./armazenamento.ts";
 import { BarraSuperior } from "./BarraSuperior.tsx";
 import { Avisos } from "./componentes/Avisos.tsx";
@@ -108,7 +114,8 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
     );
 
   // Abrir (§5.1, §8.2): valida o arquivo, congela a tabela de hoje, recalcula e compara os
-  // índices usados pelo cálculo salvo com os do recálculo.
+  // índices usados pelo cálculo salvo com os do recálculo. Qualquer falha inesperada vira a frase
+  // do arquivo que não pôde ser lido: o painel fica aberto e o cálculo atual não muda.
   const [abrirAberto, setAbrirAberto] = useState(false);
   const [erroDeAbertura, setErroDeAbertura] = useState<string | null>(null);
   const [recentes, setRecentes] = useState<Recente[]>([]);
@@ -118,17 +125,24 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
       setErroDeAbertura(leitura.erro);
       return;
     }
-    const indices = ambiente.congelar();
-    const recalculado = calcular(leitura.calculo, indices.tabela);
-    const avisos = [
-      ...leitura.avisos,
-      ...(leitura.anterior === null
-        ? []
-        : compararIndicesUsados(leitura.anterior, {
-            indicesUsados: recalculado.indicesUsados,
-            consultadoEm: recalculado.consultaIndices.em,
-          })),
-    ];
+    let indices: ReturnType<Ambiente["congelar"]>;
+    let avisos: string[];
+    try {
+      indices = ambiente.congelar();
+      const recalculado = calcular(leitura.calculo, indices.tabela);
+      avisos = [
+        ...leitura.avisos,
+        ...(leitura.anterior === null
+          ? []
+          : compararIndicesUsados(leitura.anterior, {
+              indicesUsados: recalculado.indicesUsados,
+              consultadoEm: recalculado.consultaIndices.em,
+            })),
+      ];
+    } catch {
+      setErroDeAbertura(ERRO_ARQUIVO_ILEGIVEL);
+      return;
+    }
     despachar({ tipo: "abrir", calculo: leitura.calculo, ...indices, avisos });
     setAberturas(aberturas + 1);
     setErroDeAbertura(null);
@@ -271,6 +285,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             setRecentes([]);
           }}
           aoAbrirTexto={abrirTexto}
+          aoFalharLeitura={() => setErroDeAbertura(ERRO_ARQUIVO_ILEGIVEL)}
         />
         <div className="dialogo-acoes">
           <button type="button" className="botao secundario" onClick={() => setAbrirAberto(false)}>

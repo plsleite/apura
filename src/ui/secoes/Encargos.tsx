@@ -1,7 +1,7 @@
 import type { Calculo } from "../../compartilhado/tipos.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import { CampoArea, CampoTexto, useCampoValidado } from "../componentes/Campo.tsx";
-import { formatarNumeroParaCampo, lerData, lerPercentual } from "../entrada.ts";
+import { DATA_MAXIMA, formatarNumeroParaCampo, lerData, lerPercentual } from "../entrada.ts";
 import { resumirMetodologia } from "../estado/metodologia.ts";
 
 /**
@@ -101,6 +101,7 @@ export function Encargos({
           aoMudar={data.aoMudar}
           erro={data.erro}
           min="1900-01-01"
+          max={DATA_MAXIMA}
         />
       </div>
       <CampoArea

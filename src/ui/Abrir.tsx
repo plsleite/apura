@@ -16,6 +16,7 @@ export function Abrir({
   aoRemoverRecente,
   aoLimparRecentes,
   aoAbrirTexto,
+  aoFalharLeitura,
 }: {
   recentes: Recente[];
   recentesLigados: boolean;
@@ -25,6 +26,8 @@ export function Abrir({
   aoRemoverRecente: (id: string) => void;
   aoLimparRecentes: () => void;
   aoAbrirTexto: (texto: string) => void;
+  /** o navegador não conseguiu ler o arquivo escolhido (removido, sem permissão) */
+  aoFalharLeitura: () => void;
 }) {
   const idDoArquivo = useId();
   const [lendo, setLendo] = useState(false);
@@ -33,6 +36,8 @@ export function Abrir({
     setLendo(true);
     try {
       aoAbrirTexto(await arquivo.text());
+    } catch {
+      aoFalharLeitura();
     } finally {
       setLendo(false);
     }

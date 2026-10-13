@@ -97,11 +97,22 @@ export function formatarNumeroParaCampo(texto: TextoDecimal): string {
   return texto.replace(".", ",");
 }
 
+/**
+ * Teto das datas na tela e nos arquivos (anos de 1900 a 2199): uma data muito distante, como o ano
+ * 9999, faria o cálculo percorrer milhares de meses. Os campos de data levam `max` com este valor.
+ */
+export const DATA_MAXIMA: DataISO = "2199-12-31";
+const DEPOIS_DO_TETO: Leitura<never> = {
+  ok: false,
+  erro: "A data não pode ser posterior a 31/12/2199.",
+};
+
 /** Data de um campo `type="date"` ("AAAA-MM-DD"): vazia ou fora da tabela de datas do motor é erro. */
 export function lerData(texto: string): Leitura<DataISO> {
-  return dataValida(texto)
-    ? { ok: true, valor: texto }
-    : { ok: false, erro: "Informe a data (dia, mês e ano a partir de 1900)." };
+  if (!dataValida(texto)) {
+    return { ok: false, erro: "Informe a data (dia, mês e ano a partir de 1900)." };
+  }
+  return texto > DATA_MAXIMA ? DEPOIS_DO_TETO : { ok: true, valor: texto };
 }
 
 /** "2026-09-05" → "05/09/2026": como a data aparece no campo de texto da tabela. */
@@ -121,13 +132,14 @@ export function mascaraData(texto: string): string {
   return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
 }
 
-/** Data digitada como dd/mm/aaaa (a partir de 1900), devolvida como "AAAA-MM-DD". */
+/** Data digitada como dd/mm/aaaa (de 1900 a 2199), devolvida como "AAAA-MM-DD". */
 export function lerDataTexto(texto: string): Leitura<DataISO> {
   const partes = /^\s*(\d{2})\/(\d{2})\/(\d{4})\s*$/.exec(texto);
   const data = partes ? `${partes[3]}-${partes[2]}-${partes[1]}` : "";
-  return dataValida(data)
-    ? { ok: true, valor: data }
-    : { ok: false, erro: "Informe a data como dd/mm/aaaa (ex.: 05/09/2026)." };
+  if (!dataValida(data)) {
+    return { ok: false, erro: "Informe a data como dd/mm/aaaa (ex.: 05/09/2026)." };
+  }
+  return data > DATA_MAXIMA ? DEPOIS_DO_TETO : { ok: true, valor: data };
 }
 
 /**

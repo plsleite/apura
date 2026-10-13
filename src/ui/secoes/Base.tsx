@@ -3,6 +3,7 @@ import { decompor } from "../../compartilhado/datas.ts";
 import type { Base, IndiceReajuste } from "../../compartilhado/tipos.ts";
 import { CampoSelecao, CampoTexto, Opcao, useCampoValidado } from "../componentes/Campo.tsx";
 import {
+  DATA_MAXIMA,
   formatarMoedaParaCampo,
   formatarNumeroParaCampo,
   lerData,
@@ -192,6 +193,7 @@ function ValorFixo({
           aoMudar={data.aoMudar}
           erro={data.erro}
           min="1900-01-01"
+          max={DATA_MAXIMA}
         />
         <CampoSelecao
           id="base-reajuste"

@@ -17,6 +17,7 @@ import type {
   RegraJuros,
   Resultado,
 } from "../compartilhado/tipos.ts";
+import { DATA_MAXIMA } from "./entrada.ts";
 
 /**
  * Salvar e abrir o cálculo como arquivo (§5.1, §9.1). A leitura trata o conteúdo como `unknown` e
@@ -86,8 +87,9 @@ function inteiro(valor: unknown, caminho: string, minimo: number, maximo: number
   return valor;
 }
 
+/** Data válida de 1900 a 2199 (o teto das datas da tela, `DATA_MAXIMA`). */
 function data(valor: unknown, caminho: string): string {
-  if (typeof valor !== "string" || !dataValida(valor)) falhar(caminho);
+  if (typeof valor !== "string" || !dataValida(valor) || valor > DATA_MAXIMA) falhar(caminho);
   return valor;
 }
 
@@ -369,6 +371,10 @@ function lerIndicesAnteriores(
   }
 }
 
+/** A frase do painel "Abrir" para o arquivo que não pôde ser lido (também quando a leitura ou o recálculo falham). */
+export const ERRO_ARQUIVO_ILEGIVEL =
+  "O arquivo está danificado ou não é um arquivo de cálculo do Apura: não pôde ser lido.";
+
 /**
  * Lê o texto de um arquivo de cálculo. Só o `calculo` é obrigatório e inteiramente conferido; o
  * `resultado` é opcional (sem ele, aviso). Nunca lança: erro de leitura vira uma frase.
@@ -378,10 +384,7 @@ export function lerArquivo(textoDoArquivo: string): LeituraDoArquivo {
   try {
     conteudo = JSON.parse(textoDoArquivo);
   } catch {
-    return {
-      ok: false,
-      erro: "O arquivo está danificado ou não é um arquivo de cálculo do Apura: não pôde ser lido.",
-    };
+    return { ok: false, erro: ERRO_ARQUIVO_ILEGIVEL };
   }
   if (typeof conteudo !== "object" || conteudo === null || Array.isArray(conteudo)) {
     return { ok: false, erro: "O arquivo não é um cálculo do Apura (formato apura/calculo@1)." };

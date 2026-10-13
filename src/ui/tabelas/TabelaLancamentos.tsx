@@ -25,6 +25,7 @@ import type {
 } from "../../compartilhado/tipos.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import {
+  DATA_MAXIMA,
   formatarDataParaCampo,
   formatarMoedaParaCampo,
   lerData,
@@ -277,6 +278,7 @@ export function TabelaLancamentos({
                       ref={campoDaDataNova}
                       type="date"
                       min="1900-01-01"
+                      max={DATA_MAXIMA}
                       value={rascunho.data}
                       onChange={(e) => mudarDataNova(e.target.value)}
                       aria-label={

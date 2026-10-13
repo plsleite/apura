@@ -71,6 +71,42 @@ describe("App (fundação da tela)", () => {
     );
   });
 
+  it("todo campo de data vai de 01/01/1900 a 31/12/2199 (o teto de datas)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    const conferir = () => {
+      const campos = [...document.querySelectorAll<HTMLInputElement>('input[type="date"]')];
+      expect(campos.length).toBeGreaterThan(0);
+      for (const campo of campos) {
+        expect([campo.id || campo.getAttribute("aria-label"), campo.min, campo.max]).toEqual([
+          campo.id || campo.getAttribute("aria-label"),
+          "1900-01-01",
+          "2199-12-31",
+        ]);
+      }
+      return campos.length;
+    };
+    conferir();
+    const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    await user.click(prestacoes.getByLabelText("Meses em atraso"));
+    await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
+    await user.type(prestacoes.getByLabelText("Quantos meses"), "2");
+    await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+    await user.click(prestacoes.getByLabelText("Intervalo de vencimentos"));
+    conferir();
+    await user.click(screen.getByRole("button", { name: "+ Prestação" }));
+    conferir();
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Ajustar" }));
+    conferir();
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
+    await user.click(
+      screen.getByLabelText("Usar regras próprias de correção e juros neste lançamento"),
+    );
+    expect(conferir()).toBeGreaterThanOrEqual(5);
+  });
+
   it("abre com a cópia publicada quando nenhum ambiente é injetado (sem rede)", () => {
     render(<App />);
     expect(screen.getByRole("contentinfo").textContent).toContain("Índices oficiais BCB/SGS");

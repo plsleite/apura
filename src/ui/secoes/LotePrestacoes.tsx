@@ -10,7 +10,7 @@ import type { Competencia, DataISO, LotePrestacoes } from "../../compartilhado/t
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import { Avisos } from "../componentes/Avisos.tsx";
 import { CampoTexto, Opcao } from "../componentes/Campo.tsx";
-import { lerData, lerInteiro } from "../entrada.ts";
+import { DATA_MAXIMA, lerData, lerInteiro } from "../entrada.ts";
 
 /** Limite de meses por lote: 600 (50 anos), para a tela nunca pedir milhares de prestações. */
 export const MAXIMO_DE_MESES = 600;
@@ -148,6 +148,7 @@ export function LotePrestacoesSecao({
                 aoMudar={setPrimeiro}
                 erro={erros.primeiro}
                 min="1900-01-01"
+                max={DATA_MAXIMA}
               />
               <CampoTexto
                 id="lote-ultimo"
@@ -157,6 +158,7 @@ export function LotePrestacoesSecao({
                 aoMudar={setUltimo}
                 erro={erros.ultimo}
                 min="1900-01-01"
+                max={DATA_MAXIMA}
               />
             </>
           )}
