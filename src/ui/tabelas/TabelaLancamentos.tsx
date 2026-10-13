@@ -205,7 +205,8 @@ export function TabelaLancamentos({
   const teclaNaLinhaNova = (evento: KeyboardEvent<HTMLTableRowElement>) => {
     if (evento.key === "Enter" && evento.target instanceof HTMLInputElement) {
       evento.preventDefault();
-      incluir();
+      // Enter segurado (tecla repetida) não inclui: só um Enter deliberado
+      if (!evento.repeat) incluir();
     } else if (evento.key === "Escape") {
       evento.preventDefault();
       descartar();
@@ -365,6 +366,7 @@ export function TabelaLancamentos({
           type="button"
           className="botao secundario"
           onClick={abrirLinhaNova}
+          onKeyDown={ignorarRepeticao}
           ref={botaoIncluir}
         >
           {prestacoes ? "+ Prestação" : "+ Pagamento"}
@@ -372,6 +374,14 @@ export function TabelaLancamentos({
       </div>
     </section>
   );
+}
+
+/**
+ * Enter ou Espaço segurados (tecla repetida) num botão não o acionam de novo: segurar Enter em
+ * "+ Prestação" ou depois do Enter que exclui pelo ✕ (o foco vai ao "+") não acrescenta linhas.
+ */
+function ignorarRepeticao(evento: KeyboardEvent<HTMLButtonElement>) {
+  if (evento.repeat && (evento.key === "Enter" || evento.key === " ")) evento.preventDefault();
 }
 
 function Linha({

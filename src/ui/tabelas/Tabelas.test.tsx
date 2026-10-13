@@ -439,6 +439,47 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     expect(screen.queryByLabelText("Vencimento da nova prestação")).toBeNull();
   });
 
+  describe("Enter segurado (tecla repetida) não acrescenta linhas", () => {
+    const memorias = (tipo: "prestação" | "pagamento") =>
+      screen.queryAllByRole("button", { name: new RegExp(`^Memória d[ao] ${tipo} de `) }).length;
+
+    it("em + Prestação: abre a linha nova uma vez e não inclui nada", async () => {
+      const user = userEvent.setup();
+      await montarCaso(user);
+      expect(memorias("prestação")).toBe(2);
+      screen.getByRole("button", { name: "+ Prestação" }).focus();
+      await user.keyboard("{Enter>8/}");
+      expect(memorias("prestação")).toBe(2);
+      expect(screen.getByLabelText("Vencimento da nova prestação")).toBeDefined();
+    });
+
+    it("em + Pagamento, com o valor do pagamento anterior já sugerido", async () => {
+      const user = userEvent.setup();
+      await montarCaso(user);
+      await user.click(screen.getByRole("button", { name: "+ Pagamento" }));
+      await user.type(screen.getByLabelText("Valor do novo pagamento"), "150{Enter}");
+      expect(memorias("pagamento")).toBe(1);
+      screen.getByRole("button", { name: "+ Pagamento" }).focus();
+      await user.keyboard("{Enter>8/}");
+      expect(memorias("pagamento")).toBe(1);
+      expect(screen.getByLabelText("Data do novo pagamento")).toBeDefined();
+    });
+
+    it("no Enter que confirma a exclusão pelo ✕ (o foco vai a + Prestação): só a linha excluída some", async () => {
+      const user = userEvent.setup();
+      await montarCaso(user);
+      screen.getByRole("button", { name: "Excluir prestação de 05/10/2026" }).focus();
+      await user.keyboard("{Enter}");
+      await user.keyboard("{Enter>8/}");
+      expect(memorias("prestação")).toBe(1);
+      expect(screen.queryByRole("button", { name: /05\/10\/2026/ })).toBeNull();
+      expect(
+        screen.getByRole("button", { name: "Memória da prestação de 05/09/2026" }),
+      ).toBeDefined();
+      expect(memorias("pagamento")).toBe(0);
+    });
+  });
+
   it("base incompleta: o aviso diz o que falta e onde, e o campo fica em vermelho até ser preenchido (decisão de 13/10/2026)", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);
