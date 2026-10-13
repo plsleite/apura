@@ -14,6 +14,7 @@ import {
 } from "./preferencias.ts";
 import { Rodape } from "./Rodape.tsx";
 import { BaseDosAlimentos } from "./secoes/Base.tsx";
+import { Encargos } from "./secoes/Encargos.tsx";
 import { Processo } from "./secoes/Processo.tsx";
 
 /**
@@ -80,6 +81,17 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             base={estado.calculo.base}
             hoje={ambiente.hoje()}
             aoMudar={(base) => despachar({ tipo: "base", base, em: agora() })}
+          />
+          <Encargos
+            calculo={estado.calculo}
+            aoMudarAcrescimo={(campo, valor) =>
+              despachar({ tipo: "acrescimos", campo, valor, em: agora() })
+            }
+            aoMudarDataElaboracao={(data) =>
+              despachar({ tipo: "dataElaboracao", data, em: agora() })
+            }
+            aoMudarObservacoes={(texto) => despachar({ tipo: "observacoes", texto, em: agora() })}
+            aoAjustar={() => undefined}
           />
         </div>
         <div className="coluna-direita">
