@@ -1,8 +1,9 @@
 /* Apura · estilos da tela (fase 5). Cores do manual de identidade da DPE-MS (§10.2 do design):
    verde #1D6B34, amarelo-ouro #D8BB73, preto #373636, cinza #868686, vermelho #ED1C24; fundo claro
    #F3F4F1 e tema escuro como no relatório de exemplo. Tema do sistema, claro ou escuro, pelo
-   botão da barra (decisão de 12/10/2026; o padrão é o do sistema). As fontes
-   Ubuntu e Source Sans 3 entram embutidas na fase 6; até lá valem as reservas do sistema. */
+   botão da barra (decisões de 12 e 13/10/2026; o padrão é o do sistema). Fontes Ubuntu
+   (títulos e números) e Source Sans 3 (texto), embutidas pelo main.tsx. Barra no estilo da
+   faixa do relatório: verde, logo horizontal branco da DPE-MS e linha dourada embaixo. */
 
 :root {
   --verde: #1d6b34;
@@ -122,39 +123,76 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  padding: 10px 16px;
+  gap: 12px 24px;
+  padding: 14px 24px;
+  /* linha dourada da faixa do relatório (§10.1) */
+  border-bottom: 4px solid var(--ouro);
+}
+
+/* sobre o verde, o anel de foco é dourado (o verde-claro sumiria) */
+.barra :focus-visible {
+  outline-color: var(--ouro);
+}
+
+.identidade {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* logo horizontal branco: 48 px de altura, com respiro (§10.2, área de proteção do manual) */
+.logo {
+  height: 48px;
+  width: auto;
+  flex: none;
 }
 
 .marca {
-  font-size: 18px;
+  display: flex;
+  flex-direction: column;
+  padding-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.35);
+  font-family: var(--titulos);
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  flex: 1;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
 }
 
 .marca small {
+  font-family: var(--corpo);
   font-weight: 400;
-  font-size: 14px;
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
   opacity: 0.9;
 }
 
 .acoes-principais {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
 }
 
 .botao-barra {
   background: transparent;
   color: var(--cabecalho-texto);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 4px;
-  padding: 5px 10px;
+  padding: 6px 12px;
   cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+  transition: background-color 150ms ease-out;
 }
 
-.botao-barra.principal {
+.botao-barra:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.botao-barra.relatorio {
   background: #fff;
   color: #1d6b34;
   border-color: #fff;
@@ -164,6 +202,15 @@ textarea {
 .botao-barra:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* "Relatório / PDF" desligado até a fase 6: contorno tracejado, sem o fundo branco de destaque */
+.botao-barra.relatorio:disabled {
+  background: transparent;
+  color: var(--cabecalho-texto);
+  border-color: rgba(255, 255, 255, 0.6);
+  border-style: dashed;
+  font-weight: 400;
 }
 
 .botao-tema {
@@ -437,16 +484,23 @@ textarea {
   gap: 8px;
 }
 
+/* indicadores no estilo do relatório (§10.1): faixa verde no topo; os de destaque, dourada,
+   com o valor em verde */
 .indicador {
   background: var(--superficie);
   border: 1px solid var(--linha);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-top: 4px solid var(--verde);
+  border-radius: 4px;
+  padding: 10px 12px;
   min-width: 0;
 }
 
 .indicador.destaque {
-  border: 2px solid var(--verde);
+  border-top-color: var(--ouro);
+}
+
+.indicador.destaque dd {
+  color: var(--verde);
 }
 
 .indicador dt {
@@ -462,7 +516,7 @@ textarea {
   margin: 4px 0 0;
   font-family: var(--titulos);
   font-weight: 700;
-  font-size: 17px;
+  font-size: 18px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -840,8 +894,22 @@ td.dica {
     order: -1;
   }
 
-  .marca {
+  .identidade {
     flex-basis: 100%;
+    gap: 14px;
+  }
+
+  .logo {
+    height: 34px;
+  }
+
+  .marca {
+    padding-left: 14px;
+    font-size: 20px;
+  }
+
+  .barra {
+    padding: 12px 16px;
   }
 }
 

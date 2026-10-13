@@ -12,7 +12,7 @@ const NOME_DO_TEMA: Record<Tema, string> = {
 };
 
 /**
- * Barra superior (§9.1): nome do sistema, as quatro ações e o botão de tema, que alterna a cada
+ * Barra superior (§9.1): logo da DPE-MS, nome do sistema, as quatro ações e o botão de tema, que alterna a cada
  * clique entre "do sistema", "claro" e "escuro" (decisão de 13/10/2026). "Relatório / PDF" chega
  * na fase 6.
  */
@@ -31,9 +31,21 @@ export function BarraSuperior({
 }) {
   return (
     <header className="barra">
-      <h1 className="marca">
-        Apura <small>· Sistema de Cálculos Judiciais · DPE-MS</small>
-      </h1>
+      <div className="identidade">
+        <img
+          className="logo"
+          src={`${import.meta.env.BASE_URL}logos/dpems-horizontal-branca.png`}
+          width={368}
+          height={88}
+          alt="Defensoria Pública de Mato Grosso do Sul"
+        />
+        <h1 className="marca">
+          Apura<span className="oculto-acessivel"> · </span>
+          <small>
+            Sistema de Cálculos Judiciais<span className="oculto-acessivel"> · DPE-MS</span>
+          </small>
+        </h1>
+      </div>
       <nav className="acoes-principais" aria-label="Ações do cálculo">
         <button type="button" className="botao-barra" onClick={aoNovo}>
           Novo cálculo
@@ -46,7 +58,7 @@ export function BarraSuperior({
         </button>
         <button
           type="button"
-          className="botao-barra principal"
+          className="botao-barra relatorio"
           disabled
           title="Em construção: o relatório em tela e PDF chega na fase 6 do MVP."
         >

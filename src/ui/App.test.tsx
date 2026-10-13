@@ -13,6 +13,9 @@ describe("App (fundação da tela)", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "Apura · Sistema de Cálculos Judiciais · DPE-MS",
     );
+    const logo = screen.getByRole("img", { name: "Defensoria Pública de Mato Grosso do Sul" });
+    expect(logo.getAttribute("src")).toBe("/logos/dpems-horizontal-branca.png");
+    expect([logo.getAttribute("width"), logo.getAttribute("height")]).toEqual(["368", "88"]);
     for (const nome of ["Novo cálculo", "Abrir", "Salvar"]) {
       expect(screen.getByRole("button", { name: nome })).toBeDefined();
     }
