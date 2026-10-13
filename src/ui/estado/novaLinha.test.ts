@@ -108,21 +108,39 @@ describe("sugestões da linha nova (decisões de 13/10/2026)", () => {
     expect(sugestao.encargos?.metodologia).not.toBe(regras);
   });
 
-  it("pagamento: data de hoje e o valor do último pagamento; sem pagamento anterior, valor em branco", () => {
-    const pagamento: Lancamento = {
-      id: "a-2026-09",
+  it("pagamento: mês seguinte ao do último pagamento, no mesmo dia, com o valor dele (decisão de 13/10/2026, fase 5b)", () => {
+    const pagamento = (id: string, data: string, valorInformado: string): Lancamento => ({
+      id,
       tipo: "amortizacao",
-      data: "2026-09-05",
-      valorInformado: "400.00",
+      data,
+      valorInformado,
       origem: "lote",
       editado: false,
-    };
-    expect(sugerirPagamento(calculoCom([pagamento]))).toEqual({
-      tipo: "amortizacao",
-      data: HOJE,
-      valor: "400.00",
-      pelaBase: false,
     });
+    expect(
+      sugerirPagamento(
+        calculoCom([
+          pagamento("a-2026-08", "2026-08-10", "350.00"),
+          pagamento("a-2026-09", "2026-09-10", "400.00"),
+        ]),
+      ),
+    ).toEqual({ tipo: "amortizacao", data: "2026-10-10", valor: "400.00", pelaBase: false });
+    // o último é o mais recente pela data, não o último incluído
+    const foraDeOrdem = calculoCom([
+      pagamento("a-2026-09", "2026-09-10", "400.00"),
+      pagamento("a-2026-07", "2026-07-20", "300.00"),
+    ]);
+    expect(sugerirPagamento(foraDeOrdem)).toMatchObject({ data: "2026-10-10", valor: "400.00" });
+    // dia 31 em mês curto cai no último dia; a data pode passar da data do cálculo
+    expect(
+      sugerirPagamento(calculoCom([pagamento("a-2026-01", "2026-01-31", "400.00")])).data,
+    ).toBe("2026-02-28");
+    expect(
+      sugerirPagamento(calculoCom([pagamento("a-2026-10", "2026-10-05", "400.00")])).data,
+    ).toBe("2026-11-05");
+  });
+
+  it("pagamento: sem pagamento anterior, a data de elaboração e o valor em branco", () => {
     expect(sugerirPagamento(calculoCom([]))).toEqual({
       tipo: "amortizacao",
       data: HOJE,

@@ -48,8 +48,14 @@ export function valorPelaBase(
   return apurado.valor === null ? "" : paraTexto(apurado.valor, casas);
 }
 
-function ultimoDoTipo(calculo: Calculo, tipo: Lancamento["tipo"]): Lancamento | undefined {
-  return calculo.lancamentos.filter((l) => l.tipo === tipo).at(-1);
+/** O pagamento mais recente pela data (o último incluído, entre os do mesmo dia). */
+function ultimoPagamento(calculo: Calculo): Lancamento | undefined {
+  return calculo.lancamentos
+    .filter((l) => l.tipo === "amortizacao")
+    .reduce<Lancamento | undefined>(
+      (ultimo, l) => (ultimo && ultimo.data > l.data ? ultimo : l),
+      undefined,
+    );
 }
 
 /**
@@ -87,13 +93,21 @@ export function sugerirPrestacao(calculo: Calculo, tabela: TabelaIndices): Rascu
   return { ...comum, valor: valorPelaBase(calculo, tabela, data), pelaBase: true };
 }
 
-/** Pagamento novo: data de hoje (a data de elaboração) e o valor do último pagamento. */
+/**
+ * Pagamento novo (decisão de 13/10/2026, fase 5b): no mês seguinte ao do último pagamento, no
+ * mesmo dia (último dia do mês quando ele é mais curto), com o valor dele; sem pagamento anterior,
+ * a data de elaboração e o valor em branco. A data pode passar da data do cálculo: a pessoa a
+ * corrige na linha antes de incluí-la.
+ */
 export function sugerirPagamento(calculo: Calculo): RascunhoDeLancamento {
-  const anterior = ultimoDoTipo(calculo, "amortizacao");
+  const anterior = ultimoPagamento(calculo);
   const encargos = herdarRegras(anterior);
   return {
     tipo: "amortizacao",
-    data: calculo.dataElaboracao,
+    data:
+      anterior === undefined
+        ? calculo.dataElaboracao
+        : dataNoMes(mesSeguinte(competenciaDe(anterior.data)), decompor(anterior.data).dia),
     valor: anterior?.valorInformado ?? "",
     pelaBase: false,
     ...(encargos ? { encargos } : {}),
