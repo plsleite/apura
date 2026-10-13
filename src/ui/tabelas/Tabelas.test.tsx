@@ -501,6 +501,13 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     const campo = screen.getByLabelText("Percentual do salário mínimo");
     expect(campo.getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByText("Informe o percentual.")).toBeDefined();
+    // a etiqueta "não computada" explica onde está o motivo: na memória, aberta pelo ▸
+    const setembro = screen
+      .getByRole("button", { name: "Memória da prestação de 05/09/2026" })
+      .closest("tr") as HTMLElement;
+    expect(within(setembro).getByText("não computada").getAttribute("title")).toBe(
+      "Fora dos totais: abra a memória da linha (▸) para ver o motivo.",
+    );
     await user.click(screen.getByRole("button", { name: "Memória da prestação de 05/09/2026" }));
     expect(
       screen.getByText(/Memória · prestação de 05\/09\/2026/).closest("tr")?.textContent,

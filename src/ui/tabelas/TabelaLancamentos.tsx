@@ -458,7 +458,7 @@ function Linha({
   if (calculado.situacao === "ignorado") {
     etiquetas.push({
       texto: feminino ? "não computada" : "não computado",
-      explicacao: "Fora dos totais; o motivo está na memória (clique no nome da linha).",
+      explicacao: "Fora dos totais: abra a memória da linha (▸) para ver o motivo.",
     });
   }
   if (calculado.editado) {
