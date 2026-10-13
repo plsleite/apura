@@ -17,6 +17,8 @@ import { Rodape } from "./Rodape.tsx";
 import { BaseDosAlimentos } from "./secoes/Base.tsx";
 import { EditorDePeriodos } from "./secoes/EditorDePeriodos.tsx";
 import { Encargos } from "./secoes/Encargos.tsx";
+import { LotePagamentosSecao } from "./secoes/LotePagamentos.tsx";
+import { LotePrestacoesSecao } from "./secoes/LotePrestacoes.tsx";
 import { Processo } from "./secoes/Processo.tsx";
 
 /**
@@ -84,6 +86,16 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             base={estado.calculo.base}
             hoje={ambiente.hoje()}
             aoMudar={(base) => despachar({ tipo: "base", base, em: agora() })}
+          />
+          <LotePrestacoesSecao
+            ultimoLote={estado.calculo.lotes.ultimoLotePrestacoes}
+            avisos={estado.loteRecente === "prestacoes" ? estado.avisosDoLote : []}
+            aoLancar={(lote) => despachar({ tipo: "lancarPrestacoes", lote, em: agora() })}
+          />
+          <LotePagamentosSecao
+            ultimoLote={estado.calculo.lotes.ultimoLoteAmortizacoes}
+            avisos={estado.loteRecente === "pagamentos" ? estado.avisosDoLote : []}
+            aoLancar={(lote) => despachar({ tipo: "lancarPagamentos", lote, em: agora() })}
           />
           <Encargos
             calculo={estado.calculo}
