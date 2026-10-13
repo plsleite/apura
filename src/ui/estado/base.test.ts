@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Base, FormaDaBase } from "../../compartilhado/tipos.ts";
 import { baseUnica } from "../../motor/base.ts";
-import { dividirBase, removerDivisaoDaBase, tituloDoPeriodo, trocarForma } from "./base.ts";
+import {
+  aplicarRendimentoNaBase,
+  dividirBase,
+  removerDivisaoDaBase,
+  tituloDoPeriodo,
+  trocarForma,
+} from "./base.ts";
 
 const fixo: FormaDaBase = {
   tipo: "valorFixo",
@@ -95,5 +101,47 @@ describe("edição da base por períodos (§17.2, fase 5b)", () => {
       "De 01/01/2025 a 30/06/2025",
     );
     expect(tituloDoPeriodo({ de: "2025-07-01", ate: null })).toBe("Desde 01/07/2025");
+  });
+
+  it('aplicar um rendimento daqui em diante divide o período de "% dos rendimentos" na data, com o novo rendimento padrão', () => {
+    // 30% dos rendimentos, padrão R$ 2.000,00; em 05/03/2025, R$ 2.500,00
+    expect(aplicarRendimentoNaBase(baseUnica(rendimentos), "2025-03-05", "2500.00")).toEqual({
+      periodos: [
+        { de: null, ate: "2025-03-04", forma: rendimentos },
+        { de: "2025-03-05", ate: null, forma: { ...rendimentos, rendimentoPadrao: "2500.00" } },
+      ],
+    });
+    // vai só até o fim daquele período: a divisão posterior fica com a regra dela
+    const comDepois: Base = {
+      periodos: [
+        { de: null, ate: "2025-12-31", forma: rendimentos },
+        { de: "2026-01-01", ate: null, forma: sm },
+      ],
+    };
+    expect(aplicarRendimentoNaBase(comDepois, "2025-03-05", "2500.00").periodos).toEqual([
+      { de: null, ate: "2025-03-04", forma: rendimentos },
+      {
+        de: "2025-03-05",
+        ate: "2025-12-31",
+        forma: { ...rendimentos, rendimentoPadrao: "2500.00" },
+      },
+      { de: "2026-01-01", ate: null, forma: sm },
+    ]);
+  });
+
+  it("aplicar no início de um período só troca o rendimento padrão dele; em período de outra forma, nada muda", () => {
+    const dividida: Base = {
+      periodos: [
+        { de: null, ate: "2025-03-04", forma: rendimentos },
+        { de: "2025-03-05", ate: null, forma: rendimentos },
+      ],
+    };
+    expect(aplicarRendimentoNaBase(dividida, "2025-03-05", "2600.00").periodos[1]).toEqual({
+      de: "2025-03-05",
+      ate: null,
+      forma: { ...rendimentos, rendimentoPadrao: "2600.00" },
+    });
+    const outra = baseUnica(sm);
+    expect(aplicarRendimentoNaBase(outra, "2025-03-05", "2500.00")).toBe(outra);
   });
 });

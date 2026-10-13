@@ -1,14 +1,24 @@
 import { diaAnterior } from "../../compartilhado/datas.ts";
 import { formatarData } from "../../compartilhado/formatacao.ts";
-import type { Base, DataISO, FormaDaBase, PeriodoDaBase } from "../../compartilhado/tipos.ts";
-import { descreverPeriodoDaBase, periodosDaBaseOrdenados } from "../../motor/base.ts";
+import type {
+  Base,
+  DataISO,
+  FormaDaBase,
+  PeriodoDaBase,
+  TextoDecimal,
+} from "../../compartilhado/tipos.ts";
+import {
+  descreverPeriodoDaBase,
+  periodoDaData,
+  periodosDaBaseOrdenados,
+} from "../../motor/base.ts";
 import { DATA_MINIMA } from "../entrada.ts";
 
 /**
  * Edição da base dos alimentos por períodos (§17.2, fase 5b), no padrão do editor de períodos da
  * metodologia: dividir numa data (o período novo nasce como cópia do dividido), remover uma
  * divisão (o período é absorvido pelo anterior, que mantém a própria forma), trocar a forma de um
- * período.
+ * período e aplicar um rendimento "daqui em diante" (divide o período de "% dos rendimentos").
  * Toda função devolve uma base nova, com os períodos em ordem cronológica. Módulo puro.
  */
 
@@ -62,4 +72,19 @@ export function trocarForma(base: Base, indice: number, forma: FormaDaBase): Bas
   const alvo = periodos[indice];
   if (alvo === undefined) return base;
   return { periodos: periodos.with(indice, { ...alvo, forma }) };
+}
+
+/**
+ * "Aplicar este rendimento daqui em diante" (§17.2): divide na data o período de "% dos
+ * rendimentos" que a contém e põe o rendimento como rendimento padrão do período novo; se a data
+ * já é início de período, só troca o rendimento padrão dele. O efeito vai até o fim daquele
+ * período. Período de outra forma: nada muda.
+ */
+export function aplicarRendimentoNaBase(base: Base, data: DataISO, rendimento: TextoDecimal): Base {
+  const alvo = periodoDaData(base, data);
+  if (alvo === undefined || alvo.forma.tipo !== "percentualRendimentos") return base;
+  // depois de dividir, o período que contém a data é o que começa nela
+  const dividida = dividirBase(base, data).base;
+  const indice = periodosDaBaseOrdenados(dividida).findIndex((p) => p.de === data);
+  return trocarForma(dividida, indice, { ...alvo.forma, rendimentoPadrao: rendimento });
 }

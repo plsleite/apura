@@ -22,8 +22,8 @@ import { EditorDePeriodos } from "../secoes/EditorDePeriodos.tsx";
 
 /**
  * "Personalizar" (§9.3, §6.5), o lápis da linha, para os ajustes finos: valor, data (vencimento
- * ou pagamento) e descrição; rendimento do mês (base em % dos rendimentos), com "aplicar daqui em
- * diante"; termos inicial e final da correção e dos juros; metodologia própria no mesmo editor de
+ * ou pagamento) e descrição; rendimento do mês (período da base em % dos rendimentos), com
+ * "aplicar daqui em diante", que divide a base no vencimento (§17.2); termos inicial e final da correção e dos juros; metodologia própria no mesmo editor de
  * períodos. Vencimento e valor também se corrigem na própria tabela, e a linha nova de
  * "+ Prestação"/"+ Pagamento" nasce na tabela (decisões de 13/10/2026). Validação ao aplicar,
  * erro embaixo de cada campo; termo final posterior à data de elaboração é recusado aqui (o motor
@@ -201,7 +201,7 @@ export function Personalizar({
             inputMode="decimal"
             classe="medio"
             placeholder="usa o rendimento padrão"
-            ajuda="Para 13º ou férias, informe o rendimento do evento; quando o salário mudou, informe o novo rendimento e aplique às prestações seguintes."
+            ajuda="Para 13º ou férias, informe o rendimento do evento. Quando o salário mudou, informe o novo rendimento e use “Aplicar este rendimento daqui em diante”: a base ganha um período novo, desde este vencimento, com esse rendimento padrão (seção 2)."
           />
           <button
             type="button"

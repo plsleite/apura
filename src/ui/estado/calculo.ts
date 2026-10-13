@@ -14,6 +14,7 @@ import type {
 import type { SituacaoIndices } from "../../indices/congelar.ts";
 import { metodologiaPadrao } from "../../metodologias/padrao.ts";
 import { baseUnica } from "../../motor/base.ts";
+import { aplicarRendimentoNaBase } from "./base.ts";
 import { gerarLoteAmortizacoes, gerarLotePrestacoes, idLivre } from "../../motor/lote.ts";
 
 /**
@@ -252,21 +253,19 @@ export function reduzir(estado: Estado, acao: Acao): Estado {
         acao.em,
       );
     case "aplicarRendimentoDaquiEmDiante": {
+      // divide a base no vencimento da linha, com o novo rendimento padrão (§17.2); a linha de
+      // onde se aplicou passa a seguir a regra, e as demais ficam como estão
       const origem = estado.calculo.lancamentos.find((l) => l.id === acao.id);
       if (origem === undefined) return estado;
-      return comLancamentos(
-        estado,
-        // as prestações com descrição (13º, férias) não entram, como no lote (D1); a própria
-        // linha de onde se aplicou entra sempre
-        estado.calculo.lancamentos.map((l) =>
-          l.tipo === "prestacao" &&
-          l.data >= origem.data &&
-          (l.id === origem.id || !l.descricao?.trim())
-            ? { ...l, rendimento: acao.rendimento, editado: true }
-            : l,
-        ),
-        acao.em,
-      );
+      const base = aplicarRendimentoNaBase(estado.calculo.base, origem.data, acao.rendimento);
+      if (base === estado.calculo.base) return estado;
+      const lancamentos = estado.calculo.lancamentos.map((l) => {
+        if (l.id !== origem.id) return l;
+        const semRendimento = { ...l };
+        delete semRendimento.rendimento;
+        return semRendimento;
+      });
+      return comCalculo(estado, { base, lancamentos }, acao.em);
     }
     case "excluirLancamento":
       return comLancamentos(
