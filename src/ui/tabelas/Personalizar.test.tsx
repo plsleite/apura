@@ -42,8 +42,12 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
       .getAllByRole("cell")
       .map((c) => c.textContent);
     expect(celulas[1]).toBe("R$ 1.200,00");
-    expect(celulas[0]).toContain("valor informado");
-    expect(celulas[0]).toContain("ajustada");
+    expect(celulas[0]).toContain("valor informado +1");
+    expect(
+      within(linha).getByRole("button", {
+        name: "Situação da prestação de 05/09/2026: valor informado, ajustada",
+      }),
+    ).toBeDefined();
     expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(
       "Prestações com valor informado à mão, não apurado pela base dos alimentos: set/2026.",
     );
