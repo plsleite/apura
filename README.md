@@ -9,7 +9,7 @@ com índices oficiais do Banco Central e relatório na identidade visual da DPE-
 
 ## Requisitos
 
-- Node.js 22.18 ou mais recente e npm.
+- Node.js 22.22.2 ou mais recente e npm (os testes de componente usam o jsdom 30).
 
 ## Comandos
 

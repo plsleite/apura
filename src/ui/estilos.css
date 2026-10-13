@@ -1,0 +1,857 @@
+/* Apura · estilos da tela (fase 5). Cores do manual de identidade da DPE-MS (§10.2 do design):
+   verde #1D6B34, amarelo-ouro #D8BB73, preto #373636, cinza #868686, vermelho #ED1C24; fundo claro
+   #F3F4F1 e tema escuro como no relatório de exemplo. Tema do sistema, claro ou escuro, pelo
+   botão da barra (decisão de 12/10/2026; o padrão é o do sistema). As fontes
+   Ubuntu e Source Sans 3 entram embutidas na fase 6; até lá valem as reservas do sistema. */
+
+:root {
+  --verde: #1d6b34;
+  --verde-claro: #1fa463;
+  --ouro: #d8bb73;
+  --vermelho: #c8101a;
+  --fundo: #f3f4f1;
+  --superficie: #ffffff;
+  --texto: #373636;
+  --discreto: #6e716c;
+  --linha: #dcdfd9;
+  --linha-alternada: #f7f8f5;
+  --cabecalho-fundo: #1d6b34;
+  --cabecalho-texto: #ffffff;
+  --aviso-fundo: #fff8e1;
+  --aviso-borda: #d8bb73;
+  --foco: #1fa463;
+  --titulos: "Ubuntu", "Segoe UI", system-ui, sans-serif;
+  --corpo: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+/* Tema escuro: pelo sistema (salvo se o usuário escolheu "claro") ou pela escolha "escuro" do
+   seletor da barra, que o App grava em data-theme na raiz. As duas listas são iguais de propósito. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --verde: #3fa866;
+    --verde-claro: #5cc385;
+    --vermelho: #ff6b6b;
+    --fundo: #0f1813;
+    --superficie: #17221b;
+    --texto: #e8ebe6;
+    --discreto: #9ba69d;
+    --linha: #2a3a2f;
+    --linha-alternada: #1b2820;
+    --cabecalho-fundo: #143f24;
+    --cabecalho-texto: #ffffff;
+    --aviso-fundo: #2a2410;
+    --aviso-borda: #a88d4a;
+    --foco: #5cc385;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --verde: #3fa866;
+  --verde-claro: #5cc385;
+  --vermelho: #ff6b6b;
+  --fundo: #0f1813;
+  --superficie: #17221b;
+  --texto: #e8ebe6;
+  --discreto: #9ba69d;
+  --linha: #2a3a2f;
+  --linha-alternada: #1b2820;
+  --cabecalho-fundo: #143f24;
+  --cabecalho-texto: #ffffff;
+  --aviso-fundo: #2a2410;
+  --aviso-borda: #a88d4a;
+  --foco: #5cc385;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: var(--corpo);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--titulos);
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.oculto-acessivel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- Estrutura: barra, duas colunas, rodapé ---- */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.barra {
+  background: var(--cabecalho-fundo);
+  color: var(--cabecalho-texto);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 16px;
+}
+
+.marca {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex: 1;
+}
+
+.marca small {
+  font-weight: 400;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.acoes-principais {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.botao-barra {
+  background: transparent;
+  color: var(--cabecalho-texto);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.botao-barra.principal {
+  background: #fff;
+  color: #1d6b34;
+  border-color: #fff;
+  font-weight: 600;
+}
+
+.botao-barra:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.botao-tema {
+  min-width: 10.5em;
+}
+
+.principal {
+  flex: 1;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.coluna-esquerda,
+.coluna-direita {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  color: var(--discreto);
+  border-top: 1px solid var(--linha);
+}
+
+/* ---- Seções da esquerda e campos ---- */
+
+.secao {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.secao > h2,
+.secao > .titulo-secao > h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--verde);
+  margin: 0 0 8px;
+}
+
+/* título da seção com o botão ⓘ da ajuda ao lado */
+.titulo-secao {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.secao > .titulo-secao > h2 {
+  margin: 0;
+}
+
+/* dois campos lado a lado, cada um com metade da largura (empilham no celular) */
+.grade-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-bottom: 6px;
+}
+
+.grade-2 .campo input {
+  width: 100%;
+}
+
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-end;
+  margin-bottom: 6px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rotulo-do-campo,
+.grupo > legend {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--discreto);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: 4px;
+  padding: 6px 8px;
+  min-width: 0;
+}
+
+/* exemplos dentro dos campos: mais claros e em itálico, para não parecerem um valor digitado */
+::placeholder {
+  color: var(--discreto);
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.campo input[aria-invalid="true"],
+.campo select[aria-invalid="true"] {
+  border-color: var(--vermelho);
+}
+
+.campo.largo {
+  flex: 1 1 100%;
+}
+
+.campo.curto input {
+  width: 6em;
+}
+
+.campo.medio input {
+  width: 10em;
+}
+
+/* nº do processo no padrão do CNJ: 25 caracteres */
+.campo.processo {
+  margin-bottom: 6px;
+}
+
+.campo.processo input {
+  width: 27ch;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.rotulo-do-campo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- Ajuda sob demanda (botão ⓘ e balão) ---- */
+
+.ajuda-balao {
+  position: relative;
+  display: inline-flex;
+}
+
+.botao-ajuda {
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  padding: 0 3px;
+  cursor: pointer;
+  color: var(--verde);
+  font-family: var(--corpo);
+  font-size: 15px;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.botao-ajuda[aria-expanded="true"] {
+  color: var(--texto);
+}
+
+.balao {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -10px;
+  z-index: 5;
+  width: max-content;
+  max-width: 340px;
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-top: 3px solid var(--verde);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  padding: 8px 10px;
+  font-family: var(--corpo);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  text-align: left;
+}
+
+.grupo {
+  border: 0;
+  padding: 0;
+  margin: 0 0 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.grupo > legend {
+  padding: 0;
+  margin-bottom: 2px;
+  width: 100%;
+}
+
+.grupo label {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.nota {
+  font-size: 13px;
+  color: var(--discreto);
+  margin: 2px 0 6px;
+}
+
+.erro {
+  font-size: 13px;
+  color: var(--vermelho);
+  margin: 0;
+}
+
+.botao {
+  background: var(--verde);
+  color: #fff;
+  border: 1px solid var(--verde);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.botao.secundario {
+  background: transparent;
+  color: var(--verde);
+}
+
+.botao.discreto {
+  background: transparent;
+  color: var(--discreto);
+  border-color: transparent;
+  text-decoration: underline;
+  padding: 2px 4px;
+}
+
+.botao:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---- Lado direito: indicadores, tabelas, avisos ---- */
+
+/* cinco cartões; quantos cabem por linha (5, 3, 2 ou 1, para ficar 5, 3 + 2, 2 + 2 + 1 ou um por
+   linha) é o componente que decide, medindo o maior valor (decisão de 13/10/2026): o valor nunca
+   quebra entre "R$" e o número */
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.indicador {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+.indicador.destaque {
+  border: 2px solid var(--verde);
+}
+
+.indicador dt {
+  font-family: var(--titulos);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--discreto);
+  min-height: 2.4em;
+}
+
+.indicador dd {
+  margin: 4px 0 0;
+  font-family: var(--titulos);
+  font-weight: 700;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tabela-rolagem {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+}
+
+/* só a tabela rola na horizontal (o balão da ajuda do título não fica preso na rolagem);
+   position: relative prende aqui os rótulos ocultos (posição absoluta) do cabeçalho, que senão
+   alargariam a página inteira em telas estreitas */
+.tabela-rolagem > .rolagem {
+  position: relative;
+  overflow-x: auto;
+}
+
+.tabela-rolagem > .titulo-secao {
+  padding: 10px 12px 4px;
+  margin: 0;
+}
+
+.tabela-rolagem > .titulo-secao > h2 {
+  font-size: 14px;
+  color: var(--verde);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--linha);
+  text-align: right;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+th {
+  font-family: var(--titulos);
+  font-weight: 500;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--cabecalho-fundo);
+  color: var(--cabecalho-texto);
+}
+
+th:first-child,
+td:first-child,
+td.texto {
+  text-align: left;
+}
+
+tfoot td {
+  font-weight: 700;
+  background: var(--linha-alternada);
+  border-top: 2px solid var(--verde);
+}
+
+tr.memoria td {
+  background: var(--linha-alternada);
+  text-align: left;
+  white-space: normal;
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+tr.memoria ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.botao-expandir {
+  background: transparent;
+  border: 0;
+  padding: 0 6px 0 0;
+  cursor: pointer;
+  color: var(--verde);
+}
+
+/* vencimento e valor editáveis na própria célula: parecem texto, com contorno ao passar o mouse */
+.celula-editavel {
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin: -2px -5px;
+  cursor: text;
+  font-variant-numeric: tabular-nums;
+}
+
+.celula-editavel:hover {
+  border-color: var(--discreto);
+  background: var(--linha-alternada);
+}
+
+/* em edição, o campo ocupa exatamente o lugar do texto (mesma caixa, letra e alinhamento; a
+   largura vem do texto medido no clique): a tabela não se mexe. O erro aparece num balão logo
+   abaixo, por cima da linha seguinte, sem empurrar nada. */
+.celula-em-edicao {
+  position: relative;
+  display: inline-block;
+}
+
+.celula-em-edicao input {
+  box-sizing: border-box;
+  margin: -2px -5px;
+  padding: 1px 4px;
+  border: 1px solid var(--verde);
+  border-radius: 3px;
+  background: var(--superficie);
+  font: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.celula-em-edicao input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--foco);
+}
+
+.celula-em-edicao input[aria-invalid="true"] {
+  border-color: var(--vermelho);
+}
+
+.celula-em-edicao .erro {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: -5px;
+  z-index: 3;
+  width: max-content;
+  max-width: 18em;
+  padding: 4px 8px;
+  background: var(--superficie);
+  border: 1px solid var(--vermelho);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  white-space: normal;
+  text-align: left;
+  font-size: 12px;
+}
+
+td:first-child .celula-em-edicao .erro {
+  right: auto;
+  left: -5px;
+}
+
+/* campos da linha nova ("+ Prestação", "+ Pagamento") */
+.campo-linha-nova {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.campo-linha-nova input {
+  background: var(--superficie);
+  border: 1px solid var(--verde);
+  border-radius: 3px;
+  padding: 2px 4px;
+  width: 8.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.campo-linha-nova input[type="date"] {
+  width: auto;
+  text-align: left;
+}
+
+.campo-linha-nova input[aria-invalid="true"] {
+  border-color: var(--vermelho);
+}
+
+.campo-linha-nova .erro {
+  max-width: 16em;
+  white-space: normal;
+  text-align: left;
+  font-size: 12px;
+}
+
+/* a primeira coluna quebra a linha: descrição e etiquetas descem para baixo do vencimento
+   quando falta espaço, sem empurrar os botões da linha para fora da tabela */
+tbody td:first-child {
+  white-space: normal;
+  min-width: 8.5em;
+}
+
+td .descricao {
+  margin-left: 6px;
+  color: var(--discreto);
+}
+
+tr.linha-nova td {
+  background: var(--linha-alternada);
+  border-bottom-color: var(--verde);
+}
+
+td.dica {
+  color: var(--discreto);
+  font-size: 12px;
+}
+
+.etiqueta {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 11px;
+  margin: 1px 0 1px 4px;
+  white-space: nowrap;
+  background: var(--aviso-fundo);
+  border: 1px solid var(--aviso-borda);
+  color: var(--texto);
+}
+
+.acoes-linha {
+  white-space: nowrap;
+}
+
+.botao-icone {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: var(--verde);
+}
+
+.botao-icone:hover {
+  border-color: var(--linha);
+}
+
+/* ✕ armado: vermelho, esperando o segundo clique (mesmo tamanho; a linha não se mexe) */
+.botao-icone.excluir.armado {
+  background: var(--vermelho);
+  border-color: var(--vermelho);
+  color: var(--superficie);
+  font-weight: 700;
+}
+
+.rodape-tabela {
+  padding: 8px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.avisos {
+  background: var(--aviso-fundo);
+  border: 1px solid var(--aviso-borda);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.avisos h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.avisos ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.avisos li + li {
+  margin-top: 4px;
+}
+
+/* ---- Diálogos (editor de períodos, personalizar, abrir) ---- */
+
+.dialogo-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 10;
+}
+
+.dialogo {
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 16px 18px;
+}
+
+.dialogo > h2 {
+  font-size: 16px;
+  color: var(--verde);
+  margin-bottom: 10px;
+}
+
+.dialogo-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.lista-simples {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lista-simples li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.periodo {
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.periodo > h3 {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+/* ---- Celular: campos lado a lado empilham; o balão da ajuda vira uma faixa no pé da tela ---- */
+
+@media (max-width: 599px) {
+  .grade-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .balao {
+    position: fixed;
+    top: auto;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+    max-width: none;
+    z-index: 20;
+  }
+}
+
+/* ---- Telas estreitas: as colunas empilham, com o resumo no topo (§9.1) ---- */
+
+@media (max-width: 1023px) {
+  .principal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .coluna-direita {
+    display: contents;
+  }
+
+  .resumo {
+    order: -1;
+  }
+
+  .marca {
+    flex-basis: 100%;
+  }
+}
+
+.rotulo-estatico {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--discreto);
+}
+
+.resumo-metodologia {
+  margin: 2px 0 0;
+}

@@ -3,7 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Apura</title>
+    <meta name="color-scheme" content="light dark" />
+    <title>Apura · Sistema de Cálculos Judiciais</title>
+    <script>
+      // Tema fixado pelo usuário (preferência "tema" em apura.preferencias): marcado na raiz
+      // antes do CSS e do app, para a página não piscar no tema do sistema. O App mantém em dia.
+      try {
+        var preferencias = JSON.parse(localStorage.getItem("apura.preferencias") || "{}");
+        if (preferencias.tema === "claro" || preferencias.tema === "escuro") {
+          document.documentElement.setAttribute(
+            "data-theme",
+            preferencias.tema === "claro" ? "light" : "dark",
+          );
+        }
+      } catch (erro) {
+        // sem armazenamento (bloqueado ou ausente): vale o tema do sistema
+      }
+    </script>
   </head>
   <body>
     <div id="raiz"></div>
