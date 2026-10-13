@@ -46,6 +46,16 @@ describe("lerDecimal (entrada em pt-BR, §9.4)", () => {
     expect(lerDecimal("--1")).toEqual({ ok: false, erro });
   });
 
+  it('recusa grupo de milhar que começa por zero ("0.500" não é 500)', () => {
+    const erro = "Use vírgula para os centavos (ex.: 1.234,56 ou 1234,56).";
+    expect(lerDecimal("0.500")).toEqual({ ok: false, erro });
+    expect(lerDecimal("0.075")).toEqual({ ok: false, erro });
+    expect(lerDecimal("-0.500")).toEqual({ ok: false, erro });
+    expect(lerDecimal("0,500")).toEqual({ ok: true, valor: "0.500" });
+    expect(lerDecimal("1.000")).toEqual({ ok: true, valor: "1000" });
+    expect(lerDecimal("10.000,50")).toEqual({ ok: true, valor: "10000.50" });
+  });
+
   it("vazio pede um número", () => {
     expect(lerDecimal("")).toEqual({ ok: false, erro: "Informe um número." });
     expect(lerDecimal("   ")).toEqual({ ok: false, erro: "Informe um número." });

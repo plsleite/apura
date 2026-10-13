@@ -11,7 +11,7 @@ import type { Competencia, DataISO, TextoDecimal } from "../compartilhado/tipos.
 export type Leitura<T> = { ok: true; valor: T } | { ok: false; erro: string };
 
 const SO_DIGITOS = /^\d+$/;
-const COM_MILHARES = /^\d{1,3}(\.\d{3})+$/;
+const COM_MILHARES = /^[1-9]\d{0,2}(\.\d{3})+$/;
 const ERRO_DE_FORMATO: Leitura<never> = {
   ok: false,
   erro: "Use vírgula para os centavos (ex.: 1.234,56 ou 1234,56).",
@@ -20,7 +20,8 @@ const ERRO_DE_FORMATO: Leitura<never> = {
 /**
  * Lê um número em pt-BR: "1.234,56", "1234,56", "1.234", "1234", "0,3", ",5", com sinal, e ignora
  * "R$", "%" e espaços. O ponto só vale como separador de milhar (grupos de três dígitos): "1.5" é
- * recusado, para nunca ler R$ 1,50 como R$ 15,00. Devolve o texto decimal com ponto do motor.
+ * recusado, para nunca ler R$ 1,50 como R$ 15,00, e o primeiro grupo não começa por 0 ("0.500" é
+ * recusado, nunca lido como 500). Devolve o texto decimal com ponto do motor.
  */
 export function lerDecimal(texto: string): Leitura<TextoDecimal> {
   const limpo = texto.replace(/R\$|%|\s/g, "");
