@@ -661,13 +661,14 @@ Metodologia de encargos ⓘ
 
 ### 17.4 Etiquetas das linhas numa linha só
 
-A linha das tabelas nunca quebra. A célula do vencimento mostra a data, a descrição (13º, férias) cortada com reticências (`white-space: nowrap; overflow: hidden; text-overflow: ellipsis`; inteira no `title`) e um botão com **uma etiqueta só**, a mais importante, na ordem "não computada"/"não computado" → "vincenda" → "valor informado" → "ajustada"/"ajustado", seguida de "+N" quando houver mais (ex.: "vincenda +2").
+A linha das tabelas nunca quebra. A célula do vencimento mostra a data, a descrição (13º, férias) e **uma etiqueta só**, a mais importante, na ordem "não computada"/"não computado" → "vincenda" → "valor informado" → "ajustada"/"ajustado", seguida de "+N" quando houver mais (ex.: "vincenda +2").
 
-- O botão abre o balão ⓘ de `componentes/Ajuda.tsx` (clique, toque, Enter ou Espaço; Esc ou clique fora fecham; no celular, faixa no pé da tela), com a descrição inteira e todas as etiquetas, cada uma com a sua explicação (os textos das explicações da fase 5). O componente ganha a opção de mostrar outro conteúdo no lugar do "ⓘ".
-- Nome acessível do botão: "Situação da prestação de 05/09/2026: vincenda, valor informado, ajustada" ("Situação do pagamento de …" nos pagamentos).
-- Linha com descrição e sem etiqueta: sem botão; a descrição inteira fica no `title` e no lápis.
+- **A descrição encolhe até caber** (decisão de 13/10/2026, tomada depois da conferência no navegador): a coluna da direita tem cerca de 730 px numa tela de 1366 px, e as colunas de números ocupam quase tudo; com a descrição em largura fixa, a tabela passava 49 px da coluna e o lápis e o ✕ saíam da vista. A descrição fica com o espaço que sobra (de 1,5 a 9 letras de largura; com uma descrição na tabela, a primeira coluna prefere 18em, o que dá cerca de "13º salári…" em 1366 px), cortada com reticências e inteira no `title`; com as colunas empilhadas (abaixo de 1024 px), mostra o tamanho cheio, porque a tabela já rola sozinha no celular. O lápis e o ✕ nunca saem da vista por causa dela.
+- **A descrição e a etiqueta formam um botão só**, que abre o balão de `componentes/Ajuda.tsx` (clique, toque, Enter ou Espaço; Esc, clique fora ou rolar a página fecham; no celular, faixa no pé da tela), com a descrição inteira e todas as etiquetas, cada uma com a sua explicação (os textos das explicações da fase 5). O balão flutua em posição fixa junto do botão, para não ficar preso na rolagem da tabela. O componente ganha a opção de outro conteúdo e outro nome no botão e o modo flutuante.
+- Nome acessível do botão: "Situação da prestação de 05/09/2026: vincenda, valor informado, ajustada" ("Situação do pagamento de …" nos pagamentos); numa linha só com descrição, sem etiqueta, o botão é a própria descrição: "Descrição da prestação de 20/07/2026: Férias de 2026, conforme o acordo homologado". Linha sem descrição e sem etiqueta: sem botão.
 - Sem rolagem dentro da célula, sem dependência nova e sem `popover` ou `<dialog>` nativos (o jsdom não os implementa).
-- Testes: os que procuravam as etiquetas pelo texto passam a procurar o botão pelo nome; testes novos para a ordem, o "+N", o balão com tudo e o `title` da descrição. "Uma linha só" é conferida no navegador (o jsdom não mede altura).
+- Na memória da linha, quando a frase do motor já começa por "Base até/desde …" (base por períodos), a tela não repete o rótulo "Base:".
+- Testes: os que procuravam as etiquetas pelo texto passam a procurar o botão pelo nome; testes novos para a ordem, o "+N", o balão com tudo, o `title` da descrição e a linha só com descrição. "Uma linha só" e a largura da tabela são conferidas no navegador (o jsdom não mede).
 
 ### 17.5 Registro
 
