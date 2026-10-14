@@ -1,5 +1,13 @@
-import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
-import type { Lancamento, LancamentoCalculado } from "../compartilhado/tipos.ts";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
+import type { Calculo, Lancamento, LancamentoCalculado } from "../compartilhado/tipos.ts";
 import { compararIndicesUsados } from "../indices/congelar.ts";
 import { metodologiaDaOpcao } from "../metodologias/padrao.ts";
 import { calcular } from "../motor/calcular.ts";
@@ -19,6 +27,7 @@ import { CHAVE_RECENTES, removerChave } from "./armazenamento.ts";
 import { BarraSuperior } from "./BarraSuperior.tsx";
 import { Avisos } from "./componentes/Avisos.tsx";
 import { Dialogo } from "./componentes/Dialogo.tsx";
+import { Reserva } from "./componentes/Reserva.tsx";
 import {
   estadoInicial,
   novoCalculo,
@@ -42,6 +51,7 @@ import {
   type Recente,
 } from "./recentes.ts";
 import { Rodape } from "./Rodape.tsx";
+import { TelaDeErro } from "./TelaDeErro.tsx";
 import { VERSAO } from "./versao.ts";
 import { Indicadores } from "./tabelas/Indicadores.tsx";
 import { Personalizar } from "./tabelas/Personalizar.tsx";
@@ -54,11 +64,34 @@ import { LotePrestacoesSecao } from "./secoes/LotePrestacoes.tsx";
 import { Processo } from "./secoes/Processo.tsx";
 
 /**
- * Tela única em duas colunas (§9): esquerda, dados do caso e lançamentos em lote; direita,
- * resultado e lançamentos individuais. Recálculo a cada alteração, sem botão "Calcular" (§4.3).
- * O `ambiente` é injetável para os testes de componente.
+ * O Apura, com a tela de erro de reserva em volta (§18.6): um defeito do programa ao montar a tela
+ * troca a página pela reserva, que oferece salvar o último cálculo exibido. O `ambiente` é
+ * injetável para os testes de componente.
  */
 export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambiente }) {
+  const ultimoCalculo = useRef<Calculo | null>(null);
+  const aoExibir = useCallback((calculo: Calculo) => {
+    ultimoCalculo.current = calculo;
+  }, []);
+  return (
+    <Reserva reserva={<TelaDeErro ambiente={ambiente} calculo={() => ultimoCalculo.current} />}>
+      <Tela ambiente={ambiente} aoExibir={aoExibir} />
+    </Reserva>
+  );
+}
+
+/**
+ * Tela única em duas colunas (§9): esquerda, dados do caso e lançamentos em lote; direita,
+ * resultado e lançamentos individuais. Recálculo a cada alteração, sem botão "Calcular" (§4.3).
+ */
+function Tela({
+  ambiente,
+  aoExibir,
+}: {
+  ambiente: Ambiente;
+  /** recebe cada cálculo exibido (para a tela de erro de reserva salvá-lo) */
+  aoExibir: (calculo: Calculo) => void;
+}) {
   const armazenamento = ambiente.armazenamento();
   const [preferencias, setPreferencias] = useState(() => lerPreferencias(armazenamento));
   // Tema (decisão de 12/10/2026): "sistema" deixa o CSS seguir prefers-color-scheme; "claro" e
@@ -85,6 +118,8 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
     () => calcular(estado.calculo, estado.tabela),
     [estado.calculo, estado.tabela],
   );
+  // só depois de exibido: se o cálculo novo derrubar a tela, fica guardado o anterior
+  useEffect(() => aoExibir(estado.calculo), [aoExibir, estado.calculo]);
   const agora = () => ambiente.agora();
   // o que falta na base para apurar as prestações lançadas: aviso no topo e campo em vermelho
   const faltas = faltasDaBase(estado.calculo);
@@ -248,13 +283,21 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             </button>
           </nav>
           <Avisos avisos={avisosDaTela} titulo="Antes de juntar, confira:" />
-          <Relatorio
-            calculo={estado.calculo}
-            resultado={resultado}
-            hoje={ambiente.hoje()}
-            versao={VERSAO}
-            focar
-          />
+          <Reserva
+            reserva={
+              <p className="relatorio-erro" role="alert">
+                Não foi possível montar o relatório deste cálculo.
+              </p>
+            }
+          >
+            <Relatorio
+              calculo={estado.calculo}
+              resultado={resultado}
+              hoje={ambiente.hoje()}
+              versao={VERSAO}
+              focar
+            />
+          </Reserva>
         </main>
       ) : (
         <p className="so-na-impressao">

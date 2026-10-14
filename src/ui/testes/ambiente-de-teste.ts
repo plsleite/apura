@@ -58,6 +58,8 @@ export interface AmbienteDeTeste extends Ambiente {
   congelamentos: () => number;
   /** quantas vezes a tela pediu a impressão do navegador */
   impressoes: () => number;
+  /** quantas vezes a tela de erro pediu para recarregar a página */
+  recargas: () => number;
 }
 
 export function ambienteDeTeste(
@@ -77,6 +79,7 @@ export function ambienteDeTeste(
   let contador = 0;
   let congelamentos = 0;
   let impressoes = 0;
+  let recargas = 0;
   return {
     congelar: () => {
       congelamentos++;
@@ -93,9 +96,13 @@ export function ambienteDeTeste(
     imprimir: () => {
       impressoes++;
     },
+    recarregar: () => {
+      recargas++;
+    },
     baixados,
     armazenado,
     congelamentos: () => congelamentos,
     impressoes: () => impressoes,
+    recargas: () => recargas,
   };
 }

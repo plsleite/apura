@@ -28,6 +28,8 @@ export interface Ambiente {
   baixar: (nome: string, conteudo: string) => void;
   /** abre a impressão do navegador ("Imprimir / Salvar PDF", §18.1) */
   imprimir: () => void;
+  /** recarrega a página (tela de erro de reserva, §18.6) */
+  recarregar: () => void;
 }
 
 function armazenamentoDoNavegador(): Storage | null {
@@ -61,5 +63,6 @@ export function ambientePadrao(): Ambiente {
     armazenamento: armazenamentoDoNavegador,
     baixar: baixarPeloNavegador,
     imprimir: () => window.print(),
+    recarregar: () => window.location.reload(),
   };
 }

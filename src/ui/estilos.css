@@ -1099,3 +1099,29 @@ td.dica {
     padding: 0;
   }
 }
+
+/* ---- Tela de erro de reserva (§18.6) ---- */
+
+.tela-de-erro {
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 20px 24px;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-top: 4px solid var(--vermelho);
+  border-radius: 8px;
+}
+
+.tela-de-erro h1 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.relatorio-erro {
+  margin: 0;
+  padding: 16px;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-left: 4px solid var(--vermelho);
+  border-radius: 8px;
+}
