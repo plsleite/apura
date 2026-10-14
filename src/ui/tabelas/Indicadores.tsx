@@ -3,6 +3,13 @@ import { decimal, ZERO } from "../../compartilhado/decimal.ts";
 import { formatarData, formatarMoeda } from "../../compartilhado/formatacao.ts";
 import type { DataISO, Totais } from "../../compartilhado/tipos.ts";
 
+/** O total geral como o indicador o mostra: R$ 0,00 quando não há dívida (§6.6). */
+export function totalGeralExibido(totais: Totais): string {
+  return decimal(totais.totalDevido).lte(ZERO)
+    ? formatarMoeda(ZERO)
+    : formatarMoeda(decimal(totais.totalGeral));
+}
+
 /**
  * Os cinco indicadores (§9.3), na ordem: prestações atualizadas · amortizações atualizadas ·
  * total devido na data (destaque) · multa e honorários · total geral (destaque). Dívida negativa
@@ -60,7 +67,7 @@ export function Indicadores({
       </div>
       <div className="indicador destaque">
         <dt>Total geral</dt>
-        <dd>{valor(semDivida ? formatarMoeda(ZERO) : moeda(totais.totalGeral))}</dd>
+        <dd>{valor(totalGeralExibido(totais))}</dd>
       </div>
     </dl>
   );

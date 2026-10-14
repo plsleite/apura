@@ -25,6 +25,7 @@ import {
 } from "./arquivo.ts";
 import { CHAVE_RECENTES, removerChave } from "./armazenamento.ts";
 import { BarraSuperior } from "./BarraSuperior.tsx";
+import { Anuncios } from "./componentes/Anuncios.tsx";
 import { Avisos } from "./componentes/Avisos.tsx";
 import { Dialogo } from "./componentes/Dialogo.tsx";
 import { Reserva } from "./componentes/Reserva.tsx";
@@ -53,7 +54,7 @@ import {
 import { Rodape } from "./Rodape.tsx";
 import { TelaDeErro } from "./TelaDeErro.tsx";
 import { VERSAO } from "./versao.ts";
-import { Indicadores } from "./tabelas/Indicadores.tsx";
+import { Indicadores, totalGeralExibido } from "./tabelas/Indicadores.tsx";
 import { Personalizar } from "./tabelas/Personalizar.tsx";
 import { TabelaLancamentos, type LinhaDaTabela } from "./tabelas/TabelaLancamentos.tsx";
 import { BaseDosAlimentos } from "./secoes/Base.tsx";
@@ -272,6 +273,7 @@ function Tela({
         tema={preferencias.tema}
         aoMudarTema={(tema) => mudarPreferencias({ tema })}
       />
+      <Anuncios totalGeral={totalGeralExibido(resultado.totais)} avisos={avisosDaTela.length} />
       {vendoRelatorio ? (
         <main className="principal-relatorio">
           <nav className="faixa-de-acoes" aria-label="Ações do relatório">
