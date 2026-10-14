@@ -76,7 +76,8 @@ rodapé (`tabelas.ts`), a matriz de índices (`matriz.ts`) e o motivo do botão 
 reajustes do valor fixo estruturados (`LancamentoCalculado.reajustes`), sem mudar números; a
 impressão (`imprimir`) e a recarga (`recarregar`) entram pelo `Ambiente`; tela de erro de reserva
 (`componentes/Reserva.tsx`, `TelaDeErro.tsx`), região viva (`componentes/Anuncios.tsx`, fora das
-colunas) e lápis/✕ presos à direita das tabelas (935 testes passando e 10 pulados).
+colunas) e lápis/✕ presos à direita das tabelas; a raiz do relatório tem a classe `demonstrativo`
+(a `relatorio` é do botão da barra) (939 testes passando e 10 pulados).
 Próxima: fase 7 (publicação). A tabela de fases do roteiro é a referência; atualize-a e esta seção
 ao concluir cada fase.
 
