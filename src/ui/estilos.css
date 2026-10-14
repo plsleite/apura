@@ -578,7 +578,7 @@ table {
 
 th,
 td {
-  padding: 5px 6px;
+  padding: 5px 5px;
   border-bottom: 1px solid var(--linha);
   text-align: right;
   white-space: nowrap;
@@ -836,6 +836,32 @@ td.dica {
 
 .acoes-linha {
   white-space: nowrap;
+}
+
+/* O lápis e o ✕ ficam sempre à vista (fase 6, §18.6): a coluna das ações fica presa à borda
+   direita da tabela, e só os números rolam por baixo dela quando a coluna da direita é estreita
+   (valores com milhar pedem cerca de 720 px; a coluna tem 730 px numa tela de 1366 px e 540 px
+   numa de 1024 px). */
+.tabela-rolagem thead th:last-child,
+.tabela-rolagem td.acoes-linha,
+.tabela-rolagem tfoot td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.35);
+}
+
+.tabela-rolagem td.acoes-linha {
+  background: var(--superficie);
+}
+
+.tabela-rolagem tfoot td:last-child {
+  background: var(--linha-alternada);
+}
+
+/* a linha nova é tingida: a célula fixa do ✓/✕ acompanha o tom dela */
+.tabela-rolagem tr.linha-nova td.acoes-linha {
+  background: var(--linha-alternada);
 }
 
 .botao-icone {
