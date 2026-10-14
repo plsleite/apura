@@ -109,3 +109,24 @@ export function metodologiaDeTresPeriodos(): Metodologia {
     ],
   };
 }
+
+/**
+ * Um cálculo com uma linha de cada tipo: prestação comum, com valor informado, com encargos
+ * próprios e vincenda; pagamento computado e pagamento posterior à data do cálculo.
+ */
+export function calculoCompleto(mudancas: Partial<Calculo> = {}): Calculo {
+  return calculoDeTeste({
+    lancamentos: [
+      prestacao("2024-07-05"),
+      prestacao("2024-10-05", { valorInformado: "600.00", editado: true }),
+      prestacao("2025-03-05", {
+        encargos: { termoInicialCorrecao: "2025-04-10", termoInicialJuros: "2025-05-01" },
+        editado: true,
+      }),
+      prestacao("2026-11-05"),
+      pagamento("2024-10-10", "200.00"),
+      pagamento("2026-11-10", "150.00"),
+    ],
+    ...mudancas,
+  });
+}
