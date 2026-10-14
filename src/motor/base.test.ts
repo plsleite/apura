@@ -471,6 +471,70 @@ describe("base em valor fixo (§6.3)", () => {
       expect(r.indicesUsados).toHaveLength(12);
     });
 
+    it("devolve os reajustes estruturados, para o relatório descrever a base (§18.4)", () => {
+      expect(apurarValorBase(prestacao("2026-09-15"), base, tabela, 2).reajustes).toEqual([
+        {
+          em: "2025-03",
+          indice: "IPCA",
+          de: "2024-03",
+          ate: "2025-02",
+          situacao: "aplicado",
+          percentual: "5.0576",
+          valor: "525.29",
+        },
+        {
+          em: "2026-03",
+          indice: "IPCA",
+          de: "2025-03",
+          ate: "2026-02",
+          situacao: "aplicado",
+          percentual: "3.8125",
+          valor: "545.32",
+        },
+      ]);
+      // antes do primeiro reajuste: lista vazia
+      expect(apurarValorBase(prestacao("2025-02-15"), base, tabela, 2).reajustes).toEqual([]);
+      // acumulado não positivo: "mantido", com o percentual
+      const igpm: FormaDaBase = {
+        tipo: "valorFixo",
+        valor: "451.91",
+        dataFixacao: "2017-01-10",
+        indiceReajuste: "IGP-M",
+        mesReajuste: 1,
+      };
+      expect(apurarValorBase(prestacao("2018-01-10"), igpm, tabelaIgpm(), 2).reajustes).toEqual([
+        {
+          em: "2018-01",
+          indice: "IGP-M",
+          de: "2017-01",
+          ate: "2017-12",
+          situacao: "mantido",
+          percentual: "-0.5326",
+          valor: "451.91",
+        },
+      ]);
+      // índice faltante no meio da janela: "naoAplicado", com os meses que faltaram
+      const comLacuna = tabelaRegimeNovo();
+      delete comLacuna.series["433"]?.["2025-05"];
+      expect(apurarValorBase(prestacao("2026-09-15"), base, comLacuna, 2).reajustes?.[1]).toEqual({
+        em: "2026-03",
+        indice: "IPCA",
+        de: "2025-03",
+        ate: "2026-02",
+        situacao: "naoAplicado",
+        valor: "525.29",
+        faltantes: ["2025-05"],
+        aindaNaoDivulgados: false,
+      });
+      // as outras formas não têm reajustes por índice
+      const semReajuste: FormaDaBase = { ...base, indiceReajuste: "nenhum" };
+      expect(apurarValorBase(prestacao("2026-09-15"), semReajuste, tabela, 2).reajustes).toBe(
+        undefined,
+      );
+      const porSm: FormaDaBase = { tipo: "percentualSalarioMinimo", percentual: "30" };
+      expect(apurarValorBase(prestacao("2026-09-15"), porSm, tabela, 2).reajustes).toBe(undefined);
+    });
+
     it("mês do reajuste inválido: valor fixado, com aviso", () => {
       const r = apurarValorBase(prestacao("2026-09-15"), { ...base, mesReajuste: 13 }, tabela, 2);
       expect(r.valor?.toFixed(2)).toBe("500.00");
@@ -643,6 +707,21 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
       );
       expect(r.mesesSemIndice).toEqual([{ serie: "433", competencia: "2026-10" }]);
       expect(r.indicesUsados).toEqual([]);
+    });
+
+    it("reajuste não aplicado por mês ainda não divulgado: marcado nos reajustes estruturados", () => {
+      expect(apurarValorBase(prestacao("2026-11-15"), base, comCalendario(), 2).reajustes).toEqual([
+        {
+          em: "2026-11",
+          indice: "IPCA",
+          de: "2025-11",
+          ate: "2026-10",
+          situacao: "naoAplicado",
+          valor: "500.00",
+          faltantes: ["2026-10"],
+          aindaNaoDivulgados: true,
+        },
+      ]);
     });
 
     it("dois meses ainda não divulgados saem listados na mesma frase", () => {

@@ -6,7 +6,8 @@ import type { TabelaIndices } from "../compartilhado/tipos.ts";
 /**
  * Tudo o que a tela precisa do mundo exterior, num objeto só, para que os testes de componente
  * troquem cada peça por uma versão falsa: a cópia publicada dos índices (congelada por cálculo),
- * o relógio, a geração de ids, o armazenamento do navegador e o download de arquivos. A tela
+ * o relógio, a geração de ids, o armazenamento do navegador, o download de arquivos e a
+ * impressão. A tela
  * nunca acessa a rede (§14 do design).
  */
 export interface Ambiente {
@@ -25,6 +26,10 @@ export interface Ambiente {
   armazenamento: () => Storage | null;
   /** entrega ao usuário um arquivo de texto com o nome dado (download) */
   baixar: (nome: string, conteudo: string) => void;
+  /** abre a impressão do navegador ("Imprimir / Salvar PDF", §18.1) */
+  imprimir: () => void;
+  /** recarrega a página (tela de erro de reserva, §18.6) */
+  recarregar: () => void;
 }
 
 function armazenamentoDoNavegador(): Storage | null {
@@ -57,5 +62,7 @@ export function ambientePadrao(): Ambiente {
     novoId: () => crypto.randomUUID(),
     armazenamento: armazenamentoDoNavegador,
     baixar: baixarPeloNavegador,
+    imprimir: () => window.print(),
+    recarregar: () => window.location.reload(),
   };
 }

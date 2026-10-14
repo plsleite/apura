@@ -585,6 +585,46 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
     base: baseUnica(forma),
   });
 
+  it("a prestação apurada pelo valor fixo com reajuste por índice traz os reajustes no resultado (§18.4); as demais não", () => {
+    const forma: FormaDaBase = {
+      tipo: "valorFixo",
+      valor: "500.00",
+      dataFixacao: "2024-03-15",
+      indiceReajuste: "IPCA",
+      mesReajuste: 3,
+    };
+    const r = calcular(
+      comBase(forma, [
+        semValorInformado("p-2025-04", "2025-04-15"),
+        semValorInformado("p-2024-04", "2024-04-15"),
+        semValorInformado("p-2025-05", "2025-05-15", { valorInformado: "600.00" }),
+      ]),
+      tabelaRegimeNovo(),
+    );
+    expect(r.lancamentos[0]?.reajustes).toEqual([
+      {
+        em: "2025-03",
+        indice: "IPCA",
+        de: "2024-03",
+        ate: "2025-02",
+        situacao: "aplicado",
+        percentual: "5.0576",
+        valor: "525.29",
+      },
+    ]);
+    expect(r.lancamentos[0]?.valorBase).toBe("525.29");
+    // antes do primeiro reajuste: lista vazia; valor informado à mão: sem o campo
+    expect(r.lancamentos[1]?.reajustes).toEqual([]);
+    expect(r.lancamentos[2]).not.toHaveProperty("reajustes");
+    const semIndice = calcular(
+      comBase({ tipo: "percentualSalarioMinimo", percentual: "30" }, [
+        semValorInformado("p-2025-04", "2025-04-15"),
+      ]),
+      tabelaRegimeNovo(),
+    );
+    expect(semIndice.lancamentos[0]).not.toHaveProperty("reajustes");
+  });
+
   it("pagamento posterior à data de elaboração fica fora dos totais, com aviso no lançamento e no resumo", () => {
     const futuro: Lancamento = { ...amortizacao, id: "a-2018-06", data: "2018-06-10" };
     const r = calcular(calculoCom([prestacao, futuro]), tabelaIgpm());

@@ -11,6 +11,7 @@ import {
   CEM,
   decimal,
   decimalOuNulo,
+  paraTexto,
   UM,
   type Decimal,
 } from "../compartilhado/decimal.ts";
@@ -31,6 +32,7 @@ import type {
   Lancamento,
   NomeIndice,
   PeriodoDaBase,
+  ReajusteDaBase,
   TabelaIndices,
 } from "../compartilhado/tipos.ts";
 import { aindaNaoDivulgado, divulgacaoPrevista } from "../compartilhado/divulgacao.ts";
@@ -51,6 +53,8 @@ export interface ValorBaseApurado {
   /** meses que faltaram na tabela de índices (salário mínimo ainda não publicado, índice de reajuste ausente) */
   mesesSemIndice: MesSemIndice[];
   avisos: string[];
+  /** reajustes do valor fixo por índice (só nessa forma; vazio antes do primeiro), para o relatório */
+  reajustes?: ReajusteDaBase[];
 }
 
 const SALARIO_MINIMO = CODIGO_DA_SERIE.SM;
@@ -302,6 +306,7 @@ function porIndiceAcumulado(
   let inicioJanela = mesFixacao;
   let vigente = valorFixado;
   const aplicados: string[] = [];
+  const reajustes: ReajusteDaBase[] = [];
   const indicesUsados: IndiceUsado[] = [];
   const mesesSemIndice: MesSemIndice[] = [];
   const avisos: string[] = [];
@@ -335,6 +340,16 @@ function porIndiceAcumulado(
         );
       }
       mesesSemIndice.push(...faltantes.map((m) => ({ serie, competencia: m })));
+      reajustes.push({
+        em: reajuste,
+        indice: nome,
+        de: inicioJanela,
+        ate: fimJanela,
+        situacao: "naoAplicado",
+        valor: paraTexto(vigente, valorCasas),
+        faltantes,
+        aindaNaoDivulgados: faltantes.every((m) => aindaNaoDivulgado(tabela, serie, m)),
+      });
       naoAplicado = `reajuste de ${formatarCompetencia(reajuste)} não aplicado: ${nome} de ${lista} não disponível`;
       break;
     }
@@ -346,7 +361,8 @@ function porIndiceAcumulado(
       indicesUsados.push(usado);
     }
     const janela = `${nome} de ${formatarCompetencia(inicioJanela)} a ${formatarCompetencia(fimJanela)}: ${formatarPercentual(acumulado.minus(UM).times(CEM), 4)}`;
-    if (acumulado.lte(UM)) {
+    const mantido = acumulado.lte(UM);
+    if (mantido) {
       aplicados.push(
         `em ${formatarCompetencia(reajuste)} (${janela}, acumulado não positivo: valor mantido)`,
       );
@@ -354,6 +370,15 @@ function porIndiceAcumulado(
       vigente = arredondar(vigente.times(acumulado), valorCasas);
       aplicados.push(`em ${formatarCompetencia(reajuste)} (${janela})`);
     }
+    reajustes.push({
+      em: reajuste,
+      indice: nome,
+      de: inicioJanela,
+      ate: fimJanela,
+      situacao: mantido ? "mantido" : "aplicado",
+      percentual: paraTexto(acumulado.minus(UM).times(CEM), 4),
+      valor: paraTexto(vigente, valorCasas),
+    });
     inicioJanela = reajuste;
     reajuste = somarMeses(reajuste, 12);
   }
@@ -366,7 +391,7 @@ function porIndiceAcumulado(
     const nota = naoAplicado === null ? "" : `; ${naoAplicado}`;
     memoria = `${formatarMoeda(valorFixado)} fixados em ${fixacao}, reajustados ${aplicados.join(" e ")} = ${formatarMoeda(vigente)}${nota}`;
   }
-  return { valor: vigente, memoria, indicesUsados, mesesSemIndice, avisos };
+  return { valor: vigente, memoria, indicesUsados, mesesSemIndice, avisos, reajustes };
 }
 
 function porValorFixo(

@@ -342,7 +342,7 @@ Modo comercial (meio para cima) nos valores: valor-base (2 casas), corrigido (2)
 
 Confirmar com colegas ou com a contadoria do TJMS antes de implementar a regra correspondente, ou com gabaritos do SAJ quando chegarem. Os padrões atuais são os decididos neste documento.
 
-1. Correção pro rata geométrica no mês do lançamento e meses inteiros até o último índice divulgado (confirmado no SAJ 2018); pro rata no mês final quando o índice existir (a confirmar).
+1. Correção pro rata geométrica no mês do lançamento e meses inteiros até o último índice divulgado (confirmado no SAJ 2018); pro rata no mês final quando o índice existir (decidido em 13/10/2026; ver nota da fase 6).
 2. Juros de 1% ao mês rateados por mês-calendário contando as duas pontas, sobre o valor corrigido (confirmado no SAJ 2018).
 3. Transição em 30/08/2024: índice de agosto/2024 pelo regime antigo; juros antigos até 29/08; taxa legal de agosto em 30 e 31/08. Contagem de dias da taxa legal pela metodologia do BCB, diferente da contagem do SAJ no regime antigo (decidido em 11/10/2026; ver nota abaixo).
 4. Taxa legal: série 29543, soma simples, pro rata por dias corridos, sobre o valor corrigido pelo IPCA, conferida na Calculadora do Cidadão do BCB (decidido em 11/10/2026; ver nota abaixo).
@@ -358,6 +358,8 @@ Confirmar com colegas ou com a contadoria do TJMS antes de implementar a regra c
 **Decisões registradas em 11/10/2026 (fase 2).** Pontos 3 e 4: o SAJ Tribunais não calcula a taxa legal (segue IGP-M e 1% ao mês); o gabarito do regime novo é a Calculadora do Cidadão do BCB, que conta o dia inicial e não conta o dia final; na transição, 30/08/2024 conta. Ponto 5: SELIC única capitalizada mês a mês como índice de correção, sem juros, como o SAJ. Para lançamento no próprio mês do cálculo, a execução adotou ratear o valor parcial da SELIC pelos dias decorridos, (dia do cálculo − dia do lançamento) ÷ dia do cálculo, regra confirmada pelo responsável em 11/10/2026. Ponto 8: confirmado. Ponto 9: fator e percentual multiplicam com precisão integral e são impressos com 6 casas, como o SAJ. Ponto 12: piso mantido (STJ, REsp 1.265.580/RS), decidido sobre o fator bruto; o SAJ não aplica piso. Observação: a tabela do SAJ traz IGP-M de dez/2025 = −0,02 (BCB: −0,01).
 
 **Decisões registradas em 11/10/2026 (fase 3).** Ponto 6: regra da §6.3 confirmada e completada: primeiro reajuste 12 meses após a fixação (ou na primeira ocorrência do mês escolhido, com o acumulado desde a fixação), acumulado com precisão integral impresso com 4 casas, valor arredondado a 2 casas a cada reajuste, acumulado negativo não reduz, reajuste pelo salário mínimo pela proporção do mês do vencimento sem usar o mês de reajuste, prestação anterior à fixação pelo valor fixado com aviso. Ponto 7: método do SAJ confirmado como padrão único. Ponto 9 (complemento): os juros incidem sobre o corrigido sem arredondar, como o SAJ (relatório de 11/10/2026 com 22 prestações, duas delas na fronteira do centavo). Ponto 10: IGP-M confirmado como padrão do período antigo, com INPC, IPCA e SELIC única como alternativas; a SELIC já inclui correção e juros, e o motor avisa quando um período a combina com índice de correção (um relatório do SAJ de 11/10/2026 que usa a SELIC como indexador e como juros conta a SELIC dos meses intermediários duas vezes, combinação que o Apura não oferece; a coluna de correção dele coincide com a SELIC única do Apura). Ponto 8 (confirmação adicional): no mesmo relatório, os honorários do SAJ incidem sobre atualização menos amortização, a base do Apura. Ponto 11: 13º e férias como prestação avulsa com o rendimento do evento informado; o rendimento é sempre informado (padrão ou do mês), sem reajuste automático. Lacunas fechadas: competência = mês do vencimento; lote de pagamentos pula meses já lançados; salário mínimo ainda não publicado → último publicado; a marca "editado" vale só para prestações com valor informado; o resultado traz `situacao` e `editado` em cada linha. Gabaritos: dois relatórios do SAJ de 11/10/2026 reproduzidos centavo a centavo, um com base "valor informado" (R$ 1.500,00 × 0,30, sem reajuste, como caso de % dos rendimentos) e outro com INPC, base "salário mínimo do período" e pagamentos mensais (tabela de INPC igual à do BCB); o SAJ não tem valor fixo com reajuste por índice, cujo caso é conferido na Calculadora do Cidadão e por aritmética independente.
+
+**Decisão registrada em 13/10/2026 (fase 6).** Ponto 1 (parte final): confirmada pelo responsável a regra já aplicada pelo motor desde a fase 1 (§6.4, passo 3): quando a data de elaboração é passada e o índice do mês dela já existe, esse mês entra pro rata geométrico pelos dias decorridos (`dia ÷ diasDoMes`). Exemplo: cálculo com data de 15/08/2026 e IPCA de ago/2026 de 0,50% já publicado: fator do mês (1,005)^(15/31). Com a data de elaboração igual à data de hoje, o caso não ocorre (o índice do mês corrente ainda não saiu). O relatório descreve a regra quando ela ocorre (§18.5). Com isso, não resta ponto de validação jurídica aberto na §7.
 
 ---
 
@@ -433,6 +435,8 @@ Barra superior: nome do sistema ("Apura · Sistema de Cálculos Judiciais · DPE
 ---
 
 ## 10. Relatório e PDF
+
+Decisões da fase 6 (13/10/2026), que completam esta seção: §18.
 
 ### 10.1 Estrutura (mockup v6 aprovado)
 
@@ -516,7 +520,7 @@ apura/
   src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
   src/metodologias/         lei-14905-2024.v1.json · igpm-juros-1.v1.json · padrao.ts
   src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ · secoes/ · tabelas/ · componentes/ · testes/
-  src/relatorio/            Relatorio.tsx · metodologia.ts · matriz-indices.tsx · impressao.css
+  src/relatorio/            texto.ts · metodologia.ts · tabelas.ts · matriz.ts · bloqueio.ts · Relatorio.tsx · relatorio.css · testes/
 ```
 
 ### 12.3 CLAUDE.md
@@ -673,6 +677,118 @@ A linha das tabelas nunca quebra. A célula do vencimento mostra a data, a descr
 ### 17.5 Registro
 
 Fase "5b · Ajustes da interface depois do uso" na tabela do roteiro, entre a 5 e a 6, com plano próprio em `docs/superpowers/plans/2026-10-13-fase-5b-ajustes-da-interface.md`. A fase 5 continua concluída; a 6 continua com plano a escrever.
+
+---
+
+## 18. Relatório e PDF: decisões da fase 6
+
+Decididas pelo responsável em 13/10/2026, no brainstorming da fase 6, sobre o que a §10 deixava aberto. Onde esta seção e as anteriores divergirem, vale esta. Os exemplos usam valores ilustrativos; os números exatos ficam nos testes, com a tabela fixa de 2024–2026.
+
+### 18.1 Onde o relatório abre
+
+- **Na mesma página.** "Relatório / PDF" troca as duas colunas pelo relatório; a barra superior continua. Logo abaixo dela, uma faixa de ações com "← Voltar ao cálculo" e "Imprimir / Salvar PDF" (impressão do navegador, chamada pelo `Ambiente`, como o download). Ao voltar, a tela de cálculo reaparece como estava, e o foco volta ao botão "Relatório / PDF". Nada é copiado para fora da página (sem aba nova, sem armazenamento).
+- Enquanto o relatório está aberto, o título da aba é "Apura – <processo> – <data do cálculo em dd-mm-aaaa>" (sem processo: "Apura – <data>"), que o navegador sugere como nome do PDF.
+- **Faixa "Antes de juntar, confira:"** só na tela, acima do relatório e nunca impressa, quando a caixa de avisos tem algo: os mesmos avisos da caixa da tela.
+- **Botão desligado** (com a explicação no `title`), em dois casos: sem nenhuma prestação lançada ("Lance ao menos uma prestação para gerar o relatório."); com algum lançamento "não computado" por falta de valor ou por valor inválido (prestação sem como apurar pela base, valor zero, negativo ou inválido; pagamento sem valor), com a contagem: "2 prestações estão sem valor (veja a caixa de avisos): complete a base ou informe o valor para gerar o relatório." O pagamento com data posterior à data do cálculo não bloqueia: é a única linha "não computada" que pode chegar ao relatório (§18.3).
+- O relatório na tela acompanha o tema (claro ou escuro, como o relatório de exemplo de `docs/referencia/`).
+
+### 18.2 Impressão
+
+- Sai só o relatório (sem a barra, a faixa de ações e a faixa de avisos), sempre no tema claro, mesmo com `data-theme="dark"` ou o sistema no escuro; cores da faixa verde e do cabeçalho das tabelas preservadas (`print-color-adjust: exact`); A4 com margens; cabeçalho das tabelas repetido em cada página; linhas e blocos sem quebra interna; fontes menores.
+- A linha de totais de cada tabela é a última linha do corpo, não um rodapé de tabela (`tfoot`): o Chrome repete o rodapé de tabela em cada página, e um "Totais" no pé de toda folha induziria a erro.
+- Ctrl+P na tela de cálculo imprime só a frase "Para imprimir o demonstrativo, use o botão Relatório / PDF.", para a tela de edição não ir ao papel por engano.
+- Limitação mantida (§10.3): sem numeração de páginas nem rodapé repetido.
+
+### 18.3 Conteúdo, de cima para baixo
+
+1. **Faixa verde** (§10.1): órgão (caixa alta, pequeno); "Demonstrativo discriminado e atualizado do crédito · 13/10/2026" (data do cálculo); "Processo nº …"; "Exequente: … · Executado: …"; "Defensor(a): …". Campo em branco some com o rótulo (só o exequente: "Exequente: A. B."; nenhum dos dois: a linha some). À direita, o logo horizontal branco, numa cópia recortada e reduzida do `docs/identidade-visual/logos/branca-horizontal-01.png` (o original tem 8334 × 8334 px e 1 MB) com cerca de 1100 px de largura, para a impressão sair nítida, em `public/logos/`, ao lado da cópia de 368 × 88 px da barra. Linha dourada abaixo.
+2. **Indicadores**, na ordem da tela, cada um com uma linha de apoio (mockup v6): "Prestações atualizadas" · "12 prestações, jan a dez/2025"; "Amortizações atualizadas" · "3 pagamentos"; "Total devido em 13/10/2026" (destaque) · "prestações menos amortizações"; "Multa e honorários" · "10% + 10% sobre o total devido"; "Total geral" (destaque) · "com multa e honorários". Dívida negativa sai como R$ 0,00.
+3. **Prestações.** Colunas: **Vencimento** · Valor · Fator de correção (6 casas) · Corrigido · Juros % (6 casas) · Juros R$ · Atualizado · barra proporcional (largura relativa ao maior atualizado das duas tabelas). **Sem a coluna de competência** (decisão do responsável, como a tela desde 13/10/2026: a competência é sempre o mês do vencimento). A célula do vencimento traz a descrição e as **palavras** da linha, separadas por "·": "05/12/2025 · 13º salário", "05/11/2026 · vincenda", "05/03/2025 · valor informado · encargos próprios". As palavras são "vincenda", "valor informado" e "encargos próprios" (o que a tela chama de "ajustada": no relatório não se fala em ajuste nem personalização, regra 7 do `CLAUDE.md`); no papel aparecem todas, não só a mais importante. Vincenda: Valor e Atualizado com o valor nominal; Fator, Corrigido e Juros com "—". Linha de totais no fim: cada total soma o que a coluna mostra (Valor e Atualizado, das linhas computadas, com as vincendas pelo valor nominal; Corrigido e Juros, só das linhas atualizadas, já que a vincenda mostra "—"), e o total de Atualizado é o do indicador (ajuste do ensaio, 13/10/2026). **Notas abaixo da tabela**, só as que ocorrem:
+   - "Vincenda: vencimento posterior à data do cálculo; incluída pelo valor nominal, sem correção e sem juros (art. 323 do CPC)."
+   - "Valor informado: valor indicado no cálculo, em vez do apurado pela base dos alimentos."
+   - "Encargos próprios:", com uma linha por lançamento, só com o que difere do padrão, e a descrição da linha entre parênteses depois da data (duas linhas podem ter a mesma data): "05/03/2025 (Diferença): correção desde 10/04/2025; juros desde 01/05/2025; INPC e juros de 1% ao mês." Termo só inicial: "desde"; só final: "até"; os dois: "de … a …".
+4. **Amortizações.** As mesmas colunas, a primeira chamada **Data**, com a descrição ("10/02/2025 · Pagamento parcial"). A palavra "não computado" vale para o pagamento com data posterior à data do cálculo: o Valor informado aparece, as demais colunas com "—", fora dos totais, e a nota "Não computado: pagamento com data posterior à data do cálculo; não entra nos totais." As notas de valor informado não se aplicam (o valor do pagamento é sempre informado); a de encargos próprios, sim. Sem pagamentos: o título e a frase "Não há pagamentos a abater."
+5. **Totais em 13/10/2026:** prestações atualizadas; amortizações atualizadas (com "−"); total devido; "Multa de 10% (art. 523, §1º, do CPC)"; "Honorários de 10% (art. 523, §1º, do CPC)"; total geral. Multa ou honorários de 0% não aparecem. Total devido zero ou negativo: "Total devido: 0,00", seguido de "As amortizações atualizadas superam as prestações atualizadas em R$ 120,55; não há saldo devedor."
+6. **Metodologia e fundamentos** (§18.4 e §18.5).
+7. **Índices aplicados:** uma tabela "série · ano × jan … dez" por série usada, na ordem: índices de correção na ordem em que entram no cálculo (IGP-M, INPC, IPCA), depois taxa legal, SELIC e salário mínimo. Valores como o BCB publica, com vírgula (taxa legal com as 6 casas; salário mínimo em reais, "1.518,00"), tirados de `resultado.indicesUsados`. O ponto "·" marca só o mês que o cálculo precisou e que não tinha índice na data da consulta (mês com valor nulo na memória de correção de algum lançamento, como out/2026 num cálculo de 13/10/2026); os meses fora do uso ficam vazios (ex.: o IGP-M depois de ago/2024, quando a correção passa ao IPCA), para o ponto nunca sugerir "não divulgado" num mês que não entrou na conta. A legenda diz: "O ponto indica mês sem índice divulgado na data da consulta."
+8. **Rodapé:** "Defensoria Pública de Mato Grosso do Sul · {órgão}" à esquerda; "Fonte dos índices: BCB/SGS · Gerado com Apura v{versão} em 13/10/2026" à direita, discreto, com a data do dia em que o relatório foi gerado (do `Ambiente`), não a do cálculo. Único lugar com o nome Apura.
+
+O componente (`src/relatorio/Relatorio.tsx`) recebe só o `Calculo`, o `Resultado`, a data de hoje e a versão; os textos saem de módulos puros (`src/relatorio/`), testados sem tela.
+
+### 18.4 "Metodologia e fundamentos": regras gerais
+
+- Gerado do que foi aplicado (§10.4): nunca o nome da opção de metodologia (uma metodologia ajustada guarda o id e o nome da opção de origem, que o relatório ignora), versão, "ajuste" ou "personalização".
+- Cada parágrafo só aparece quando há o que dizer. Ordem: Base, Termos, Encargos, Amortizações, Multa e honorários, Deflação, Observações, Fontes e arredondamento.
+- **Reajustes do valor fixo:** para o relatório não depender da redação da memória, o motor passa a devolver em cada prestação a lista estruturada dos reajustes da base (mês, índice, janela, percentual acumulado e se foi aplicado). Nenhum número muda, os casos de referência continuam idênticos, e o arquivo salvo abre como antes (a abertura só lê `indicesUsados` e `consultaIndices` do resultado).
+
+### 18.5 "Metodologia e fundamentos": textos, com exemplos
+
+**Base.** Uma frase por forma; com vários períodos, uma por período, separadas por ";", no modelo da §17.2.
+
+- Valor fixo sem reajuste: "Valor fixo de R$ 500,00, fixado em 10/03/2024, sem reajuste."
+- Valor fixo com índice: "Valor fixo de R$ 1.000,00, fixado em 15/03/2023, reajustado pelo IPCA acumulado desde o reajuste anterior: em mar/2024 (IPCA de mar/2023 a fev/2024: 3,9312%) e em mar/2025 (IPCA de mar/2024 a fev/2025: 5,4800%), chegando a R$ 1.096,26." O percentual tem 4 casas, como na memória (§6.3). Os reajustes descritos são os da prestação de vencimento mais recente apurada pela base naquele período. Reajuste não aplicado: "; o reajuste de mar/2026 não foi aplicado (IPCA de fev/2026 ainda não divulgado na data da consulta)". Acumulado não positivo: "em mar/2024 (IPCA de mar/2023 a fev/2024: −0,1234%, acumulado não positivo: valor mantido)". Antes do primeiro reajuste: "Valor fixo de R$ 500,00, fixado em 15/03/2026, com reajuste anual pelo IPCA acumulado, em março; não houve reajuste até o último vencimento." Só o reajuste não aplicado: "Valor fixo de R$ 500,00, fixado em 15/11/2025, com reajuste anual pelo IPCA acumulado, em novembro; o reajuste de nov/2026 não foi aplicado (IPCA de out/2026 ainda não divulgado na data da consulta)."
+- Valor fixo pelo salário mínimo: "Valor fixo de R$ 451,91, fixado em 10/01/2017, reajustado na proporção do salário mínimo vigente no mês de cada vencimento (salário mínimo de jan/2017: R$ 937,00)."
+- Percentual do salário mínimo: "30% do salário mínimo vigente no mês de cada vencimento."
+- Percentual dos rendimentos: "30% dos rendimentos do executado, sobre o rendimento mensal de R$ 2.000,00; nos meses com rendimento próprio, sobre ele: 05/12/2025 (13º salário), R$ 2.000,00; 05/01/2026 (férias), R$ 2.666,67." Sem rendimento padrão: "30% dos rendimentos do executado, sobre o rendimento de cada mês: …".
+- Só se descrevem os períodos da base em que vence alguma prestação apurada pela base (sem valor informado); com dois ou mais períodos na base, a frase de cada um começa pelo intervalo, mesmo que só um deles apareça.
+- Base dividida (§17.2): "Até 31/12/2024, valor fixo de R$ 500,00, fixado em 10/03/2024, sem reajuste; desde 01/01/2025, 30% do salário mínimo vigente no mês de cada vencimento."
+- Complementos, quando ocorrem: "As prestações vencidas antes da fixação entram pelo valor fixado, sem reajuste."; "Nas prestações marcadas \"valor informado\", vale o valor indicado na tabela, em vez do apurado pela base."
+
+**Termos.**
+
+- Regra comum (§10.4): "Encargos desde o vencimento de cada prestação (mora automática, art. 397 do CC). Correção pelo índice do mês do vencimento, proporcional aos dias restantes (pro rata), e pelos meses seguintes até set/2026, último índice divulgado; juros até a data do cálculo." O mês é o último com índice aplicado na correção dos lançamentos.
+- Incidência a partir do mês seguinte: "Correção a partir do mês seguinte ao do vencimento, pelos meses inteiros até set/2026, último índice divulgado; juros até a data do cálculo."
+- Pro rata no mês final (§6.4, passo 3; ponto 1 da §7, decidido em 13/10/2026), só quando ocorre: "…e pelos meses seguintes até jul/2026 e, no mês do cálculo, pelo índice de ago/2026 proporcional aos 15 dias decorridos; juros até a data do cálculo."
+- Com lançamentos de encargos próprios: "Os lançamentos marcados \"encargos próprios\" seguem os termos e as regras indicados nas notas das tabelas."
+
+**Encargos.** Descreve só os períodos da metodologia global que algum lançamento alcançou (pela correção ou pelos juros); com um só, sem a data de início ou de fim.
+
+- "Lei 14.905/2024" com lançamentos dos dois lados de 30/08/2024: o texto aprovado da §10.4, na íntegra: "Até 29/08/2024, IGP-M e juros de 1% ao mês, simples, pro rata die; desde 30/08/2024, IPCA (art. 389, parágrafo único, do CC) e juros pela taxa legal (art. 406, §1º, do CC; Lei 14.905/2024; Resolução CMN 5.171/2024), série 29543 do BCB, acumulada por juros simples e pro rata por dias corridos, sobre o valor corrigido."
+- A mesma, com todos os lançamentos (e seus juros) desde 30/08/2024: "IPCA (art. 389, parágrafo único, do CC) e juros pela taxa legal (art. 406, §1º, do CC; Lei 14.905/2024; Resolução CMN 5.171/2024), série 29543 do BCB, acumulada por juros simples e pro rata por dias corridos, sobre o valor corrigido."
+- "IGP-M e juros de 1% ao mês" (§17.3, com "sobre o valor corrigido" acrescentado para ficar igual à outra): "IGP-M e juros de 1% ao mês, simples, pro rata die, do vencimento até a data do cálculo, sobre o valor corrigido."
+- Metodologia ajustada: cada período montado com as mesmas peças, prefixado pelo intervalo ("Até 29/08/2024,", "de 01/01/2020 a 31/12/2022,", "desde 01/01/2023,"). Correção: "IGP-M", "INPC", "IPCA" (com "(art. 389, parágrafo único, do CC)" só em período que começa em 30/08/2024 ou depois) ou "sem correção monetária". Juros: "juros de 2% ao mês, simples, pro rata die"; "juros pela taxa legal (art. 406, §1º, do CC; Lei 14.905/2024; Resolução CMN 5.171/2024), série 29543 do BCB, acumulada por juros simples e pro rata por dias corridos"; SELIC única: "SELIC (série 4390 do BCB) como índice único de correção e juros, capitalizada mês a mês". O parágrafo termina com ", sobre o valor corrigido." quando algum período tem juros separados.
+
+**Amortizações** (§10.4), quando há pagamento computado: "Cada pagamento é atualizado pelos mesmos critérios, da data do pagamento até a data do cálculo, e abatido do total atualizado."
+
+**Multa e honorários**, quando o percentual é maior que zero: "Multa de 10% e honorários de 10% (art. 523, §1º, do CPC), cada um sobre o total devido atualizado, sem incidência dos honorários sobre a multa."; só um deles: "Multa de 10% (art. 523, §1º, do CPC), sobre o total devido atualizado."
+
+**Deflação**, só quando um índice negativo entrou na conta: com piso, e só se o piso atuou em algum lançamento, o texto da §10.4: "Índices negativos computados; o valor corrigido não fica inferior ao original."; sem piso: "Índices negativos computados, sem piso."; negativos zerados: "Índices negativos desconsiderados (tomados como zero)."
+
+**Observações:** o texto livre da seção 5, com as quebras de linha.
+
+**Fontes e arredondamento:** "Índices do Sistema Gerenciador de Séries Temporais do Banco Central (IGP-M, série 189; IPCA, série 433; taxa legal, série 29543), atualizados em 09/10/2026 14:17 (horário de Brasília). Arredondamento comercial: fator e percentual de juros com 6 casas, valores com 2 casas por lançamento." As séries são as de `resultado.indicesUsados`, em ordem numérica; a data é `resultado.consultaIndices.em`. Quando ocorre: "Mês sem índice divulgado na data da consulta, computado sem correção: IPCA de out/2026." (vários: "Meses sem índice divulgado na data da consulta, computados sem correção: IGP-M de set/2026 e out/2026; IPCA de out/2026").
+
+### 18.6 Pendências da fase 5 resolvidas nesta fase
+
+- **Tela de erro de reserva.** Um erro inesperado não apaga mais a página: no app inteiro, "Algo deu errado no Apura. O cálculo em andamento pode ser salvo num arquivo antes de recomeçar.", com "Salvar o cálculo" (o último cálculo exibido, sem o resultado; abre depois com o aviso de arquivo sem resultado) e "Recarregar a página"; só no relatório, "Não foi possível montar o relatório deste cálculo.", com "← Voltar ao cálculo", e a tela de cálculo intacta.
+- **Região viva.** Depois de cerca de um segundo sem alteração, o leitor de tela anuncia o total ("Total geral: R$ 2.497,35"); a caixa de avisos anuncia quando a quantidade muda ("2 avisos no cálculo"). As duas regiões ficam fora das colunas, que "Abrir" e "Novo cálculo" remontam, para o anúncio sair também depois de abrir um cálculo; ao carregar a página, nada é anunciado.
+- **Ajustes visuais.** Logo da barra mantido em 48 px de altura (medida conferida no navegador na fase 5; o texto do plano da fase 5, que dizia 44, é corrigido); Source Sans 3 com o negrito (700) e o itálico (400) embutidos, que o relatório usa (hoje o navegador sintetiza o itálico e troca o 700 pelo 600), e conferência do peso 600, que não carregava na fase 5; o lápis e o ✕ sempre à vista: a coluna das ações fica presa à borda direita da tabela (`position: sticky`), e só os números rolam por baixo dela quando a coluna da direita é estreita; o espaço lateral das células cai de 6 para 5 px. O ponto das duas colunas continua em 1024 px. Mudança do ensaio (13/10/2026), no lugar de subir o ponto para 1200 px: medido no navegador com valores na casa do milhar ("R$ 1.000,00"), a tabela pede cerca de 737 px, e a coluna da direita tem 730 px em 1366 px, 682 px em 1280 px, 638 px em 1200 px e 540 px em 1024 px; o ✕ já ficava 7 px fora da vista no notebook de 1366 px, e subir o ponto só resolveria a partir de cerca de 1380 px, o que empilharia as colunas justamente em 1366 px. Com 5 px de espaço lateral, a tabela cabe inteira em 1366 px (730 de 730 px).
+
+Ficam fora: as duas sobras menores da revisão da fase 5b (limite de 1900 escrito à mão em dois campos; um comentário longo) e as melhorias "sem fase" da fase 5.
+
+### 18.7 Ajustes do ensaio e da revisão independente (13/10/2026)
+
+O código foi ensaiado numa cópia fora do repositório, conferido no navegador e no PDF e revisado por um agente independente. O que mudou nos textos e nas regras acima:
+
+- **O texto segue o resultado, não só a metodologia.** "Encargos" descreve os períodos que algum lançamento de fato alcançou: pela correção, o período do primeiro dia de cada mês que entrou com fração (o mês do vencimento com fração zero, ou fora pela incidência a partir do mês seguinte, não conta); pelos juros, os períodos tocados por algum trecho de juros. Os termos próprios entram por aí (ex.: prestação de 05/07/2024 com termos finais em 31/07/2024 sai "IGP-M e juros de 1% ao mês, simples, pro rata die, sobre o valor corrigido.", sem o IPCA e a taxa legal que não foram usados; vencimento em 31/08/2024 sai só com IPCA e taxa legal).
+- **"Termos" só fala do que houve:** a frase da correção só quando algum mês entrou com índice; "juros até a data do cálculo" só quando o percentual de juros passou de zero (sem correção e com juros: "… art. 397 do CC). Juros até a data do cálculo."); a frase da mora só quando há prestação atualizada, e, só com pagamentos, "Correção pelo índice do mês do pagamento, …"; com SELIC única até o mês do cálculo, "… e pelos meses seguintes até out/2026 (no mês do cálculo, o valor parcial já divulgado)".
+- **"sobre o valor corrigido"** vem logo depois do último período com juros separados (com SELIC única depois da taxa legal: "Até 31/12/2024, IPCA e juros pela taxa legal (…), sobre o valor corrigido; desde 01/01/2025, SELIC (série 4390 do BCB) como índice único de correção e juros, capitalizada mês a mês."). Nos textos aprovados da §18.5, nada muda.
+- **Encargos próprios só com o que difere** da metodologia do cálculo: termos próprios; regras (só dos períodos da metodologia própria que o lançamento alcançou, e só se diferentes das do cálculo); "correção a partir do mês seguinte ao do vencimento" (ou "pelo índice do mês do vencimento, proporcional aos dias restantes (pro rata)") quando a incidência difere; a deflação, quando difere ("índices negativos computados, sem piso"). Metodologia própria igual à do cálculo e sem termos: a linha não leva a palavra nem a nota, e o lançamento entra em "Termos" e "Encargos" como os demais.
+- Base: vários meses faltantes no plural ("IPCA de mai/2025 e jun/2025 não disponíveis na tabela de índices"; "… ainda não divulgados na data da consulta"); mês do reajuste fora de 1 a 12 (só com arquivo fora do padrão) sai "sem reajuste", como o motor aplica.
+- Totais: sem pagamentos, "Amortizações atualizadas 0,00", sem o sinal de menos.
+
+Limites aceitos (registrados, sem mudança): metodologia com buraco entre períodos (só com arquivo fora do padrão) não descreve no papel o intervalo que ficou sem correção e sem juros (o aviso do motor aparece na faixa "Antes de juntar, confira:"); com dívida zero, as linhas e o parágrafo de multa e honorários continuam, com 0,00; o motivo do botão desligado fica no `title` (não alcançável por teclado; o detalhe está na caixa de avisos); a frase de abertura das tabelas ("Cada prestação é atualizada do vencimento até …") vale para a regra comum, e as exceções estão nas notas; a impressão foi conferida no Chrome (outros navegadores podem paginar diferente).
+
+### 18.8 Testes e conferência
+
+- Cada parágrafo de "Metodologia e fundamentos" com teste do texto exato, para cada forma da base, cada metodologia (as duas opções e uma ajustada com SELIC única e taxa de 2%), com e sem pro rata final, com e sem índices negativos; os textos aprovados da §10.4, da §17.2 e da §17.3 entram literalmente nos testes.
+- Notas das tabelas, palavras das linhas, totais com dívida não positiva e matriz de índices com o exemplo de 2024–2026 dos testes do motor; motor: o campo novo dos reajustes, com exemplo numérico, e os doze casos de referência idênticos.
+- Componente (jsdom): botão desligado sem prestação e com lançamento sem valor (e ligado com pagamento posterior à data do cálculo), abrir, voltar com o foco no botão, título da aba, imprimir pelo `Ambiente`, faixa de avisos, telas de erro de reserva com defeito simulado, região viva.
+- Navegador (no ensaio e de novo na execução): relatório claro e escuro na tela; impressão em PDF com o tema escuro ligado (sai claro), cabeçalho repetido, nenhuma linha cortada entre páginas, totais só no fim da tabela; Ctrl+P na tela de cálculo; 1366 px, 1100 px (empilhado) e celular.
+
+### 18.9 Registro
+
+Plano em `docs/superpowers/plans/2026-10-13-fase-6-relatorio-e-pdf.md`, escrito depois de um ensaio do código numa cópia fora do repositório, conferido no navegador e revisado por um agente independente, como na fase 5b. Executado em 13/10/2026, direto na sessão, por escolha do responsável; fase 6 concluída (ver a seção "Estado" do plano).
 
 ---
 

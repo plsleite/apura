@@ -13435,9 +13435,9 @@ São nove itens que a revisão final da branch recomendou corrigir antes de mesc
 **Fase 6**
 
 - O relatório força o tema claro na impressão mesmo com `data-theme="dark"`; decide como mostrar a linha "ignorado" e os valores informados à mão (hoje etiquetas na tela); traz o CSS de impressão; e liga o botão "Relatório / PDF" (classe `relatorio`). (Já conhecido ao escrever o plano.)
-- Tela de erro de reserva (error boundary): hoje qualquer exceção do motor apaga a página.
-- Indicadores e caixa de avisos sem região viva: o leitor de tela não é avisado do recálculo.
-- Revisão visual: o logo é exibido a 48 px (o texto do plano fala em 44); itálico sintetizado e peso 700 caindo para 600 (só os pesos 400/600 e 500/700 estão embutidos); a 1024 px o lápis e o ✕ ficam na rolagem da tabela (considerar subir o ponto de duas colunas para cerca de 1200 px ou fixar a coluna de ações).
+- Tela de erro de reserva (error boundary): hoje qualquer exceção do motor apaga a página. **Resolvida na fase 6** (`Reserva.tsx`, `TelaDeErro.tsx`; §18.6 do design).
+- Indicadores e caixa de avisos sem região viva: o leitor de tela não é avisado do recálculo. **Resolvida na fase 6** (`Anuncios.tsx`).
+- Revisão visual (**resolvida na fase 6**: o logo fica em 48 px, a medida conferida; entram o itálico 400 e o negrito 700 da Source Sans 3; o lápis e o ✕ ficam presos à direita da tabela, no lugar de subir o ponto das duas colunas): o logo é exibido a 48 px (o texto do plano fala em 44); itálico sintetizado e peso 700 caindo para 600 (só os pesos 400/600 e 500/700 estão embutidos); a 1024 px o lápis e o ✕ ficam na rolagem da tabela (considerar subir o ponto de duas colunas para cerca de 1200 px ou fixar a coluna de ações).
 
 **Fase 7**
 

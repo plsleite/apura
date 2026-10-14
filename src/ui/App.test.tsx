@@ -20,7 +20,9 @@ describe("App (fundação da tela)", () => {
       expect(screen.getByRole("button", { name: nome })).toBeDefined();
     }
     const relatorio = screen.getByRole("button", { name: "Relatório / PDF" }) as HTMLButtonElement;
+    // cálculo em branco: sem prestação, o relatório não abre (§18.1)
     expect(relatorio.disabled).toBe(true);
+    expect(relatorio.title).toBe("Lance ao menos uma prestação para gerar o relatório.");
     const rodape = screen.getByRole("contentinfo").textContent ?? "";
     expect(rodape).toContain(
       "Índices oficiais BCB/SGS · IPCA até set/2026 · atualizados em 11/10/2026 09:00 (horário de Brasília)",

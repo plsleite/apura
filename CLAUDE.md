@@ -62,9 +62,24 @@ recusada na abertura); a metodologia de encargos se escolhe entre "Lei 14.905/20
 reconhecidas pelo conteúdo, e a escolha fica nas preferências (sobrevive a "Esquecer"; "Restaurar"
 volta a ela); as linhas das tabelas ficam numa linha só, com a etiqueta mais importante e "+N", e a
 descrição, que encolhe até caber, abre com a etiqueta um balão flutuante (`tabelas/etiquetas.ts`)
-(861 testes passando e 10 pulados). "Relatório / PDF" está na barra, desligado, até a fase 6.
-Próxima: fase 6 (relatório e PDF), com plano a escrever. A tabela de fases do roteiro é a referência; atualize-a e esta seção ao concluir cada
-fase.
+(861 testes passando e 10 pulados). Fase 6 (relatório e PDF, §18 do design) concluída em
+2026-10-13: "Relatório / PDF" troca as colunas (que ficam montadas, escondidas) pelo relatório em
+`src/relatorio/`, que lê só o `Calculo` e o `Resultado`: módulos puros montam "Metodologia e
+fundamentos" a partir do que o motor de fato aplicou (`metodologia.ts`: só os períodos que a correção
+ou os juros alcançaram; os textos aprovados da §18.5 nos testes, literalmente), as linhas com as
+palavras "vincenda", "valor informado", "encargos próprios" (só o que difere da metodologia do
+cálculo) e "não computado" e as notas abaixo da tabela, os totais, os indicadores, o cabeçalho e o
+rodapé (`tabelas.ts`), a matriz de índices (`matriz.ts`) e o motivo do botão desligado
+(`bloqueio.ts`: lançamento sem valor bloqueia; pagamento posterior à data do cálculo, não);
+`Relatorio.tsx` desenha, e `relatorio.css` acompanha o tema na tela e força o claro na impressão
+(A4, cabeçalho repetido, totais como última linha do corpo, não `tfoot`); o motor devolve os
+reajustes do valor fixo estruturados (`LancamentoCalculado.reajustes`), sem mudar números; a
+impressão (`imprimir`) e a recarga (`recarregar`) entram pelo `Ambiente`; tela de erro de reserva
+(`componentes/Reserva.tsx`, `TelaDeErro.tsx`), região viva (`componentes/Anuncios.tsx`, fora das
+colunas) e lápis/✕ presos à direita das tabelas; a raiz do relatório tem a classe `demonstrativo`
+(a `relatorio` é do botão da barra) (939 testes passando e 10 pulados).
+Próxima: fase 7 (publicação). A tabela de fases do roteiro é a referência; atualize-a e esta seção
+ao concluir cada fase.
 
 ## Comandos
 
@@ -97,7 +112,7 @@ docs/referencia/          briefing original, relatório de exemplo
 docs/superpowers/specs/   design e visão
 docs/superpowers/plans/   planos de implementação (um por fase)
 docs/monitoramento/       relatórios mensais da rotina de índices (gerados pelo workflow)
-public/logos/             logo da DPE-MS reduzido para a barra da tela (gerado do PNG do manual)
+public/logos/             logos da DPE-MS gerados do PNG do manual: o da barra da tela e o da faixa do relatório
 scripts/                  atualizar-indices.ts · relatorio-indices.ts (com o teste dele)
 src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
 src/motor/                periodos.ts · correcao.ts · juros.ts · lote.ts · base.ts · calcular.ts · casos/ (casos de referência)
@@ -105,8 +120,8 @@ src/motor/testes/         dados de teste: IGP-M e salário mínimo de 2017–201
 src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
 src/indices/testes/       respostas reais do SGS gravadas em 10 e 11/10/2026 e execuções sintéticas da rotina
 src/metodologias/         lei-14905-2024.v1.json · igpm-juros-1.v1.json · padrao.ts
-src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ (calculo.ts · base.ts · faltas.ts · metodologia.ts · novaLinha.ts) · secoes/ · tabelas/ · componentes/ · testes/ (ambiente de teste)
-src/relatorio/            relatório e impressão (fase 6)
+src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · TelaDeErro.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ (calculo.ts · base.ts · faltas.ts · metodologia.ts · novaLinha.ts) · secoes/ · tabelas/ · componentes/ · testes/ (ambiente de teste)
+src/relatorio/            texto.ts · metodologia.ts · tabelas.ts · matriz.ts · bloqueio.ts · Relatorio.tsx · relatorio.css · testes/ (cálculos de exemplo)
 ```
 
 ## Regras obrigatórias
@@ -154,8 +169,9 @@ src/relatorio/            relatório e impressão (fase 6)
 A seção 7 do design lista as convenções que ainda dependem de confirmação jurídica ou de gabaritos
 da contadoria. Não as "resolva" sozinho: implemente o padrão decidido no design e pergunte ao
 responsável quando a fase tocar em uma delas. Os pontos 3, 4, 5, 8, 9 e 12 foram decididos em
-11/10/2026 na fase 2, e os pontos 6, 7, 10 e 11 na fase 3 (notas ao fim da §7 do design); resta a
-parte do ponto 1 sobre o pro rata no mês final.
+11/10/2026 na fase 2, os pontos 6, 7, 10 e 11 na fase 3 e a parte final do ponto 1 (pro rata no mês
+final, confirmado como o motor já faz) em 13/10/2026, na fase 6 (notas ao fim da §7 do design): não
+resta ponto aberto.
 
 ## Como registrar um caso de referência
 

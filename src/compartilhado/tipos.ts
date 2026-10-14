@@ -236,6 +236,29 @@ export interface DetalheJuros {
  */
 export type SituacaoLancamento = "atualizado" | "vincenda" | "ignorado";
 
+/**
+ * Um reajuste anual do valor fixo por índice (§6.3), como o motor o aplicou, para o relatório
+ * descrever a base sem depender da redação da memória (§18.4).
+ */
+export interface ReajusteDaBase {
+  /** mês do reajuste */
+  em: Competencia;
+  indice: NomeIndice;
+  /** janela do acumulado, inclusive */
+  de: Competencia;
+  ate: Competencia;
+  /** "aplicado"; "mantido" (acumulado não positivo); "naoAplicado" (faltou índice na janela) */
+  situacao: "aplicado" | "mantido" | "naoAplicado";
+  /** acumulado da janela em %, com 4 casas ("5.0576"); ausente quando não aplicado */
+  percentual?: TextoDecimal;
+  /** valor vigente depois do reajuste (o mesmo de antes quando mantido ou não aplicado) */
+  valor: TextoDecimal;
+  /** meses que faltaram na janela (só quando não aplicado) */
+  faltantes?: Competencia[];
+  /** todos os meses faltantes ainda sem divulgação na data da consulta (só quando não aplicado) */
+  aindaNaoDivulgados?: boolean;
+}
+
 export interface LancamentoCalculado {
   id: string;
   tipo: Lancamento["tipo"];
@@ -247,6 +270,11 @@ export interface LancamentoCalculado {
   /** prestação cujo valor foi informado à mão, em vez de apurado pela base dos alimentos (§6.3) */
   editado: boolean;
   situacao: SituacaoLancamento;
+  /**
+   * reajustes do valor fixo por índice até o vencimento (vazio antes do primeiro), só nas
+   * prestações apuradas por essa forma da base (§18.4)
+   */
+  reajustes?: ReajusteDaBase[];
   correcao: { fator: TextoDecimal; indices: IndiceAplicado[]; pisoAplicado: boolean };
   corrigido: TextoDecimal;
   juros: { percentual: TextoDecimal; detalhe: DetalheJuros[] };

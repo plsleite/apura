@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import { TEMAS, type Tema } from "./preferencias.ts";
 
 /** O tema seguinte na volta do botão: do sistema → claro → escuro → do sistema. */
@@ -13,19 +14,26 @@ const NOME_DO_TEMA: Record<Tema, string> = {
 
 /**
  * Barra superior (§9.1): logo da DPE-MS, nome do sistema, as quatro ações e o botão de tema, que alterna a cada
- * clique entre "do sistema", "claro" e "escuro" (decisão de 13/10/2026). "Relatório / PDF" chega
- * na fase 6.
+ * clique entre "do sistema", "claro" e "escuro" (decisão de 13/10/2026). "Relatório / PDF" fica
+ * desligado, com o motivo no `title`, sem prestação ou com lançamento sem valor (§18.1).
  */
 export function BarraSuperior({
   aoNovo,
   aoAbrir,
   aoSalvar,
+  aoRelatorio,
+  bloqueioDoRelatorio = null,
+  refDoRelatorio,
   tema = "sistema",
   aoMudarTema,
 }: {
   aoNovo?: () => void;
   aoAbrir?: () => void;
   aoSalvar?: () => void;
+  aoRelatorio?: () => void;
+  /** por que o relatório não pode abrir (vai para o `title`), ou nulo */
+  bloqueioDoRelatorio?: string | null;
+  refDoRelatorio?: Ref<HTMLButtonElement>;
   tema?: Tema;
   aoMudarTema?: (tema: Tema) => void;
 }) {
@@ -57,10 +65,12 @@ export function BarraSuperior({
           Salvar
         </button>
         <button
+          ref={refDoRelatorio}
           type="button"
           className="botao-barra relatorio"
-          disabled
-          title="Em construção: o relatório em tela e PDF chega na fase 6 do MVP."
+          disabled={aoRelatorio === undefined || bloqueioDoRelatorio !== null}
+          title={bloqueioDoRelatorio ?? undefined}
+          onClick={aoRelatorio}
         >
           Relatório / PDF
         </button>
