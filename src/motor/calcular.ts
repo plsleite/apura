@@ -19,6 +19,7 @@ import type {
   IndiceUsado,
   Lancamento,
   LancamentoCalculado,
+  ReajusteDaBase,
   Resultado,
   SituacaoLancamento,
   TabelaIndices,
@@ -80,6 +81,8 @@ interface Rastro {
   mesesSemTaxaLegal: Competencia[];
   indicesDaBase: IndiceUsado[];
   mesesSemIndiceNaBase: MesSemIndice[];
+  /** reajustes do valor fixo por índice da prestação apurada pela base (§18.4) */
+  reajustesDaBase?: ReajusteDaBase[];
 }
 
 interface ValorResolvido {
@@ -101,7 +104,7 @@ function resolverValor(
   indices: TabelaIndices,
   valorCasas: number,
   avisos: string[],
-  rastro: Pick<Rastro, "indicesDaBase" | "mesesSemIndiceNaBase">,
+  rastro: Pick<Rastro, "indicesDaBase" | "mesesSemIndiceNaBase" | "reajustesDaBase">,
 ): ValorResolvido {
   if (lancamento.valorInformado !== undefined) {
     const informado = decimalOuNulo(lancamento.valorInformado);
@@ -133,6 +136,7 @@ function resolverValor(
   avisos.push(...base.avisos);
   rastro.indicesDaBase = base.indicesUsados;
   rastro.mesesSemIndiceNaBase = base.mesesSemIndice;
+  if (base.reajustes !== undefined) rastro.reajustesDaBase = base.reajustes;
   if (base.valor === null) {
     return { valorBase: ZERO, memoriaBase: base.memoria, editado: false, semValor: true };
   }
@@ -207,7 +211,7 @@ function atualizarComRastro(
   if (lancamento.encargos?.metodologia !== undefined) {
     avisos.push(...validarMetodologia(lancamento.encargos.metodologia));
   }
-  const rastroDaBase: Pick<Rastro, "indicesDaBase" | "mesesSemIndiceNaBase"> = {
+  const rastroDaBase: Pick<Rastro, "indicesDaBase" | "mesesSemIndiceNaBase" | "reajustesDaBase"> = {
     indicesDaBase: [],
     mesesSemIndiceNaBase: [],
   };
@@ -223,6 +227,9 @@ function atualizarComRastro(
     memoriaBase: valor.memoriaBase,
     editado: valor.editado,
     situacao,
+    ...(rastroDaBase.reajustesDaBase === undefined
+      ? {}
+      : { reajustes: rastroDaBase.reajustesDaBase }),
   };
 
   // Vincenda e ignorado entram pelo valor nominal: sem correção e sem juros (§6.7).
