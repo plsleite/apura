@@ -258,21 +258,35 @@ export function periodosAlcancados(m: Metodologia, lista: Par[]): PeriodoMetodol
   return periodos.filter((p) => alcancados.has(p));
 }
 
-/** Os períodos com os mesmos índices e juros (a taxa comparada como número). */
-export function mesmasRegras(a: Metodologia, b: Metodologia): boolean {
-  const regras = (m: Metodologia) =>
-    JSON.stringify(
-      periodosOrdenados(m).map((p) => [
-        p.de,
-        p.ate,
-        p.correcao.indice,
-        p.juros.tipo,
-        p.juros.tipo === "percentualMensal"
-          ? (decimalOuNulo(p.juros.taxaMensal)?.toString() ?? p.juros.taxaMensal)
-          : null,
-      ]),
-    );
-  return regras(a) === regras(b);
+/** A regra (índice e juros, a taxa como número) do período que contém a data; "sem período" fora deles. */
+function regraEm(m: Metodologia, data: DataISO): string {
+  const p = periodoVigenteEm(m, data);
+  if (p === undefined) return "sem período";
+  const taxa =
+    p.juros.tipo === "percentualMensal"
+      ? (decimalOuNulo(p.juros.taxaMensal)?.toString() ?? p.juros.taxaMensal)
+      : "";
+  return `${p.correcao.indice}|${p.juros.tipo}|${taxa}`;
+}
+
+/**
+ * A metodologia própria do lançamento aplica, no trecho que ele alcançou, as mesmas regras da
+ * metodologia do cálculo nas mesmas datas (§18.7): diferença só num período que o lançamento não
+ * alcança não conta. Compara o primeiro dia de cada mês que entrou na correção e as duas pontas de
+ * cada trecho de juros.
+ */
+export function mesmasRegrasNoAlcance(
+  propria: Metodologia,
+  global: Metodologia,
+  par: Par,
+): boolean {
+  const datas = [
+    ...par.calculado.correcao.indices
+      .filter((i) => !i.fracao.startsWith("0/"))
+      .map((i) => primeiroDiaDoMes(i.competencia)),
+    ...par.calculado.juros.detalhe.flatMap((d) => [d.de, d.ate]),
+  ];
+  return datas.every((data) => regraEm(propria, data) === regraEm(global, data));
 }
 
 const DEFLACAO_CURTA: Record<Metodologia["deflacao"], string> = {
@@ -307,7 +321,7 @@ export function diferencasDosEncargos(par: Par, calculo: Calculo): string[] {
   const propria = e.metodologia;
   if (propria === undefined) return partes;
   const global = calculo.metodologia;
-  if (!mesmasRegras(propria, global)) {
+  if (!mesmasRegrasNoAlcance(propria, global, par)) {
     partes.push(regrasResumidas(propria, periodosAlcancados(propria, [par])));
   }
   if (propria.incidenciaMesInicial !== global.incidenciaMesInicial) {
@@ -339,6 +353,7 @@ export function paragrafoTermos(calculo: Calculo, resultado: Resultado): string 
   const mesDoCalculo = competenciaDe(calculo.dataElaboracao);
   let comCorrecao = false;
   let ultimoInteiro: Competencia | null = null;
+  let parcialDaSelic = false;
   let proRataFinal: { competencia: Competencia; dias: number } | null = null;
   for (const { lancamento, calculado } of comuns) {
     for (const i of calculado.correcao.indices) {
@@ -347,6 +362,8 @@ export function paragrafoTermos(calculo: Calculo, resultado: Resultado): string 
       if (i.valor === null) continue;
       if (i.fracao === "1") {
         if (ultimoInteiro === null || i.competencia > ultimoInteiro) ultimoInteiro = i.competencia;
+        if (i.competencia === mesDoCalculo && i.serie === CODIGO_DA_SERIE.SELIC)
+          parcialDaSelic = true;
       } else if (
         i.competencia === mesDoCalculo &&
         competenciaDe(lancamento.data) !== mesDoCalculo
@@ -360,11 +377,12 @@ export function paragrafoTermos(calculo: Calculo, resultado: Resultado): string 
   const mesSeguinte = calculo.metodologia.incidenciaMesInicial === "mesSeguinte";
   let correcao: string | null = null;
   if (comCorrecao) {
-    // o mês do cálculo com índice inteiro só ocorre com o valor parcial da SELIC (§6.4)
+    // o valor parcial do mês do cálculo é só da SELIC (§6.4); o índice inteiro do mês do cálculo
+    // em outra série (cálculo no último dia do mês, com o índice já publicado) é o último divulgado
     const ate =
       ultimoInteiro === null
         ? null
-        : ultimoInteiro === mesDoCalculo
+        : ultimoInteiro === mesDoCalculo && parcialDaSelic
           ? `até ${formatarCompetencia(ultimoInteiro)} (no mês do cálculo, o valor parcial já divulgado)`
           : `até ${formatarCompetencia(ultimoInteiro)}${proRataFinal === null ? ", último índice divulgado" : ""}`;
     const inicio = mesSeguinte
@@ -429,7 +447,7 @@ export function paragrafoEncargos(calculo: Calculo, resultado: Resultado): strin
   const global = calculo.metodologia;
   const daGlobal = atualizados(calculo, resultado).filter((p) => {
     const propria = p.lancamento.encargos?.metodologia;
-    return propria === undefined || mesmasRegras(propria, global);
+    return propria === undefined || mesmasRegrasNoAlcance(propria, global, p);
   });
   if (daGlobal.length === 0) return null;
   const alcancados = periodosAlcancados(global, daGlobal);

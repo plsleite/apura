@@ -3,7 +3,7 @@
    repetido em cada página e sem linhas cortadas (§18.2). Estrutura e medidas do mockup v6
    (docs/referencia/mockups/04-relatorio.html). */
 
-.relatorio {
+.demonstrativo {
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
@@ -66,7 +66,7 @@
   padding: 14px 22px 16px;
 }
 
-.relatorio h2 {
+.demonstrativo h2 {
   font-size: 14.5px;
   color: var(--verde);
   margin: 18px 0 4px;
@@ -130,7 +130,7 @@
 
 /* ---- Tabelas ---- */
 
-.relatorio table {
+.demonstrativo table {
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
@@ -387,13 +387,13 @@
     background: #fff;
   }
 
-  .relatorio,
-  .relatorio * {
+  .demonstrativo,
+  .demonstrativo * {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
-  .relatorio {
+  .demonstrativo {
     max-width: none;
     border: 0;
     border-radius: 0;
@@ -417,11 +417,11 @@
     font-size: 8.5pt;
   }
 
-  .relatorio thead {
+  .demonstrativo thead {
     display: table-header-group;
   }
 
-  .relatorio tr,
+  .demonstrativo tr,
   .relatorio-indicadores,
   .relatorio-totais,
   .relatorio-metodologia p,
@@ -431,13 +431,13 @@
   }
 
   /* o título e a frase de abertura ficam com o que vem depois (nunca sozinhos no pé da página) */
-  .relatorio h2,
+  .demonstrativo h2,
   .relatorio-lede {
     break-after: avoid;
   }
 
   /* o título recebe o foco ao abrir o relatório: o anel de foco não vai para o papel */
-  .relatorio h1 {
+  .demonstrativo h1 {
     outline: none !important;
   }
 }

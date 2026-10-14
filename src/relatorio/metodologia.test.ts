@@ -557,3 +557,39 @@ describe("o texto acompanha o que o motor aplicou (revisão do ensaio)", () => {
     );
   });
 });
+
+describe("revisão final da fase 6", () => {
+  it("cálculo no último dia do mês, com o IPCA do mês já publicado: “último índice divulgado”, não o valor parcial (só da SELIC)", () => {
+    const calculo = calculoDeTeste({
+      dataElaboracao: "2026-09-30",
+      lancamentos: [prestacao("2026-03-05")],
+    });
+    expect(textos(calculo).termos).toBe(
+      "Encargos desde o vencimento de cada prestação (mora automática, art. 397 do CC). Correção pelo índice do mês do vencimento, proporcional aos dias restantes (pro rata), e pelos meses seguintes até set/2026, último índice divulgado; juros até a data do cálculo.",
+    );
+  });
+
+  it("metodologia própria diferente só num período que o lançamento não alcança: o lançamento segue a regra comum", () => {
+    const propria: Metodologia = {
+      ...metodologiaDaOpcao("lei14905"),
+      ajustada: true,
+      periodos: [
+        {
+          de: null,
+          ate: "2024-08-29",
+          correcao: { indice: "INPC" },
+          juros: { tipo: "percentualMensal", taxaMensal: "2" },
+        },
+        { de: "2024-08-30", ate: null, correcao: { indice: "IPCA" }, juros: { tipo: "taxaLegal" } },
+      ],
+    };
+    const calculo = calculoDeTeste({
+      lancamentos: [prestacao("2025-03-05", { encargos: { metodologia: propria } })],
+    });
+    const t = textos(calculo);
+    expect(t.termos).not.toContain("encargos próprios");
+    expect(t.encargos).toBe(
+      "IPCA (art. 389, parágrafo único, do CC) e juros pela taxa legal (art. 406, §1º, do CC; Lei 14.905/2024; Resolução CMN 5.171/2024), série 29543 do BCB, acumulada por juros simples e pro rata por dias corridos, sobre o valor corrigido.",
+    );
+  });
+});

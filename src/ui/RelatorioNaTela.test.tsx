@@ -83,6 +83,15 @@ describe("Relatório na tela (§18.1)", () => {
     expect(document.title).toBe("Apura · Sistema de Cálculos Judiciais");
   });
 
+  it("o relatório e o botão da barra não dividem classe (o CSS de um não deforma o outro)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await abrir(user, calculoCompleto());
+    await user.click(botao());
+    const doRelatorio = new Set(screen.getByRole("article").classList);
+    expect([...botao().classList].filter((c) => doRelatorio.has(c))).toEqual([]);
+  });
+
   it("“Novo cálculo” com o relatório aberto volta à tela de cálculo", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);

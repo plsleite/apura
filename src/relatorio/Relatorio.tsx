@@ -46,7 +46,7 @@ export function Relatorio({
   const data = formatarData(calculo.dataElaboracao);
   const id = useId();
   return (
-    <article className="relatorio" aria-labelledby={`${id}-titulo`}>
+    <article className="demonstrativo" aria-labelledby={`${id}-titulo`}>
       <header className="relatorio-faixa">
         <div className="relatorio-identificacao">
           {cabecalho.orgao === null ? null : <p className="relatorio-orgao">{cabecalho.orgao}</p>}

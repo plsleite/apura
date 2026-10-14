@@ -451,3 +451,37 @@ describe("encargos próprios: só o que difere da metodologia do cálculo (revis
     });
   });
 });
+
+describe("encargos próprios: só diferença no trecho alcançado (revisão final da fase 6)", () => {
+  it("metodologia própria diferente só antes de 30/08/2024, prestação de 2025: sem palavra e sem nota", () => {
+    const calculo = calculoDeTeste({
+      lancamentos: [
+        prestacao("2025-03-05", {
+          encargos: {
+            metodologia: {
+              ...metodologiaDaOpcao("lei14905"),
+              ajustada: true,
+              periodos: [
+                {
+                  de: null,
+                  ate: "2024-08-29",
+                  correcao: { indice: "INPC" },
+                  juros: { tipo: "percentualMensal", taxaMensal: "2" },
+                },
+                {
+                  de: "2024-08-30",
+                  ate: null,
+                  correcao: { indice: "IPCA" },
+                  juros: { tipo: "taxaLegal" },
+                },
+              ],
+            },
+          },
+        }),
+      ],
+    });
+    const t = tabelasDoRelatorio(calculo, resultadoDe(calculo));
+    expect(t.prestacoes.linhas[0]?.palavras).toEqual([]);
+    expect(t.prestacoes.notas).toEqual([]);
+  });
+});
