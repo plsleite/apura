@@ -27,7 +27,7 @@ Este arquivo diz em que ponto o projeto está e como retomar o trabalho em qualq
 | 4 · Índices: rotina central e monitoramento | rotina central diária no repositório, congelamento por cálculo, calendário de divulgação, monitoramento gratuito | concluída em 2026-10-12 · plano: `docs/superpowers/plans/2026-10-12-fase-4-indices-rotina-central.md` |
 | 5 · Interface | layout em duas colunas, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-12-fase-5-interface.md` |
 | 5b · Ajustes da interface depois do uso | pagamento sugerido no mês seguinte, base dos alimentos por períodos, escolha da metodologia padrão de encargos (guardada no navegador), etiquetas das linhas numa linha só (§17 do design) | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-13-fase-5b-ajustes-da-interface.md` |
-| 6 · Relatório e PDF | componente, metodologia gerada, matriz de índices, marca, fontes, impressão | plano a escrever |
+| 6 · Relatório e PDF | componente, metodologia gerada, matriz de índices, marca, fontes, impressão; tela de erro de reserva, região viva e ajustes visuais (§18 do design) | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-13-fase-6-relatorio-e-pdf.md` |
 | 7 · Publicação | GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores | pendente |
 
 Depois do MVP: ver a seção 6 da visão do produto (art. 524, servidor e usuários, cálculo livre, honorários, danos morais, integrações).

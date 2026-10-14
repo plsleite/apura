@@ -520,7 +520,7 @@ apura/
   src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
   src/metodologias/         lei-14905-2024.v1.json · igpm-juros-1.v1.json · padrao.ts
   src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ · secoes/ · tabelas/ · componentes/ · testes/
-  src/relatorio/            Relatorio.tsx · metodologia.ts · matriz-indices.tsx · impressao.css
+  src/relatorio/            texto.ts · metodologia.ts · tabelas.ts · matriz.ts · bloqueio.ts · Relatorio.tsx · relatorio.css · testes/
 ```
 
 ### 12.3 CLAUDE.md
@@ -788,7 +788,7 @@ Limites aceitos (registrados, sem mudança): metodologia com buraco entre perío
 
 ### 18.9 Registro
 
-Plano em `docs/superpowers/plans/2026-10-13-fase-6-relatorio-e-pdf.md`, escrito depois de um ensaio do código numa cópia fora do repositório, conferido no navegador e revisado por um agente independente, como na fase 5b.
+Plano em `docs/superpowers/plans/2026-10-13-fase-6-relatorio-e-pdf.md`, escrito depois de um ensaio do código numa cópia fora do repositório, conferido no navegador e revisado por um agente independente, como na fase 5b. Executado em 13/10/2026, direto na sessão, por escolha do responsável; fase 6 concluída (ver a seção "Estado" do plano).
 
 ---
 

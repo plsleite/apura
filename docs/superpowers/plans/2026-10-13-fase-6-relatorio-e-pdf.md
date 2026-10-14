@@ -5311,7 +5311,7 @@ O jsdom não mede larguras nem imprime: esta tarefa confere no navegador integra
 
 ## Estado
 
-Plano escrito em 13/10/2026, a partir do ensaio e da reconstrução descritos em "Para o responsável". Execução: a preencher pela sessão que executar (modo, modelo, contagens medidas, revisão final).
+Plano escrito em 13/10/2026, a partir do ensaio e da reconstrução descritos em "Para o responsável". Executado no mesmo dia, por escolha do responsável, direto na sessão (superpowers:executing-plans, Claude Opus 5.5), na branch `claude/apura-fase-6-plan-55c423`, a partir de `a34a10a`. Em cada tarefa, o patch dos testes falhou como o passo previa (na Task 6, o Vite relatou `./TelaDeErro.tsx` em vez de `./componentes/Reserva.tsx`: os dois imports faltam, e ele relata um ou outro) e o do código deixou `npm run verificar` verde, com o `format` sem mudança e as contagens do plano: 1 → 864 passando e 10 pulados (874), 46 arquivos; 2 → 893 (903), 47; 3 → 916 (926), 50; 4 → 923 (933), 51 (logo com o mesmo `shasum` do ensaio); 5 → 927 (937), 52; 6 → 932 (942), 54; 7 → 935 (945), 55; 8 → 935 (945), 55. A Task 9 confirmou no navegador integrado e em PDF (Chrome sem janela) tudo o que o passo pedia, sem ajuste de CSS; o Step 4 foi conferido com um cálculo novo e a base em branco, porque apagar um campo da base não leva o vazio ao cálculo (o campo guarda o último valor válido, como desde a fase 5); `npm run build` gerou `dist/`. Revisão final da branch: ver o parágrafo seguinte.
 
 ## Notas para a fase 7
 
