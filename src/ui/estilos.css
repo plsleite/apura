@@ -204,7 +204,8 @@ textarea {
   cursor: not-allowed;
 }
 
-/* "Relatório / PDF" desligado até a fase 6: contorno tracejado, sem o fundo branco de destaque */
+/* "Relatório / PDF" desligado (sem prestação ou com lançamento sem valor, §18.1): contorno
+   tracejado, sem o fundo branco de destaque */
 .botao-barra.relatorio:disabled {
   background: transparent;
   color: var(--cabecalho-texto);
@@ -1037,4 +1038,64 @@ td.dica {
 
 .resumo-metodologia {
   margin: 2px 0 0;
+}
+
+/* ---- Relatório na tela (§18.1) e impressão (§18.2) ---- */
+
+/* as colunas continuam montadas, escondidas, enquanto o relatório está aberto */
+.principal[hidden] {
+  display: none;
+}
+
+.principal-relatorio {
+  flex: 1;
+  width: 100%;
+  max-width: 1132px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faixa-de-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.relatorio h1:focus {
+  outline: none;
+}
+
+.relatorio h1:focus-visible {
+  outline: 2px solid var(--ouro);
+  outline-offset: 3px;
+}
+
+.so-na-impressao {
+  display: none;
+}
+
+@media print {
+  .barra,
+  .rodape,
+  .faixa-de-acoes,
+  .avisos,
+  .dialogo-fundo,
+  .app:not(.vendo-relatorio) .principal {
+    display: none !important;
+  }
+
+  .app:not(.vendo-relatorio) .so-na-impressao {
+    display: block;
+    margin: 24px;
+    font-size: 14pt;
+  }
+
+  .principal-relatorio {
+    max-width: none;
+    padding: 0;
+  }
 }

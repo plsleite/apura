@@ -3,6 +3,9 @@ import type { Lancamento, LancamentoCalculado } from "../compartilhado/tipos.ts"
 import { compararIndicesUsados } from "../indices/congelar.ts";
 import { metodologiaDaOpcao } from "../metodologias/padrao.ts";
 import { calcular } from "../motor/calcular.ts";
+import { motivoDoBloqueio } from "../relatorio/bloqueio.ts";
+import { Relatorio } from "../relatorio/Relatorio.tsx";
+import { tituloDoDocumento } from "../relatorio/tabelas.ts";
 import { Abrir } from "./Abrir.tsx";
 import { ambientePadrao, type Ambiente } from "./ambiente.ts";
 import {
@@ -39,6 +42,7 @@ import {
   type Recente,
 } from "./recentes.ts";
 import { Rodape } from "./Rodape.tsx";
+import { VERSAO } from "./versao.ts";
 import { Indicadores } from "./tabelas/Indicadores.tsx";
 import { Personalizar } from "./tabelas/Personalizar.tsx";
 import { TabelaLancamentos, type LinhaDaTabela } from "./tabelas/TabelaLancamentos.tsx";
@@ -100,12 +104,38 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
   const personalizar = (id: string) =>
     setPersonalizando(estado.calculo.lancamentos.find((l) => l.id === id) ?? null);
 
+  // Relatório (§18.1): na mesma página, no lugar das colunas, que continuam montadas (escondidas)
+  // para a tela voltar como estava; o título da aba vira o nome sugerido do PDF; ao voltar, o foco
+  // volta ao botão "Relatório / PDF".
+  const [vendoRelatorio, setVendoRelatorio] = useState(false);
+  const botaoRelatorio = useRef<HTMLButtonElement>(null);
+  const voltouDoRelatorio = useRef(false);
+  const bloqueioDoRelatorio = motivoDoBloqueio(estado.calculo, resultado);
+  const tituloDoRelatorio = tituloDoDocumento(estado.calculo);
+  useEffect(() => {
+    if (!vendoRelatorio) {
+      if (voltouDoRelatorio.current) botaoRelatorio.current?.focus();
+      voltouDoRelatorio.current = false;
+      return;
+    }
+    const anterior = document.title;
+    document.title = tituloDoRelatorio;
+    return () => {
+      document.title = anterior;
+    };
+  }, [vendoRelatorio, tituloDoRelatorio]);
+  const fecharRelatorio = () => {
+    voltouDoRelatorio.current = true;
+    setVendoRelatorio(false);
+  };
+
   // Cada "Novo cálculo" ou "Abrir" remonta as duas colunas: os formulários, a linha nova e as
   // células em edição recomeçam (nada digitado para um cálculo vai parar no outro).
   const [aberturas, setAberturas] = useState(0);
   const novo = () => {
     despachar({ tipo: "novo", calculo: calculoNovo(preferencias), ...ambiente.congelar() });
     setAberturas(aberturas + 1);
+    setVendoRelatorio(false);
   };
 
   // Salvar (§5.1): o arquivo leva o cálculo e o resultado, com o nome apura-<processo>-<data>.json.
@@ -148,6 +178,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
     }
     despachar({ tipo: "abrir", calculo: leitura.calculo, ...indices, avisos });
     setAberturas(aberturas + 1);
+    setVendoRelatorio(false);
     setErroDeAbertura(null);
     setAbrirAberto(false);
   };
@@ -182,8 +213,15 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
     gravarPreferencias(armazenamento, novas);
   };
 
+  const avisosDaTela = [
+    ...faltas.map((f) => f.aviso),
+    ...estado.situacao.avisos,
+    ...estado.avisosDaAbertura,
+    ...resultado.avisos,
+  ];
+
   return (
-    <div className="app">
+    <div className={vendoRelatorio ? "app vendo-relatorio" : "app"}>
       <BarraSuperior
         aoNovo={novo}
         aoAbrir={() => {
@@ -193,10 +231,37 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
           setAbrirAberto(true);
         }}
         aoSalvar={salvar}
+        aoRelatorio={() => setVendoRelatorio(true)}
+        bloqueioDoRelatorio={bloqueioDoRelatorio}
+        refDoRelatorio={botaoRelatorio}
         tema={preferencias.tema}
         aoMudarTema={(tema) => mudarPreferencias({ tema })}
       />
-      <main className="principal">
+      {vendoRelatorio ? (
+        <main className="principal-relatorio">
+          <nav className="faixa-de-acoes" aria-label="Ações do relatório">
+            <button type="button" className="botao secundario" onClick={fecharRelatorio}>
+              ← Voltar ao cálculo
+            </button>
+            <button type="button" className="botao" onClick={() => ambiente.imprimir()}>
+              Imprimir / Salvar PDF
+            </button>
+          </nav>
+          <Avisos avisos={avisosDaTela} titulo="Antes de juntar, confira:" />
+          <Relatorio
+            calculo={estado.calculo}
+            resultado={resultado}
+            hoje={ambiente.hoje()}
+            versao={VERSAO}
+            focar
+          />
+        </main>
+      ) : (
+        <p className="so-na-impressao">
+          Para imprimir o demonstrativo, use o botão Relatório / PDF.
+        </p>
+      )}
+      <main className="principal" hidden={vendoRelatorio}>
         <div className="coluna-esquerda" key={`esquerda-${estado.calculo.id}-${aberturas}`}>
           <Processo
             cabecalho={estado.calculo.cabecalho}
@@ -264,14 +329,7 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
             valorDaBase={valorDaBase}
             aoIncluir={incluir}
           />
-          <Avisos
-            avisos={[
-              ...faltas.map((f) => f.aviso),
-              ...estado.situacao.avisos,
-              ...estado.avisosDaAbertura,
-              ...resultado.avisos,
-            ]}
-          />
+          <Avisos avisos={avisosDaTela} />
         </div>
       </main>
       <Rodape situacaoDosIndices={estado.situacao.rodape} />

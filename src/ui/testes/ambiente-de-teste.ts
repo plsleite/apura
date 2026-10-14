@@ -56,6 +56,8 @@ export interface AmbienteDeTeste extends Ambiente {
   armazenado: Storage | null;
   /** quantas vezes a tela congelou a tabela de índices */
   congelamentos: () => number;
+  /** quantas vezes a tela pediu a impressão do navegador */
+  impressoes: () => number;
 }
 
 export function ambienteDeTeste(
@@ -74,6 +76,7 @@ export function ambienteDeTeste(
   const baixados: AmbienteDeTeste["baixados"] = [];
   let contador = 0;
   let congelamentos = 0;
+  let impressoes = 0;
   return {
     congelar: () => {
       congelamentos++;
@@ -87,8 +90,12 @@ export function ambienteDeTeste(
     baixar: (nome, conteudo) => {
       baixados.push({ nome, conteudo });
     },
+    imprimir: () => {
+      impressoes++;
+    },
     baixados,
     armazenado,
     congelamentos: () => congelamentos,
+    impressoes: () => impressoes,
   };
 }

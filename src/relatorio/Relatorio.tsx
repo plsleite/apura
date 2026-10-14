@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { formatarData } from "../compartilhado/formatacao.ts";
 import type { Calculo, Resultado } from "../compartilhado/tipos.ts";
 import { matrizesDeIndices } from "./matriz.ts";
@@ -26,12 +26,19 @@ export function Relatorio({
   resultado,
   hoje,
   versao,
+  focar = false,
 }: {
   calculo: Calculo;
   resultado: Resultado;
   hoje: string;
   versao: string;
+  /** leva o foco ao título quando o relatório aparece (na tela, ao abrir pelo botão) */
+  focar?: boolean;
 }) {
+  const titulo = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focar) titulo.current?.focus();
+  }, [focar]);
   const cabecalho = cabecalhoDoRelatorio(calculo);
   const { prestacoes, amortizacoes } = tabelasDoRelatorio(calculo, resultado);
   const totais = totaisDoRelatorio(calculo, resultado);
@@ -43,7 +50,9 @@ export function Relatorio({
       <header className="relatorio-faixa">
         <div className="relatorio-identificacao">
           {cabecalho.orgao === null ? null : <p className="relatorio-orgao">{cabecalho.orgao}</p>}
-          <h1 id={`${id}-titulo`}>{cabecalho.titulo}</h1>
+          <h1 id={`${id}-titulo`} ref={titulo} tabIndex={-1}>
+            {cabecalho.titulo}
+          </h1>
           {cabecalho.linhas.map((linha) => (
             <p key={linha} className="relatorio-sub">
               {linha}
