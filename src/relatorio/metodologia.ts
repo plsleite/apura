@@ -188,9 +188,33 @@ function fraseDaForma(forma: FormaDaBase, doPeriodo: Par[], resultado: Resultado
 }
 
 /**
+ * "Nas prestações de 05/01/2027 e 05/02/2027, sem o salário mínimo do mês na data da consulta, foi
+ * usado o último disponível, de dez/2026 (R$ 1.621,00).": uma frase por mês de salário mínimo usado
+ * no lugar do que faltou, nas prestações apuradas pela base (§19.7, item 6).
+ */
+function frasesDoSalarioAnterior(apuradas: Par[]): string[] {
+  const porMesUsado = new Map<Competencia, Par[]>();
+  for (const par of apuradas) {
+    const anterior = par.calculado.salarioMinimoAnterior;
+    if (anterior === undefined) continue;
+    porMesUsado.set(anterior.usado, [...(porMesUsado.get(anterior.usado) ?? []), par]);
+  }
+  return [...porMesUsado.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([usado, lista]) => {
+      // a mensal e um 13º podem vencer no mesmo dia: a data sai uma vez só
+      const datas = [...new Set(lista.map((p) => p.lancamento.data))].sort();
+      const valor = lista[0]?.calculado.salarioMinimoAnterior?.valor ?? "0";
+      const quais = `${lista.length === 1 ? "Na prestação" : "Nas prestações"} de ${listar(datas.map(formatarData))}`;
+      return `${quais}, sem o salário mínimo do mês na data da consulta, foi usado o último disponível, de ${formatarCompetencia(usado)} (${formatarMoeda(decimal(valor))}).`;
+    });
+}
+
+/**
  * Base (§18.5): uma frase por período em que vence alguma prestação apurada pela base; com dois
- * ou mais períodos na base, cada frase começa pelo intervalo (§17.2). Complementos: prestações
- * anteriores à fixação e valores informados à mão.
+ * ou mais períodos na base, cada frase começa pelo intervalo (§17.2). Complementos: o salário
+ * mínimo usado no lugar do que faltou (§19.7), prestações anteriores à fixação e valores
+ * informados à mão.
  */
 export function paragrafoBase(calculo: Calculo, resultado: Resultado): string | null {
   const todos = pares(calculo, resultado);
@@ -214,6 +238,7 @@ export function paragrafoBase(calculo: Calculo, resultado: Resultado): string | 
   }
   const textos: string[] = [];
   if (frases.length > 0) textos.push(`${maiuscula(frases.join("; "))}.`);
+  textos.push(...frasesDoSalarioAnterior(apuradas));
   if (anteriorAFixacao) {
     textos.push("As prestações vencidas antes da fixação entram pelo valor fixado, sem reajuste.");
   }

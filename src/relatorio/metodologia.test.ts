@@ -651,6 +651,57 @@ describe("acertos da fase 7 (§19.7)", () => {
       "Mês sem índice divulgado na data da consulta, computado sem correção: IPCA de out/2026.",
     );
   });
+
+  it("6. salário mínimo que faltou no mês do vencimento: uma frase por mês usado no lugar", () => {
+    const porSm = baseUnica({ tipo: "percentualSalarioMinimo", percentual: "30" });
+    const varias = calculoDeTeste({
+      base: porSm,
+      lancamentos: [
+        prestacao("2026-09-05"),
+        prestacao("2027-01-05"),
+        prestacao("2027-02-05"),
+        prestacao("2027-03-05", { valorInformado: "500.00", editado: true }),
+      ],
+    });
+    expect(textos(varias).base).toBe(
+      "30% do salário mínimo vigente no mês de cada vencimento. Nas prestações de 05/01/2027 e 05/02/2027, sem o salário mínimo do mês na data da consulta, foi usado o último disponível, de dez/2026 (R$ 1.621,00). Nas prestações marcadas “valor informado”, vale o valor indicado na tabela, em vez do apurado pela base.",
+    );
+    const uma = calculoDeTeste({ base: porSm, lancamentos: [prestacao("2027-01-05")] });
+    expect(textos(uma).base).toBe(
+      "30% do salário mínimo vigente no mês de cada vencimento. Na prestação de 05/01/2027, sem o salário mínimo do mês na data da consulta, foi usado o último disponível, de dez/2026 (R$ 1.621,00).",
+    );
+  });
+
+  it("6. duas prestações no mesmo vencimento (a mensal e um 13º): a data sai uma vez só", () => {
+    const calculo = calculoDeTeste({
+      base: baseUnica({ tipo: "percentualSalarioMinimo", percentual: "30" }),
+      lancamentos: [
+        prestacao("2027-01-05"),
+        prestacao("2027-01-05", { id: "p-13", descricao: "13º salário", origem: "avulso" }),
+      ],
+    });
+    expect(textos(calculo).base).toBe(
+      "30% do salário mínimo vigente no mês de cada vencimento. Nas prestações de 05/01/2027, sem o salário mínimo do mês na data da consulta, foi usado o último disponível, de dez/2026 (R$ 1.621,00).",
+    );
+  });
+
+  it("6. valor fixo pelo salário mínimo, com um mês que falta na tabela", () => {
+    const tabela = tabelaRegimeNovo();
+    delete tabela.series["1619"]?.["2026-06"];
+    const calculo = calculoDeTeste({
+      base: baseUnica({
+        tipo: "valorFixo",
+        valor: "500.00",
+        dataFixacao: "2024-07-01",
+        indiceReajuste: "SM",
+        mesReajuste: 7,
+      }),
+      lancamentos: [prestacao("2026-05-05"), prestacao("2026-06-05")],
+    });
+    expect(textos(calculo, tabela).base).toBe(
+      "Valor fixo de R$ 500,00, fixado em 01/07/2024, reajustado na proporção do salário mínimo vigente no mês de cada vencimento (salário mínimo de jul/2024: R$ 1.412,00). Na prestação de 05/06/2026, sem o salário mínimo do mês na data da consulta, foi usado o último disponível, de mai/2026 (R$ 1.621,00).",
+    );
+  });
 });
 
 describe("revisão do ensaio da fase 7 (§19.7, itens 2 e 4, revistos em 14/10/2026)", () => {

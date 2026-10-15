@@ -20,6 +20,7 @@ import type {
   Lancamento,
   LancamentoCalculado,
   ReajusteDaBase,
+  SalarioMinimoAnterior,
   Resultado,
   SituacaoLancamento,
   TabelaIndices,
@@ -83,7 +84,14 @@ interface Rastro {
   mesesSemIndiceNaBase: MesSemIndice[];
   /** reajustes do valor fixo por índice da prestação apurada pela base (§18.4) */
   reajustesDaBase?: ReajusteDaBase[];
+  /** salário mínimo anterior usado no lugar do que faltou (§19.7, item 6) */
+  salarioMinimoAnteriorDaBase?: SalarioMinimoAnterior;
 }
+
+type RastroDaBase = Pick<
+  Rastro,
+  "indicesDaBase" | "mesesSemIndiceNaBase" | "reajustesDaBase" | "salarioMinimoAnteriorDaBase"
+>;
 
 interface ValorResolvido {
   valorBase: Decimal;
@@ -104,7 +112,7 @@ function resolverValor(
   indices: TabelaIndices,
   valorCasas: number,
   avisos: string[],
-  rastro: Pick<Rastro, "indicesDaBase" | "mesesSemIndiceNaBase" | "reajustesDaBase">,
+  rastro: RastroDaBase,
 ): ValorResolvido {
   if (lancamento.valorInformado !== undefined) {
     const informado = decimalOuNulo(lancamento.valorInformado);
@@ -137,6 +145,9 @@ function resolverValor(
   rastro.indicesDaBase = base.indicesUsados;
   rastro.mesesSemIndiceNaBase = base.mesesSemIndice;
   if (base.reajustes !== undefined) rastro.reajustesDaBase = base.reajustes;
+  if (base.salarioMinimoAnterior !== undefined) {
+    rastro.salarioMinimoAnteriorDaBase = base.salarioMinimoAnterior;
+  }
   if (base.valor === null) {
     return { valorBase: ZERO, memoriaBase: base.memoria, editado: false, semValor: true };
   }
@@ -211,10 +222,7 @@ function atualizarComRastro(
   if (lancamento.encargos?.metodologia !== undefined) {
     avisos.push(...validarMetodologia(lancamento.encargos.metodologia));
   }
-  const rastroDaBase: Pick<Rastro, "indicesDaBase" | "mesesSemIndiceNaBase" | "reajustesDaBase"> = {
-    indicesDaBase: [],
-    mesesSemIndiceNaBase: [],
-  };
+  const rastroDaBase: RastroDaBase = { indicesDaBase: [], mesesSemIndiceNaBase: [] };
   const valor = resolverValor(lancamento, calculo, indices, valorCasas, avisos, rastroDaBase);
   const situacao = decidirSituacao(lancamento, calculo, valor, avisos);
   const comum = {
@@ -230,6 +238,9 @@ function atualizarComRastro(
     ...(rastroDaBase.reajustesDaBase === undefined
       ? {}
       : { reajustes: rastroDaBase.reajustesDaBase }),
+    ...(rastroDaBase.salarioMinimoAnteriorDaBase === undefined
+      ? {}
+      : { salarioMinimoAnterior: rastroDaBase.salarioMinimoAnteriorDaBase }),
   };
 
   // Vincenda e ignorado entram pelo valor nominal: sem correção e sem juros (§6.7).

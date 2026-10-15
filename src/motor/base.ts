@@ -33,6 +33,7 @@ import type {
   NomeIndice,
   PeriodoDaBase,
   ReajusteDaBase,
+  SalarioMinimoAnterior,
   TabelaIndices,
 } from "../compartilhado/tipos.ts";
 import { aindaNaoDivulgado, divulgacaoPrevista } from "../compartilhado/divulgacao.ts";
@@ -55,6 +56,8 @@ export interface ValorBaseApurado {
   avisos: string[];
   /** reajustes do valor fixo por índice (só nessa forma; vazio antes do primeiro), para o relatório */
   reajustes?: ReajusteDaBase[];
+  /** salário mínimo de um mês anterior usado no lugar do que faltou, para o relatório (§19.7) */
+  salarioMinimoAnterior?: SalarioMinimoAnterior;
 }
 
 const SALARIO_MINIMO = CODIGO_DA_SERIE.SM;
@@ -90,6 +93,11 @@ function registro(
   const valor = tabela.series[serie]?.[competencia];
   if (valor === undefined) return null;
   return { serie, competencia, valor: valor.valor, fonte: valor.fonte, obtidoEm: valor.obtidoEm };
+}
+
+/** O salário mínimo de um mês anterior usado no lugar do que faltou, para o relatório (§19.7). */
+function anteriorUsado(competencia: Competencia, usado: IndiceUsado): SalarioMinimoAnterior {
+  return { competencia, usado: usado.competencia, valor: usado.valor };
 }
 
 /**
@@ -186,6 +194,7 @@ function porSalarioMinimo(
     indicesUsados: [salario.usado],
     mesesSemIndice: [{ serie: SALARIO_MINIMO, competencia }],
     avisos: [anterior.aviso],
+    salarioMinimoAnterior: anteriorUsado(competencia, salario.usado),
   };
 }
 
@@ -271,6 +280,7 @@ function porSalarioMinimoProporcional(
     indicesUsados,
     mesesSemIndice: [{ serie: SALARIO_MINIMO, competencia }],
     avisos: [anterior.aviso],
+    salarioMinimoAnterior: anteriorUsado(competencia, noVencimento.usado),
   };
 }
 

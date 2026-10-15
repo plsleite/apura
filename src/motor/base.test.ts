@@ -75,6 +75,15 @@ describe("base em percentual do salário mínimo (§6.3)", () => {
     expect(r.mesesSemIndice).toEqual([{ serie: "1619", competencia: "2027-01" }]);
   });
 
+  it("o salário mínimo anterior usado no lugar do que faltou sai estruturado, para o relatório (§19.7, item 6)", () => {
+    expect(
+      apurarValorBase(prestacao("2027-01-05"), base, tabelaRegimeNovo(), 2).salarioMinimoAnterior,
+    ).toEqual({ competencia: "2027-01", usado: "2026-12", valor: "1621.00" });
+    expect(
+      apurarValorBase(prestacao("2026-12-05"), base, tabelaRegimeNovo(), 2),
+    ).not.toHaveProperty("salarioMinimoAnterior");
+  });
+
   it("sem nenhum salário mínimo anterior na tabela: fica sem valor, com aviso", () => {
     const r = apurarValorBase(prestacao("2023-06-10"), base, tabelaRegimeNovo(), 2);
     expect(r.valor).toBeNull();
@@ -675,6 +684,11 @@ describe("base com calendário de divulgação (fase 4: esperadoAte)", () => {
       );
       expect(r.mesesSemIndice).toEqual([{ serie: "1619", competencia: "2018-03" }]);
       expect(r.indicesUsados.map((i) => i.competencia)).toEqual(["2017-01", "2018-02"]);
+      expect(r.salarioMinimoAnterior).toEqual({
+        competencia: "2018-03",
+        usado: "2018-02",
+        valor: "954.00",
+      });
     });
 
     it("mês presente na tabela: sem aviso, com ou sem calendário", () => {
