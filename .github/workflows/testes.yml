@@ -1,0 +1,49 @@
+# Integração contínua (§19.3 do design): a cada envio, em qualquer branch, e a cada pull request,
+# confere formatação, lint, tipos e testes (npm run verificar), monta o site e audita as
+# dependências (vulnerabilidades conhecidas e assinaturas de origem dos pacotes). Só lê o
+# repositório. Os commits do robô dos índices não o disparam (são feitos com o token padrão do
+# GitHub), e a rotina já roda as mesmas conferências antes de gravar.
+#
+# As actions ficam fixadas pelo SHA do commit da versão (comentário ao lado); para trocar de versão,
+# use uma publicada há pelo menos 14 dias (§19.6) e confira com o actionlint (CLAUDE.md).
+name: Testes
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      # Sem programas de pacote na instalação, e Node fora do engines para a instalação (.npmrc).
+      - run: npm ci
+
+      - name: Conferir formatação, lint, tipos e testes
+        run: npm run verificar
+
+      - name: Montar o site
+        run: npm run build
+
+      - name: Auditar as dependências
+        run: npm audit --audit-level=high
+
+      - name: Conferir as assinaturas dos pacotes
+        run: npm audit signatures
