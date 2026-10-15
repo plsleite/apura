@@ -232,6 +232,17 @@ export function paragrafoBase(calculo: Calculo, resultado: Resultado): string | 
 const atualizados = (calculo: Calculo, resultado: Resultado): Par[] =>
   pares(calculo, resultado).filter((p) => p.calculado.situacao === "atualizado");
 
+/** Prestação que começa os encargos no vencimento: sem termo inicial próprio (§19.7, item 1). */
+function comecaNoVencimento(p: Par): boolean {
+  return p.lancamento.tipo === "prestacao" && semTermoInicialProprio(p);
+}
+
+/** Lançamento que começa os encargos na própria data: sem termo inicial próprio (§19.7). */
+function semTermoInicialProprio(p: Par): boolean {
+  const e = p.lancamento.encargos;
+  return e?.termoInicialCorrecao === undefined && e?.termoInicialJuros === undefined;
+}
+
 function sobrepoe(p: PeriodoMetodologia, inicio: DataISO, fim: DataISO): boolean {
   return (p.de === null || p.de <= fim) && (p.ate === null || inicio <= p.ate);
 }
@@ -289,6 +300,41 @@ export function mesmasRegrasNoAlcance(
   return datas.every((data) => regraEm(propria, data) === regraEm(global, data));
 }
 
+/** Um índice negativo entrou na correção do lançamento, com fração e com valor. */
+function negativoNaConta(par: Par): boolean {
+  return par.calculado.correcao.indices.some(
+    (i) => i.valor !== null && !i.fracao.startsWith("0/") && decimal(i.valor).isNegative(),
+  );
+}
+
+/**
+ * A deflação da metodologia mudou a conta do lançamento: um índice negativo entrou; com piso, só
+ * quando o piso atuou (§18.5, parágrafo "Deflação").
+ */
+function deflacaoAtuou(par: Par, modo: Metodologia["deflacao"]): boolean {
+  return negativoNaConta(par) && (modo !== "aplicarComPiso" || par.calculado.correcao.pisoAplicado);
+}
+
+/**
+ * A deflação própria deu à linha um valor diferente do que a deflação do cálculo daria (§19.7,
+ * item 4, revisto em 14/10/2026): basta um índice negativo na conta, salvo entre "com piso" e "sem
+ * piso", que só diferem quando o piso atua (o da própria, ou o do cálculo, que atuaria com o
+ * acumulado abaixo de 1).
+ */
+function deflacaoPropriaMudouAConta(
+  par: Par,
+  propria: Metodologia["deflacao"],
+  global: Metodologia["deflacao"],
+): boolean {
+  if (propria === global || !negativoNaConta(par)) return false;
+  const { correcao } = par.calculado;
+  if (propria === "aplicarComPiso" && global === "aplicarSemPiso") return correcao.pisoAplicado;
+  if (propria === "aplicarSemPiso" && global === "aplicarComPiso") {
+    return decimal(correcao.fator).lt(1);
+  }
+  return true;
+}
+
 const DEFLACAO_CURTA: Record<Metodologia["deflacao"], string> = {
   aplicarComPiso:
     "índices negativos computados, sem que o valor corrigido fique inferior ao original",
@@ -310,7 +356,8 @@ function termo(nome: string, inicio?: string, fim?: string): string | null {
  * O que os encargos de um lançamento têm de diferente dos do cálculo (§18.3, nota "Encargos
  * próprios"): os termos próprios; e, com metodologia própria, as regras dos períodos que o
  * lançamento alcançou (quando não são as do cálculo), a incidência no mês inicial e a deflação
- * (quando diferem). Lista vazia: nada difere, e a linha não leva a palavra "encargos próprios".
+ * (quando muda a conta do lançamento). Lista vazia: nada difere, e a linha não leva a palavra
+ * "encargos próprios".
  */
 export function diferencasDosEncargos(par: Par, calculo: Calculo): string[] {
   const e = par.lancamento.encargos ?? {};
@@ -332,7 +379,9 @@ export function diferencasDosEncargos(par: Par, calculo: Calculo): string[] {
         : `correção pelo índice do mês do ${data}, proporcional aos dias restantes (pro rata)`,
     );
   }
-  if (propria.deflacao !== global.deflacao) partes.push(DEFLACAO_CURTA[propria.deflacao]);
+  if (deflacaoPropriaMudouAConta(par, propria.deflacao, global.deflacao)) {
+    partes.push(DEFLACAO_CURTA[propria.deflacao]);
+  }
   return partes;
 }
 
@@ -340,15 +389,16 @@ export function diferencasDosEncargos(par: Par, calculo: Calculo): string[] {
  * Termos (§18.5): a regra comum, descrita a partir dos lançamentos atualizados sem encargos
  * próprios e só com o que eles tiveram (correção, se algum mês entrou com índice; juros, se o
  * percentual passou de zero; o último mês inteiro com índice; o pro rata no mês do cálculo; o
- * valor parcial da SELIC no mês do cálculo); a mora fala das prestações, e, só com pagamentos, a
- * correção fala da data do pagamento. Com lançamentos de encargos próprios, a remissão às notas.
+ * valor parcial da SELIC no mês do cálculo); a mora, só quando alguma prestação começa os encargos
+ * no vencimento, e, só com pagamentos, a correção fala da data do pagamento. Com lançamentos de
+ * encargos próprios, a remissão às notas.
  */
 export function paragrafoTermos(calculo: Calculo, resultado: Resultado): string | null {
   const lista = atualizados(calculo, resultado);
   if (lista.length === 0) return null;
   const comuns = lista.filter((p) => diferencasDosEncargos(p, calculo).length === 0);
   const frases: string[] = [];
-  if (lista.some((p) => p.lancamento.tipo === "prestacao")) frases.push(MORA);
+  if (lista.some(comecaNoVencimento)) frases.push(MORA);
 
   const mesDoCalculo = competenciaDe(calculo.dataElaboracao);
   let comCorrecao = false;
@@ -357,9 +407,9 @@ export function paragrafoTermos(calculo: Calculo, resultado: Resultado): string 
   let proRataFinal: { competencia: Competencia; dias: number } | null = null;
   for (const { lancamento, calculado } of comuns) {
     for (const i of calculado.correcao.indices) {
-      if (i.serie === null || i.fracao.startsWith("0/")) continue;
+      // só o mês que entrou com fração e com índice divulgado conta como correção (§19.7, item 3)
+      if (i.serie === null || i.fracao.startsWith("0/") || i.valor === null) continue;
       comCorrecao = true;
-      if (i.valor === null) continue;
       if (i.fracao === "1") {
         if (ultimoInteiro === null || i.competencia > ultimoInteiro) ultimoInteiro = i.competencia;
         if (i.competencia === mesDoCalculo && i.serie === CODIGO_DA_SERIE.SELIC)
@@ -456,8 +506,19 @@ export function paragrafoEncargos(calculo: Calculo, resultado: Resultado): strin
   const ultimoComJuros = regras.map((r) => r.jurosSeparados).lastIndexOf(true);
   const corrigido = (i: number) => (i === ultimoComJuros ? ", sobre o valor corrigido" : "");
   if (alcancados.length === 1) {
+    // o termo inicial comum (§19.7, item 2, revisto em 14/10/2026): o vencimento, se alguma
+    // prestação começa nele; a data do pagamento, se só há pagamentos; senão, nenhum (as notas
+    // das tabelas dizem os termos próprios de cada linha)
+    const soPagamentos = !daGlobal.some((p) => p.lancamento.tipo === "prestacao");
+    const desde = daGlobal.some(comecaNoVencimento)
+      ? "do vencimento"
+      : soPagamentos && daGlobal.some(semTermoInicialProprio)
+        ? "da data do pagamento"
+        : null;
     const unico =
-      periodosOrdenados(global).length === 1 ? ", do vencimento até a data do cálculo" : "";
+      periodosOrdenados(global).length === 1 && desde !== null
+        ? `, ${desde} até a data do cálculo`
+        : "";
     return `${maiuscula(regras[0]?.texto ?? "")}${unico}${corrigido(0)}.`;
   }
   const trechos = alcancados.map(
@@ -516,18 +577,19 @@ function paragrafoMultaEHonorarios(calculo: Calculo): string | null {
 
 /**
  * Deflação (§18.5): só quando um índice negativo entrou na conta de algum lançamento; com piso,
- * só quando o piso atuou. Cada lançamento segue a deflação da sua metodologia (a própria ou a do
- * cálculo).
+ * só quando o piso atuou. Cada lançamento segue a deflação da sua metodologia: a própria, quando
+ * ela mudou a conta da linha (§19.7, item 4); senão, a do cálculo.
  */
 export function paragrafoDeflacao(calculo: Calculo, resultado: Resultado): string | null {
   const frases = new Set<string>();
-  for (const { lancamento, calculado } of atualizados(calculo, resultado)) {
-    const modo = (lancamento.encargos?.metodologia ?? calculo.metodologia).deflacao;
-    const negativo = calculado.correcao.indices.some(
-      (i) => i.valor !== null && !i.fracao.startsWith("0/") && decimal(i.valor).isNegative(),
-    );
-    if (!negativo) continue;
-    if (modo === "aplicarComPiso" && calculado.correcao.pisoAplicado) {
+  const global = calculo.metodologia.deflacao;
+  for (const par of atualizados(calculo, resultado)) {
+    // a deflação própria só conta quando mudou a conta da linha; senão, vale a do cálculo (§19.7)
+    const propria = par.lancamento.encargos?.metodologia?.deflacao;
+    const modo =
+      propria !== undefined && deflacaoPropriaMudouAConta(par, propria, global) ? propria : global;
+    if (!deflacaoAtuou(par, modo)) continue;
+    if (modo === "aplicarComPiso") {
       frases.add("Índices negativos computados; o valor corrigido não fica inferior ao original.");
     } else if (modo === "aplicarSemPiso") {
       frases.add("Índices negativos computados, sem piso.");

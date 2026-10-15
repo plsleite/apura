@@ -388,18 +388,18 @@ describe("encargos próprios: só o que difere da metodologia do cálculo (revis
     ).toEqual(["05/03/2025: correção a partir do mês seguinte ao do vencimento."]);
   });
 
-  it("deflação diferente da do cálculo", () => {
+  it("deflação diferente da do cálculo, com índice negativo na conta (§19.7, item 4)", () => {
     expect(
       nota({
         lancamentos: [
           prestacao("2025-03-05", {
             encargos: {
-              metodologia: { ...metodologiaDaOpcao("lei14905"), deflacao: "aplicarSemPiso" },
+              metodologia: { ...metodologiaDaOpcao("lei14905"), deflacao: "zerarNegativos" },
             },
           }),
         ],
       }).itens,
-    ).toEqual(["05/03/2025: índices negativos computados, sem piso."]);
+    ).toEqual(["05/03/2025: índices negativos desconsiderados (tomados como zero)."]);
   });
 
   it("só os períodos da metodologia própria que o lançamento alcançou", () => {
@@ -483,5 +483,94 @@ describe("encargos próprios: só diferença no trecho alcançado (revisão fina
     const t = tabelasDoRelatorio(calculo, resultadoDe(calculo));
     expect(t.prestacoes.linhas[0]?.palavras).toEqual([]);
     expect(t.prestacoes.notas).toEqual([]);
+  });
+});
+
+describe("deflação própria só com índice negativo na conta (§19.7, item 4)", () => {
+  const linha = (data: string, deflacao: "aplicarSemPiso" | "zerarNegativos") => {
+    const calculo = calculoDeTeste({
+      lancamentos: [
+        prestacao(data, {
+          encargos: { metodologia: { ...metodologiaDaOpcao("lei14905"), deflacao } },
+        }),
+      ],
+    });
+    const t = tabelasDoRelatorio(calculo, resultadoDe(calculo));
+    return {
+      palavras: t.prestacoes.linhas[0]?.palavras,
+      itens: t.prestacoes.notas.find((n) => n.termo === "Encargos próprios")?.itens,
+    };
+  };
+
+  it("sem índice negativo na conta (set/2026 e out/2026): sem palavra e sem nota", () => {
+    expect(linha("2026-09-05", "aplicarSemPiso")).toEqual({ palavras: [], itens: undefined });
+    expect(linha("2026-09-05", "zerarNegativos")).toEqual({ palavras: [], itens: undefined });
+  });
+
+  it("com índice negativo na conta (ago/2026, −0,32%): a deflação própria entra na nota", () => {
+    expect(linha("2026-08-05", "zerarNegativos")).toEqual({
+      palavras: ["encargos próprios"],
+      itens: ["05/08/2026: índices negativos desconsiderados (tomados como zero)."],
+    });
+  });
+
+  it("própria com piso, cálculo sem piso: só entra se o piso atuou", () => {
+    const comPiso = (data: string) => {
+      const calculo = calculoDeTeste({
+        metodologia: { ...metodologiaDaOpcao("lei14905"), deflacao: "aplicarSemPiso" },
+        lancamentos: [
+          prestacao(data, {
+            encargos: {
+              metodologia: { ...metodologiaDaOpcao("lei14905"), deflacao: "aplicarComPiso" },
+            },
+          }),
+        ],
+      });
+      return tabelasDoRelatorio(calculo, resultadoDe(calculo)).prestacoes.notas.find(
+        (n) => n.termo === "Encargos próprios",
+      )?.itens;
+    };
+    // ago/2026 (−0,32%) e set/2026 (+0,82%): o acumulado fica positivo, o piso não atua
+    expect(comPiso("2026-08-05")).toBe(undefined);
+  });
+});
+
+describe("deflação própria × deflação do cálculo (§19.7, item 4, revisto em 14/10/2026)", () => {
+  const linhaDe = (
+    data: string,
+    doCalculo: "aplicarComPiso" | "aplicarSemPiso" | "zerarNegativos",
+    propria: "aplicarComPiso" | "aplicarSemPiso" | "zerarNegativos",
+  ) => {
+    const calculo = calculoDeTeste({
+      metodologia: { ...metodologiaDaOpcao("igpmJuros1"), deflacao: doCalculo },
+      lancamentos: [
+        prestacao(data, {
+          encargos: {
+            metodologia: { ...metodologiaDaOpcao("igpmJuros1"), deflacao: propria },
+          },
+        }),
+      ],
+    });
+    const t = tabelasDoRelatorio(calculo, resultadoDe(calculo));
+    return {
+      palavras: t.prestacoes.linhas[0]?.palavras,
+      itens: t.prestacoes.notas.find((n) => n.termo === "Encargos próprios")?.itens,
+    };
+  };
+
+  it("cálculo “desconsiderados”, linha “com piso”: negativos na conta mudam o valor, mesmo sem o piso atuar", () => {
+    expect(linhaDe("2024-01-05", "zerarNegativos", "aplicarComPiso")).toEqual({
+      palavras: ["encargos próprios"],
+      itens: [
+        "05/01/2024: índices negativos computados, sem que o valor corrigido fique inferior ao original.",
+      ],
+    });
+  });
+
+  it("cálculo “com piso”, linha “sem piso”, acumulado acima do original: o piso não teria atuado, nada difere", () => {
+    expect(linhaDe("2024-01-05", "aplicarComPiso", "aplicarSemPiso")).toEqual({
+      palavras: [],
+      itens: undefined,
+    });
   });
 });
