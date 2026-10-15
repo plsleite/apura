@@ -28,7 +28,7 @@ Este arquivo diz em que ponto o projeto está e como retomar o trabalho em qualq
 | 5 · Interface | layout em duas colunas, seções, tabelas, personalização, recentes, preferências, salvar/abrir, temas | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-12-fase-5-interface.md` |
 | 5b · Ajustes da interface depois do uso | pagamento sugerido no mês seguinte, base dos alimentos por períodos, escolha da metodologia padrão de encargos (guardada no navegador), etiquetas das linhas numa linha só (§17 do design) | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-13-fase-5b-ajustes-da-interface.md` |
 | 6 · Relatório e PDF | componente, metodologia gerada, matriz de índices, marca, fontes, impressão; tela de erro de reserva, região viva e ajustes visuais (§18 do design) | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-13-fase-6-relatorio-e-pdf.md` |
-| 7 · Publicação | GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores | pendente |
+| 7 · Publicação | GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores; rotina em etapas, conferência da publicação, monitoramento; acertos do relatório (§19 do design) | concluída em 2026-10-15 · plano: `docs/superpowers/plans/2026-10-14-fase-7-publicacao.md` · site: `https://apura-dpems.pages.dev` · repositório: `plsleite/apura` (privado) |
 
 Depois do MVP: ver a seção 6 da visão do produto (art. 524, servidor e usuários, cálculo livre, honorários, danos morais, integrações).
 
@@ -36,15 +36,13 @@ Depois do MVP: ver a seção 6 da visão do produto (art. 524, servidor e usuár
 
 - Pontos de validação jurídica (seção 7 do design): cada fase pergunta os que lhe tocam.
 - Gabaritos do SAJ Tribunais: obtidos em 11/10/2026 (IGP-M 2024–2026; SELIC capitalizada; base "valor informado" R$ 1.500,00 × 0,30 em 22 prestações, sem reajuste; INPC com base "salário mínimo do período" 0,30 e quatro pagamentos mensais; SELIC como indexador e como juros com aba Honorários a 10%, analisado sem virar caso porque conta a SELIC duas vezes). O SAJ não calcula a taxa legal nem o valor fixo com reajuste por índice: os gabaritos desses são a Calculadora do Cidadão do BCB e aritmética decimal independente. Opcional restante: lançamento datado no dia do cálculo.
-- Criação do repositório privado no GitHub e da conta no Cloudflare Pages (fase 7, ou antes se os testadores precisarem).
-- Rotina de índices e monitoramento, feitos uma vez na fase 7, com o repositório no GitHub:
-  - criar no Healthchecks.io (plano gratuito) uma verificação com agendamento "0 7 * * 1-5", fuso America/Sao_Paulo e tolerância de 1 dia, e guardar o endereço de sinal no segredo `HC_URL` do repositório;
-  - ligar no Cloudflare Pages o aviso por e-mail de publicação com falha;
-  - não exigir pull request para gravar na `main` (a rotina grava direto, depois das conferências automáticas);
-  - rodar a rotina à mão ("Run workflow" em "Atualizar índices do BCB") e conferir o resumo, o commit do robô e a publicação do site (se o resumo mostrar as seis séries como "sem mudança", não há commit para conferir, e o passo "Ver se algum arquivo mudou" diz "Nenhum arquivo de dados/ mudou; nada a gravar.": repita num dia útil depois das 19h, quando a SELIC do dia já saiu); só se o commit não publicar, criar o deploy hook da `main` no Cloudflare e guardá-lo no segredo `CF_DEPLOY_HOOK`;
-  - opcional: ampliar para 400 dias a guarda do histórico de execuções (Settings > Actions > General), antes da primeira execução;
-  - depois de um e de três meses, revisar com o Claude os relatórios em `docs/monitoramento/` e decidir se muda horário ou agendador.
-- Teste na rede da Defensoria: com o site publicado (fase 7), abrir o Apura num computador da instituição; o app não acessa mais o BCB, então basta que a rede alcance o site.
+- Publicação e rotina (feitas na fase 7, em 14–15/10/2026): repositório privado `plsleite/apura`; Cloudflare Pages `apura-dpems` com integração Git (pré-visualizações restritas, aviso de montagem com falha); Healthchecks.io "Apura · rotina de índices" (`0 7 * * 1-5`, America/Sao_Paulo, 1 dia) com o segredo `HC_URL`; alertas de segurança das dependências; guarda de 400 dias; actions exigidas por SHA; e-mail de workflow com falha. Primeira rodada manual em 15/10/2026 02:15: gravou a SELIC e o Cloudflare publicou sozinho (sem deploy hook). Teste na rede da Defensoria, impressão do relatório lá e "Salvar" no Safari: conferidos pelo responsável em 15/10/2026.
+- Pendências com data:
+  - **Agendador do GitHub:** em 15/10/2026 nenhuma rodada agendada foi criada (nem às 10h47 nem às 14h17), como em vários relatos recentes de repositórios privados do plano gratuito. Decisão marcada: em 16/10/2026, depois das 11h, conferir (`gh run list -R plsleite/apura --workflow atualizar-indices.yml`) e, sem rodada agendada, decidir com o responsável o disparo externo (§15 do design: outro agendador chamando o "Run workflow" pela API, com uma chave restrita ao `apura`). O alarme do Healthchecks deve chegar por e-mail se nada rodar até lá (é a conferência dele). Quando a primeira rodada agendada vier, conferir que o título é "Atualizar índices · 47 10 * * 1-5" (ou outra rodada) e que começou perto do horário de Brasília (chave `timezone`).
+  - **02/11/2026, depois das 12h17:** conferir o primeiro relatório mensal (`docs/monitoramento/2026-10.md`, commit "[CF-Pages-Skip] monitoramento: …", sem nova publicação).
+  - **Depois de 19/10/2026:** a máquina padrão do GitHub passa ao Ubuntu 26; conferir a primeira rodada depois disso.
+  - **Um e três meses depois da ligação:** revisar com o Claude os relatórios em `docs/monitoramento/` e decidir se muda horário ou agendador; na de um mês, ajustar duas notas do relatório mensal que a rotina em etapas desatualizou (estimativa de minutos por etapa; comparação com o alarme do Healthchecks nos dias de site atrasado).
+  - **Antes de abril de 2027:** o Node 22 chega ao fim da vida útil; trocar pelo 24 (`.node-version`, `engines`, testes).
 
 ## Prompt de retomada (modelo)
 
