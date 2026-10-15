@@ -4,7 +4,13 @@ import type { LoteAmortizacoes } from "../../compartilhado/tipos.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import { Avisos } from "../componentes/Avisos.tsx";
 import { CampoTexto } from "../componentes/Campo.tsx";
-import { DATA_MAXIMA, formatarMoedaParaCampo, lerData, lerValorPositivo } from "../entrada.ts";
+import {
+  DATA_MAXIMA,
+  DATA_MINIMA,
+  formatarMoedaParaCampo,
+  lerData,
+  lerValorPositivo,
+} from "../entrada.ts";
 import { intervaloDoLote, MAXIMO_DE_MESES } from "./LotePrestacoes.tsx";
 
 /**
@@ -93,7 +99,7 @@ export function LotePagamentosSecao({
             valor={primeiro}
             aoMudar={setPrimeiro}
             erro={erros.primeiro}
-            min="1900-01-01"
+            min={DATA_MINIMA}
             max={DATA_MAXIMA}
           />
           <CampoTexto
@@ -103,7 +109,7 @@ export function LotePagamentosSecao({
             valor={ultimo}
             aoMudar={setUltimo}
             erro={erros.ultimo}
-            min="1900-01-01"
+            min={DATA_MINIMA}
             max={DATA_MAXIMA}
           />
           <button type="submit" className="botao">

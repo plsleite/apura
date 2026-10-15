@@ -259,6 +259,19 @@ export interface ReajusteDaBase {
   aindaNaoDivulgados?: boolean;
 }
 
+/**
+ * O salário mínimo de um mês anterior usado no lugar do que faltou no mês do vencimento (ainda não
+ * publicado ou fora da tabela), para o relatório dizer qual entrou (§19.7, item 6).
+ */
+export interface SalarioMinimoAnterior {
+  /** mês do vencimento, sem salário mínimo na tabela */
+  competencia: Competencia;
+  /** mês do salário mínimo usado no lugar */
+  usado: Competencia;
+  /** valor do salário mínimo usado, em reais */
+  valor: TextoDecimal;
+}
+
 export interface LancamentoCalculado {
   id: string;
   tipo: Lancamento["tipo"];
@@ -275,6 +288,11 @@ export interface LancamentoCalculado {
    * prestações apuradas por essa forma da base (§18.4)
    */
   reajustes?: ReajusteDaBase[];
+  /**
+   * salário mínimo de um mês anterior usado no lugar do que faltou no mês do vencimento, só nas
+   * prestações apuradas pela base que precisaram dele (§19.7, item 6)
+   */
+  salarioMinimoAnterior?: SalarioMinimoAnterior;
   correcao: { fator: TextoDecimal; indices: IndiceAplicado[]; pisoAplicado: boolean };
   corrigido: TextoDecimal;
   juros: { percentual: TextoDecimal; detalhe: DetalheJuros[] };

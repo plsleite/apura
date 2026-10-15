@@ -792,6 +792,148 @@ Plano em `docs/superpowers/plans/2026-10-13-fase-6-relatorio-e-pdf.md`, escrito 
 
 ---
 
+## 19. Publicação: decisões da fase 7
+
+Decididas pelo responsável em 14/10/2026, no brainstorming da fase 7, sobre o que a §3.3, a §11, a §12.2, a §13 e a §14 deixavam abertos, com as pendências de "Fase 7" dos planos das fases 1, 4, 5 e 6. Onde esta seção e as anteriores divergirem, vale esta.
+
+### 19.1 Contas e repositório
+
+- **Repositório privado na conta pessoal do responsável no GitHub** (`plsleite/apura`), no lugar de uma organização da Defensoria (a §13 deixava "a definir na criação"). Uma transferência futura para uma organização é possível; ela exigiria religar o Cloudflare ao repositório e conferir os segredos.
+- **`main` sem exigência de pull request:** no plano gratuito, repositório privado não tem proteção de branch, e não há o que configurar. A rotina grava direto, depois das conferências automáticas (§8.2).
+- **Contas novas, gratuitas, criadas pelo responsável:** Cloudflare (com o e-mail que ele lê todo dia, para onde vão os avisos de montagem com falha) e Healthchecks.io. Nenhum segredo passa pelo chat: o responsável cola os segredos direto nos painéis.
+- **O que fica para fora** (criar o repositório, enviar, desligar e religar workflows, disparar a rotina, pôr a etiqueta da versão) é feito pelo Claude Code com o `gh` já autenticado na máquina, uma ação de cada vez, sempre depois da confirmação do responsável.
+
+### 19.2 Publicação
+
+- **Cloudflare Pages com integração Git** (§3.3 e §13), no lugar do GitHub Pages e de um workflow `publicar.yml`. O GitHub Pages exigiria tornar o código público (ou pagar o GitHub Pro) e não tem pré-visualização por branch nem cabeçalhos próprios. O `publicar.yml` exigiria guardar no GitHub uma chave de API do Cloudflare, acrescentaria o `wrangler` às dependências e precisaria reagir ao fim da rotina, porque o commit do robô com o `GITHUB_TOKEN` não dispara outros workflows. A integração Git publica também os commits do robô, porque não é um workflow. **O `publicar.yml` previsto na §12.2 não existe.**
+- **Projeto `apura-dpems`, endereço `https://apura-dpems.pages.dev`** (o `apura.pages.dev` tem outro dono). Um subdomínio da Defensoria pode ser acrescentado depois, no painel do Cloudflare mais um registro no DNS da instituição, sem mudar o código. Nesse caso, liga-se ali o "Always Use HTTPS" e troca-se o endereço da conferência da publicação (§19.4). Esse é o remédio também se a rede da Defensoria bloquear `*.pages.dev`.
+- **Montagem no Cloudflare:** branch de produção `main`; comando `npm run verificar && npm run build`; pasta `dist`. Com teste quebrado a montagem falha, e o site continua na versão anterior: é a garantia "publicação só com testes verdes" da §11.
+- **Node 22.23.3 fixado no arquivo `.node-version`**, lido pelo Cloudflare (cuja imagem de montagem usa o 22.16 por padrão, abaixo do `engines`) e pelos workflows (`node-version-file`). A versão saiu em 23/09/2026, passa da regra dos 14 dias (§19.6) e é a última versão 22 com correções de segurança na data da decisão.
+- **Arquivo `.npmrc`** com `ignore-scripts=true` (nenhum pacote roda programa próprio na instalação; hoje nenhum precisa) e `engine-strict=true` (com Node abaixo do `engines`, a instalação para com erro em vez de seguir com aviso). Vale na máquina local, nos workflows e no Cloudflare.
+- **Pré-visualização de cada branch**, restrita ao responsável pela política de acesso das pré-visualizações do Cloudflare (login do Cloudflare).
+- **Site aberto a quem tiver o endereço, sem aparecer em buscadores.** O Apura não guarda dado algum no servidor (§14), e quem abre o site recebe só o programa e a cópia dos índices. A restrição por e-mail (Cloudflare Access) foi descartada para não pôr um passo de entrada para cada testador.
+- **Cabeçalhos do site** (`public/_headers`, copiado para `dist/`), em todas as respostas:
+  - `X-Robots-Tag: noindex`, e a marca `<meta name="robots" content="noindex">` no `index.html`;
+  - política de conteúdo (`Content-Security-Policy`): o navegador só aceita carregar o que vem do próprio site (scripts, estilos, fontes e imagens do próprio endereço; estilos em atributo, que o React usa; imagens e fontes em `data:`) e recusa qualquer conexão externa (`connect-src 'self'`), objetos, `<base>`, envio de formulário e moldura. Com ela, a frase da §14 ("o app não faz nenhuma comunicação de rede além de carregar o próprio site") passa a ser garantida pelo navegador. A lista exata sai do ensaio, conferida com o site montado e servido com os mesmos cabeçalhos;
+  - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` e `Permissions-Policy` sem câmera, microfone e localização.
+- **HTTPS:** o domínio `.dev` inteiro está na lista dos navegadores que só aceitam HTTPS, e o Cloudflare redireciona o HTTP. Com isso, `crypto.randomUUID` (que exige contexto seguro; pendência da fase 5) funciona sempre no endereço publicado. Na intranet, só por HTTPS ou em `localhost`.
+- **Arquivo `versao.json`** gerado na montagem (`vite.config.ts`), com a versão do `package.json` e a data de obtenção mais recente da cópia dos índices (a mesma que o app mostra no rodapé). É o que a rotina lê para conferir a publicação (§19.4).
+- **Aviso de montagem com falha** por e-mail, ligado pelo responsável nas notificações do Cloudflare.
+- **Deploy hook (`CF_DEPLOY_HOOK`) só se o commit do robô não publicar** (roteiro, insumos).
+
+### 19.3 Integração contínua
+
+`.github/workflows/testes.yml`, novo (§11 e §12.2; pendência da fase 4), roda a cada envio, em qualquer branch, e a cada pull request. Os commits do robô não o disparam, porque são feitos com o `GITHUB_TOKEN`, e a rotina já confere o mesmo antes de gravar.
+
+- Permissão só de leitura (`contents: read`), checkout sem guardar a credencial e actions fixadas por SHA (§19.4).
+- Passos: instalação (`npm ci`, sob o `.npmrc`), `npm run verificar`, `npm run build`, `npm audit --audit-level=high` (a auditoria de dependências da §14) e `npm audit signatures` (confere a assinatura de origem de cada pacote instalado).
+- Um envio com teste quebrado fica vermelho e gera e-mail. É também o que protege a rotina: um envio que quebre o `npm run verificar` travaria a gravação das séries em todas as rodadas.
+
+### 19.4 Rotina de índices: segurança e conferência da publicação
+
+Pendências da fase 4, resolvidas nos dois workflows (`atualizar-indices.yml` e `relatorio-indices.yml`):
+
+- **Actions fixadas pelo SHA do commit da versão**, com a versão num comentário: `actions/checkout` 7.0.1 (20/07/2026), `actions/setup-node` 7.0.0 (14/07/2026), `actions/upload-artifact` 7.0.1 (10/04/2026) e `actions/download-artifact` 8.0.1 (11/03/2026). São as últimas versões com mais de 14 dias em 14/10/2026 (a 7.1.0 do setup-node é de 08/10/2026), conferidas pelas notas de cada uma no ensaio.
+- **A rotina em etapas (decisão do responsável de 14/10/2026, depois da revisão do ensaio).** A revisão mostrou que só tirar a credencial dos passos de instalação e de testes não basta: um pacote adulterado, rodando nos testes, poderia deixar um gancho ou uma configuração na pasta do git, e o passo de gravação, na mesma máquina, os executaria com o token à mão (demonstrado num repositório descartável). Por isso:
+  - `atualizar-indices.yml` tem três etapas (jobs). **"baixar"**, só com leitura (`contents: read`), confere a publicação, baixa as séries, roda as conferências e entrega os arquivos de `dados/indices/` e a saída do script como artefato. **"gravar"**, com escrita, numa máquina nova, **sem instalar nem rodar pacote algum** (só o git e o `jq`, que vêm na máquina do GitHub), recebe o artefato, aceita só arquivos `<código>.json` que sejam JSON válido, e grava na `main`. **"fechar"**, sem permissão alguma, escreve o desfecho, manda o sinal ao Healthchecks, aciona o deploy hook (se houver; depois do sinal, e a falha dele não apaga o "gravado") e devolve as falhas (séries, conferências ou publicação do site). A etapa "gravar" recusa gravar se outra gravação dos índices entrou na `main` depois do ponto de partida da rodada (por exemplo, ao reexecutar só essa etapa, com o artefato antigo), para não voltar séries mais novas.
+  - `relatorio-indices.yml` tem duas etapas: **"montar"**, só com leitura (o token lê as execuções pela API), instala os pacotes e monta o relatório; **"gravar"**, como acima, só recebe o arquivo `AAAA-MM.md` e grava.
+  - Em todas as etapas, `persist-credentials: false` no checkout; o token de escrita entra só no passo "Gravar na main" (no endereço do remoto, retirado ao fim do passo).
+- **Instalação sem programas de pacote**, pelo `.npmrc` (§19.2), e **sem cache de pacotes** (`package-manager-cache: false`, explícito, porque o setup-node liga o cache sozinho se um dia o `package.json` declarar o gerenciador de pacotes), como as notas do setup-node recomendam para workflows que gravam.
+- **"Sinalizar problema nas séries" sempre visível:** na etapa "fechar", com `always()`, para a mensagem não sumir quando as conferências, a gravação ou o deploy hook também falham. O mesmo para "Sinalizar problema na publicação do site", com a frase da conferência.
+- **Resumo completado ao fim:** a etapa "fechar" acrescenta o desfecho: "Gravado na main: <commit>.", "Nada foi gravado: as conferências falharam (veja o passo …).", "Nenhum arquivo de dados/ mudou; nada foi gravado.", "Nada foi gravado: o envio à main falhou (veja a etapa "gravar")." ou "Nada foi gravado: a execução parou antes (veja a etapa "baixar").". O sinal ao Healthchecks segue a regra de antes: só em execução agendada, com as séries baixadas e sem falha nas conferências nem na gravação.
+- **Conferência da publicação, no início de cada rodada:** antes de baixar as séries, a rotina lê `https://apura-dpems.pages.dev/versao.json` (endereço fixo no workflow) e compara a data dos índices do site com a mais recente da cópia na `main`.
+  - Em dia, ou `main` mais nova há menos de 30 minutos (a publicação ainda pode estar em andamento): segue em silêncio, com uma linha no resumo.
+  - Site atrasado: a execução segue (as séries são baixadas e gravadas normalmente) e termina **vermelha**, com a frase no resumo e no e-mail do GitHub, por exemplo "O site publicado tem os índices de 19/11/2026 22:47; a main tem os de 20/11/2026 10:47 (horário de Brasília).". O sinal ao Healthchecks não é afetado: ele vigia só se a rotina roda.
+  - Site inacessível ou `versao.json` ilegível (inclusive data que não seja data-hora com fuso): também vermelha, com a frase do motivo.
+  - A comparação é uma função pura em `src/indices/` (testada sem rede); a leitura do site fica num script em `scripts/`.
+- **Testes de leitura dos workflows** (`scripts/`), como o que já confere os horários contra `RODADAS`. Reprovam o envio se:
+  - alguma action não estiver fixada por SHA;
+  - algum checkout guardar a credencial;
+  - o token aparecer em qualquer lugar do arquivo fora dos passos de gravação (e, no relatório mensal, do passo que lê as execuções), inclusive nas variáveis da etapa ou do workflow;
+  - uma etapa com escrita instalar ou rodar pacotes, ou o topo do arquivo der escrita;
+  - o `testes.yml` tiver permissão de escrita;
+  - o `.node-version` não for o lido pelos workflows, ou o cache de pacotes não estiver desligado;
+  - o sinal ao Healthchecks depender da conferência da publicação.
+- **`actionlint`**, verificador de workflows instalado pelo Homebrew na máquina do responsável, roda no ensaio e fica no `CLAUDE.md` como conferência manual sempre que um workflow mudar. Não entra na integração contínua: seria mais uma ferramenta baixada a cada execução.
+
+### 19.5 Monitoramento: quem avisa o quê
+
+Tudo chega por e-mail ao responsável:
+
+| Situação | Quem avisa |
+|---|---|
+| Uma série do BCB não veio; as conferências ou a gravação falharam; o site está atrasado em relação à `main` ou fora do ar | GitHub (execução vermelha da rotina) |
+| Um dia útil inteiro sem rodada agendada bem-sucedida (por exemplo, agendador do GitHub parado) | Healthchecks.io (verificação com agendamento `0 7 * * 1-5`, fuso America/Sao_Paulo e tolerância de 1 dia, como decidido na fase 4; segredo `HC_URL`) |
+| Montagem do site com falha (o site continua na versão anterior) | Cloudflare |
+| Envio com teste quebrado | GitHub (`testes.yml` vermelho) |
+| Falha de segurança conhecida numa dependência | GitHub (alertas de segurança das dependências, ligados pelo responsável) |
+
+O e-mail de execução agendada com falha vai para quem gravou por último o agendamento no GitHub. Os envios saem da conta do responsável, e as preferências de notificação dele precisam manter ligados os e-mails de workflow com falha. A guarda do histórico de execuções passa a 400 dias (opcional do roteiro, adotado), para o relatório mensal e as revisões de um e três meses.
+
+### 19.6 Versão, registro de mudanças e dependências
+
+- **Versão 0.1.0** no `package.json` e no `package-lock.json`. O rodapé da tela e o do relatório leem dela ("Gerado com Apura v0.1.0"). O commit publicado ganha a etiqueta `v0.1.0` no git, enviada ao GitHub com a confirmação do responsável.
+- **`CHANGELOG.md`** em português, com uma seção por versão ("## [0.1.0] · AAAA-MM-DD", com a data da publicação) descrevendo o que mudou para quem usa. Um teste (`scripts/`) reprova o envio se a versão do `package.json` não tiver a sua seção, ou se o `package-lock.json` disser outra versão.
+- **Sem robô de atualização de dependências.** Os alertas de segurança do GitHub ficam ligados, e a auditoria roda na integração contínua (§19.3). As atualizações entram nas fases de trabalho, pelo Claude Code, com os testes e a revisão do responsável.
+- **Idade mínima de 14 dias** para versões novas de dependências, de actions e do Node (nota da fase 1). Ao instalar ou atualizar um pacote, usa-se `npm install <pacote>@<versão> --before=<data de 14 dias atrás>`, que faz o npm recusar qualquer versão mais nova, inclusive das dependências indiretas. A regra vai para o `CLAUDE.md`.
+
+### 19.7 Acertos do relatório, da interface e do "Salvar"
+
+Os seis menores adiados da fase 6 e as duas sobras da fase 5b entram nesta fase (decisão do responsável). As frases e as regras abaixo foram aprovadas em 14/10/2026 e entram nos testes literalmente. Os exemplos usam a tabela fixa de 2024–2026 dos testes do motor e a data do cálculo 11/10/2026.
+
+1. **Mora só quando há prestação que começa no vencimento.** A frase "Encargos desde o vencimento de cada prestação (mora automática, art. 397 do CC)." sai só se ao menos uma prestação atualizada não tem termo inicial próprio, nem de correção nem de juros. Exemplo: duas prestações (05/07/2024 e 05/10/2024), ambas com correção e juros desde 10/01/2025. "Termos" fica só com "Os lançamentos marcados “encargos próprios” seguem os termos e as regras indicados nas notas das tabelas.".
+2. **"Encargos" sem prestação que comece no vencimento** (revisto em 14/10/2026, depois da revisão do ensaio). Na metodologia de um período só, o trecho das datas segue os lançamentos que o parágrafo descreve:
+   - alguma prestação começa os encargos no vencimento (sem termo inicial próprio): "…pro rata die, do vencimento até a data do cálculo, sobre o valor corrigido." (§17.3);
+   - só pagamentos: "IGP-M e juros de 1% ao mês, simples, pro rata die, da data do pagamento até a data do cálculo, sobre o valor corrigido." (exemplo: uma prestação vincenda e um pagamento de 10/03/2025);
+   - nenhuma prestação começa no vencimento (todas com termo inicial próprio, com ou sem pagamentos), ou só há pagamentos e nenhum começa na própria data: sem o trecho, "IGP-M e juros de 1% ao mês, simples, pro rata die, sobre o valor corrigido.", porque as notas das tabelas já dizem os termos de cada linha (exemplos: as duas prestações do item 1; uma vincenda e um pagamento de 10/03/2025 com encargos desde 01/06/2025, aprovado em 14/10/2026 depois da segunda revisão).
+3. **Frase da correção só com índice aplicado** (regra da §18.7, que o código não cumpria quando todos os meses que entraram estavam sem índice). Conta como correção só o mês que entrou com fração e com índice divulgado. Exemplo: uma prestação de 05/10/2026, sem o IPCA de out/2026. "Termos" fica "Encargos desde o vencimento de cada prestação (mora automática, art. 397 do CC). Juros até a data do cálculo.", e "Fontes" continua com "Mês sem índice divulgado na data da consulta, computado sem correção: IPCA de out/2026.".
+4. **Deflação própria só quando mudou a conta da linha** (revisto em 14/10/2026, depois da revisão do ensaio). Na nota de encargos próprios, a deflação própria entra sempre que um índice negativo entrou na conta da linha, salvo entre "com piso" e "sem piso", que só diferem quando o piso atua: própria "com piso" e cálculo "sem piso", só se o piso atuou; própria "sem piso" e cálculo "com piso", só se o acumulado ficou abaixo do original (o piso do cálculo teria atuado). Exemplos:
+   - prestação de 05/09/2026 com metodologia própria igual à do cálculo, exceto "índices negativos computados, sem piso", em que só entraram set/2026 (0,82%) e out/2026 (sem índice): a linha perde a palavra "encargos próprios" e a nota, e segue a regra comum;
+   - cálculo "IGP-M e juros de 1% ao mês" com "índices negativos desconsiderados", prestação de 05/01/2024 com a mesma metodologia, exceto "computados, com piso": os negativos de 2024 entraram, o piso não atuou, e o corrigido dela difere do de uma prestação vizinha; a linha leva "encargos próprios" e a nota "05/01/2024: índices negativos computados, sem que o valor corrigido fique inferior ao original.";
+   - no parágrafo "Deflação" (§18.5), a linha cuja deflação própria não mudou a conta conta pela regra do cálculo (aprovado em 14/10/2026, depois da segunda revisão): cálculo "com piso", uma linha "sem piso" com o acumulado acima do original e outra comum em que o piso atuou → só "Índices negativos computados; o valor corrigido não fica inferior ao original."; cálculo "sem piso" e a única linha "com piso", sem o piso atuar → "Índices negativos computados, sem piso.".
+5. **Pagamento posterior sem valor bloqueia.** O pagamento com data posterior à data do cálculo só deixa de desligar "Relatório / PDF" quando tem valor válido e positivo. Sem valor, ou com valor zero, negativo ou inválido, conta como os demais: "1 pagamento está sem valor (veja a caixa de avisos): informe o valor para gerar o relatório." (§18.1).
+6. **Salário mínimo que faltou no mês do vencimento.** Logo depois da frase da base, uma frase por mês de salário mínimo usado no lugar do que faltou, nas prestações apuradas pela base em % do salário mínimo ou em valor fixo reajustado pelo salário mínimo, tanto para o mês ainda não publicado quanto para o que falta na tabela:
+   - uma prestação: "Na prestação de 05/01/2027, sem o salário mínimo do mês na data da consulta, foi usado o último disponível, de dez/2026 (R$ 1.621,00).";
+   - várias: "Nas prestações de 05/01/2027 e 05/02/2027, sem o salário mínimo do mês na data da consulta, foi usado o último disponível, de dez/2026 (R$ 1.621,00).".
+7. **Limite de 1900 pela constante** (sobra da fase 5b): todos os campos de data usam `DATA_MINIMA` (`entrada.ts`) no `min`, como já usam `DATA_MAXIMA` no `max`, em vez de "1900-01-01" escrito à mão.
+8. **Comentário longo** de `src/ui/preferencias.ts` quebrado em linhas de até 100 colunas (sobra da fase 5b).
+9. **"Salvar" no Safari** (pendência da fase 5): o endereço provisório do arquivo (`URL.createObjectURL`) é revogado um minuto depois do clique, e não no mesmo instante; o Safari às vezes perde o download quando o endereço some antes de ele começar. Com teste (relógio simulado).
+
+### 19.8 Ordem de ligação, conferências e pendências com data
+
+1. Execução do plano numa branch, com TDD; a `main` local recebe a fase com a autorização do responsável.
+2. O responsável cria as contas no Cloudflare e no Healthchecks (antes do passo 4).
+3. Com a confirmação do responsável a cada ação: criar `plsleite/apura` (privado), enviar a `main` e **desligar na hora os dois workflows agendados**, para o robô não rodar antes de o site existir (a conferência da publicação falharia à toa). Conferir o primeiro `testes.yml` verde.
+4. O responsável liga o Cloudflare (§19.2). Na primeira montagem confere-se:
+   - o site abre por HTTPS, e o HTTP redireciona;
+   - os cabeçalhos chegam como previstos;
+   - o `versao.json` responde com a data da `main`;
+   - o registro da montagem mostra o Node 22.23.3 e os testes passando.
+5. O responsável configura o Healthchecks e o segredo `HC_URL`, os alertas de segurança das dependências, a guarda de 400 dias e o aviso de montagem com falha.
+6. Com a confirmação do responsável: religar os dois workflows e disparar a primeira rodada manual. Confere-se:
+   - o resumo e a conferência da publicação;
+   - se houve mudança, o commit do robô e a nova publicação (o `versao.json` com a data nova);
+   - sem mudança no dia, a mesma conferência depois das 19h de um dia útil, como diz o roteiro.
+
+   O deploy hook só é criado se o commit do robô não publicar.
+7. Conferência do site publicado. No navegador integrado: tela, um cálculo de ponta a ponta, salvar e abrir, relatório, PDF pelo "Imprimir / Salvar PDF" e o rodapé com os índices do dia. Pelo responsável: abrir o Apura num computador da rede da Defensoria, imprimir um relatório pelo botão no navegador de lá e testar o "Salvar" no Safari.
+8. Fechamento:
+   - roteiro, `CLAUDE.md` e este design atualizados numa branch, enviada para conferir a pré-visualização restrita e o `testes.yml` fora da `main`;
+   - merge e envio com a autorização do responsável;
+   - etiqueta `v0.1.0`;
+   - só então o endereço vai aos testadores.
+
+**Pendências com data** (vão para o roteiro):
+- No dia útil seguinte à ligação, às 10h47: conferir que a primeira rodada agendada rodou no horário de Brasília (a chave `timezone` do agendamento) e que o Healthchecks recebeu o sinal.
+- Em 02/11/2026: conferir o primeiro relatório mensal automático. Antes disso, não há mês encerrado com execuções para testá-lo sem gravar um relatório vazio.
+- Depois de um e de três meses: revisar com o responsável os relatórios de `docs/monitoramento/` (roteiro).
+
+### 19.9 Ensaio e registro
+
+Como nas fases 5b e 6, o código desta fase é ensaiado numa cópia do repositório fora dele, antes do plano: os acertos da §19.7, a versão e o `CHANGELOG.md`, o `versao.json` e a conferência da publicação, o `testes.yml`, os dois workflows endurecidos e os testes de leitura deles, o `.node-version`, o `.npmrc` e o `_headers`. A conferência inclui o `actionlint` e o site montado e servido localmente com os mesmos cabeçalhos do `_headers`, aberto no navegador integrado (abrir, editar, salvar, abrir arquivo, relatório e impressão). Depois vêm uma revisão adversária independente e a reconstrução tarefa por tarefa, para o plano trazer as falhas e as contagens medidas. A primeira revisão (14/10/2026) achou quatro problemas importantes e oito menores; os que mudam texto ou regra aprovada foram decididos pelo responsável e estão acima (§19.4, a rotina em etapas; §19.7, itens 2 e 4); os demais foram corrigidos no ensaio, com teste. Uma segunda revisão, só das mudanças, achou três importantes (o deploy hook dentro da etapa de gravação; brechas no teste dos workflows) e seis menores; os dois de texto foram aprovados pelo responsável (§19.7, itens 2 e 4), os técnicos corrigidos com teste, e dois ficam como notas para a revisão de um mês da rotina (a estimativa de minutos do relatório mensal, que conta o tempo da execução e não o de cada etapa; e a frase que compara as falhas do relatório mensal com o alarme do Healthchecks, que deixa de bater nos dias de site atrasado). O que só se confere com o GitHub e o Cloudflare de verdade fica para a execução (§19.8). Plano em `docs/superpowers/plans/2026-10-14-fase-7-publicacao.md`.
+
+---
+
 ## Anexo A · Caso de referência: SAJ TJMS, cálculo de 25/05/2018
 
 Fonte: "Relatório de Cálculo Processual – Sintético", TJMS/SAJ, emitido em 25/05/2018 (execução de alimentos; número do processo omitido por minimização de dados; o PDF original fica fora do repositório).

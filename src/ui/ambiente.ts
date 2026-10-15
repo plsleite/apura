@@ -42,7 +42,14 @@ function armazenamentoDoNavegador(): Storage | null {
   }
 }
 
-function baixarPeloNavegador(nome: string, conteudo: string): void {
+/** Espera antes de revogar o endereço provisório do arquivo baixado (§19.7, item 9). */
+const ESPERA_PARA_REVOGAR_MS = 60_000;
+
+/**
+ * Entrega o arquivo pelo download do navegador. O endereço provisório (`blob:`) só é revogado um
+ * minuto depois do clique: o Safari às vezes perde o download quando ele some antes de começar.
+ */
+export function baixarPeloNavegador(nome: string, conteudo: string): void {
   const url = URL.createObjectURL(new Blob([conteudo], { type: "application/json" }));
   const ancora = document.createElement("a");
   ancora.href = url;
@@ -50,7 +57,7 @@ function baixarPeloNavegador(nome: string, conteudo: string): void {
   document.body.append(ancora);
   ancora.click();
   ancora.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), ESPERA_PARA_REVOGAR_MS);
 }
 
 /** O ambiente real do navegador. */

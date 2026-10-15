@@ -1,10 +1,24 @@
+import { decimalOuNulo } from "../compartilhado/decimal.ts";
 import type { Calculo, Resultado } from "../compartilhado/tipos.ts";
-import { listar, pares } from "./texto.ts";
+import { listar, pares, type Par } from "./texto.ts";
+
+/**
+ * O pagamento com data posterior à data do cálculo e com valor válido e positivo: o único
+ * "não computado" que pode chegar ao relatório (§18.1). Sem valor, ou com valor zero, negativo
+ * ou inválido, ele conta como os demais lançamentos sem valor (§19.7, item 5).
+ */
+function posteriorComValor(p: Par, calculo: Calculo): boolean {
+  if (p.lancamento.tipo !== "amortizacao" || p.lancamento.data <= calculo.dataElaboracao) {
+    return false;
+  }
+  const valor = decimalOuNulo(p.lancamento.valorInformado);
+  return valor !== null && valor.gt(0);
+}
 
 /**
  * Por que "Relatório / PDF" fica desligado (§18.1), ou `null` quando pode abrir: sem prestação
  * lançada, ou com algum lançamento "não computado" por falta de valor ou por valor inválido. O
- * pagamento com data posterior à data do cálculo não bloqueia. Módulo puro.
+ * pagamento com data posterior à data do cálculo e com valor não bloqueia. Módulo puro.
  */
 export function motivoDoBloqueio(calculo: Calculo, resultado: Resultado): string | null {
   const todos = pares(calculo, resultado);
@@ -12,9 +26,7 @@ export function motivoDoBloqueio(calculo: Calculo, resultado: Resultado): string
     return "Lance ao menos uma prestação para gerar o relatório.";
   }
   const semValor = todos.filter(
-    (p) =>
-      p.calculado.situacao === "ignorado" &&
-      !(p.lancamento.tipo === "amortizacao" && p.lancamento.data > calculo.dataElaboracao),
+    (p) => p.calculado.situacao === "ignorado" && !posteriorComValor(p, calculo),
   );
   if (semValor.length === 0) return null;
   const n = semValor.filter((p) => p.lancamento.tipo === "prestacao").length;

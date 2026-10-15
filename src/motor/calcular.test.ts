@@ -625,6 +625,24 @@ describe("calcular (fase 3: situação dos lançamentos, base dos alimentos e pr
     expect(semIndice.lancamentos[0]).not.toHaveProperty("reajustes");
   });
 
+  it("a prestação que usou o salário mínimo de um mês anterior traz qual foi (§19.7, item 6); as demais não", () => {
+    const r = calcular(
+      comBase({ tipo: "percentualSalarioMinimo", percentual: "30" }, [
+        semValorInformado("p-2026-12", "2026-12-05"),
+        semValorInformado("p-2027-01", "2027-01-05"),
+        semValorInformado("p-2027-02", "2027-02-05", { valorInformado: "600.00" }),
+      ]),
+      tabelaRegimeNovo(),
+    );
+    expect(r.lancamentos[0]).not.toHaveProperty("salarioMinimoAnterior");
+    expect(r.lancamentos[1]?.salarioMinimoAnterior).toEqual({
+      competencia: "2027-01",
+      usado: "2026-12",
+      valor: "1621.00",
+    });
+    expect(r.lancamentos[2]).not.toHaveProperty("salarioMinimoAnterior");
+  });
+
   it("pagamento posterior à data de elaboração fica fora dos totais, com aviso no lançamento e no resumo", () => {
     const futuro: Lancamento = { ...amortizacao, id: "a-2018-06", data: "2018-06-10" };
     const r = calcular(calculoCom([prestacao, futuro]), tabelaIgpm());

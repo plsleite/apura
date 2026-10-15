@@ -2,7 +2,13 @@ import type { Calculo } from "../../compartilhado/tipos.ts";
 import type { OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import { CampoArea, CampoTexto, Opcao, useCampoValidado } from "../componentes/Campo.tsx";
-import { DATA_MAXIMA, formatarNumeroParaCampo, lerData, lerPercentual } from "../entrada.ts";
+import {
+  DATA_MAXIMA,
+  DATA_MINIMA,
+  formatarNumeroParaCampo,
+  lerData,
+  lerPercentual,
+} from "../entrada.ts";
 import { opcaoDaMetodologia, resumirMetodologia } from "../estado/metodologia.ts";
 
 /**
@@ -130,7 +136,7 @@ export function Encargos({
           aoMudar={data.aoMudar}
           aoSair={data.aoSair}
           erro={data.erro}
-          min="1900-01-01"
+          min={DATA_MINIMA}
           max={DATA_MAXIMA}
         />
       </div>

@@ -1,10 +1,20 @@
-# Rotina central de índices (fase 4, decisão de 12/10/2026).
+# Rotina central de índices (fase 4, decisão de 12/10/2026; segurança e conferência da publicação
+# na fase 7, §19.4 do design).
 #
-# O que faz: baixa as seis séries do BCB com o mesmo script usado à mão (npm run
-# indices:atualizar), grava série por série as que vieram boas e mudaram (uma série com problema não
-# impede as outras), confere formatação, lint, tipos e testes e, se algum arquivo de dados/ mudou,
-# grava na main com um commit que traz a rodada, a saída do script e o endereço desta execução. O
-# app não consulta o BCB: lê só a cópia publicada em dados/indices/.
+# O que faz, em três etapas (jobs):
+# 1. "baixar", sem poder de gravação: confere se o site publicado tem a cópia de índices da main;
+#    baixa as seis séries do BCB com o mesmo script usado à mão (npm run indices:atualizar), que
+#    grava série por série as que vieram boas e mudaram (uma série com problema não impede as
+#    outras); confere formatação, lint, tipos e testes; e entrega os arquivos de dados/indices/ à
+#    etapa seguinte.
+# 2. "gravar", numa máquina limpa, sem instalar nem rodar pacotes de terceiros (só o git): se
+#    algum arquivo mudou e as conferências passaram, grava na main com um commit que traz a
+#    rodada, a saída do script e o endereço desta execução. Se outra gravação dos índices entrou
+#    na main depois do início da rodada (por exemplo, numa reexecução só desta etapa), não grava,
+#    para não voltar séries mais novas.
+# 3. "fechar": completa o resumo com o desfecho, manda o sinal de vida ao Healthchecks, aciona o
+#    deploy hook (se houver) e devolve as falhas (séries, conferências ou publicação do site).
+# O app não consulta o BCB: lê só a cópia publicada em dados/indices/.
 #
 # Quando roda: de segunda a sexta às 10h47, 14h17 e 22h47 de Brasília (três agendamentos, cada um
 # com o fuso America/Sao_Paulo) e à mão, em "Actions" (workflow_dispatch). O título de cada
@@ -12,22 +22,28 @@
 # Ao mudar um horário, mude também o case do passo Baixar e RODADAS em src/indices/relatorio.ts
 # (scripts/relatorio-indices.test.ts confere).
 #
-# Monitoramento: cada execução deixa um resumo com a saída do script; problema numa série faz a
-# execução terminar com falha (vermelha no GitHub); nas execuções agendadas sem problema, um sinal de vida vai
-# ao Healthchecks.io (só se o segredo HC_URL existir), que avisa quando os sinais param. Uma falha
-# nas conferências ou na gravação também suprime o sinal; a do deploy hook, que vem depois, não.
+# Monitoramento: cada execução deixa um resumo com a conferência da publicação, a saída do script
+# e o desfecho; problema numa série ou na publicação do site faz a execução terminar com falha
+# (vermelha no GitHub, com e-mail); nas execuções agendadas sem problema nas séries, um sinal de
+# vida vai ao Healthchecks.io (só se o segredo HC_URL existir), que avisa quando os sinais param.
+# Uma falha nas conferências ou na gravação também suprime o sinal; a da publicação do site e a do
+# deploy hook, não.
 #
-# Só grava a partir da main: disparado à mão em outro ramo, o job não roda. O checkout pega sempre
-# a ponta da main, para que uma reexecução ou uma execução que esperou na fila não parta de um
-# commit antigo (o rebase entraria em conflito com a gravação anterior).
+# Segurança (§19.4): actions fixadas pelo SHA do commit da versão; o checkout não guarda a
+# credencial; a etapa que instala pacotes e roda os testes só lê o repositório, e o token de
+# escrita só entra no passo "Gravar na main", numa máquina que nunca rodou código de terceiros
+# (nada que um pacote adulterado deixasse para trás alcança o token); a instalação não roda
+# programas de pacote (.npmrc); sem cache de pacotes, como recomenda o setup-node para workflows
+# que gravam. scripts/workflows.test.ts confere essas regras; o actionlint, a sintaxe (CLAUDE.md).
 #
-# Só pode ser executado e testado quando o repositório estiver no GitHub (fase 7): até lá, é apenas
-# conferido por leitura e pelo Prettier.
+# Só grava a partir da main: disparado à mão em outro ramo, nada roda. O checkout pega sempre a
+# ponta da main, para que uma execução que esperou na fila não parta de um commit antigo; a etapa
+# "gravar" confere que nenhuma gravação dos índices entrou depois do ponto de partida da rodada.
 #
-# Atenção: o commit feito com o GITHUB_TOKEN não dispara outros workflows; a publicação do site
-# reage pela integração Git do Cloudflare Pages ou pelo deploy hook (só se o segredo CF_DEPLOY_HOOK
-# existir). E a main recebe commits deste robô quase todo dia útil: atualize a sua cópia (git pull)
-# antes de enviar alterações.
+# Atenção: o commit feito com o token padrão do GitHub não dispara outros workflows; a publicação
+# do site reage pela integração Git do Cloudflare Pages ou pelo deploy hook (só se o segredo
+# CF_DEPLOY_HOOK existir). E a main recebe commits deste robô quase todo dia útil: atualize a sua
+# cópia (git pull) antes de enviar alterações.
 name: Atualizar índices do BCB
 run-name: "Atualizar índices · ${{ github.event_name == 'schedule' && github.event.schedule || 'manual' }}"
 
@@ -41,38 +57,57 @@ on:
       timezone: "America/Sao_Paulo"
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: atualizar-indices
   cancel-in-progress: false
 
 jobs:
-  atualizar:
+  baixar:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Os segredos só entram nos passos que os usam; aqui ficam apenas os indicadores de que existem.
+    permissions:
+      contents: read
     env:
-      TEM_HC: ${{ secrets.HC_URL != '' }}
-      TEM_CF: ${{ secrets.CF_DEPLOY_HOOK != '' }}
       AGENDAMENTO: ${{ github.event.schedule }}
+      SITE_URL: https://apura-dpems.pages.dev
+    outputs:
+      base: ${{ steps.baixar.outputs.base }}
+      rodada: ${{ steps.baixar.outputs.rodada }}
+      baixar: ${{ steps.baixar.outcome }}
+      publicacao: ${{ steps.publicacao.outcome }}
+      mensagem-publicacao: ${{ steps.publicacao.outputs.mensagem }}
+      houve: ${{ steps.mudancas.outputs.houve }}
+      conferir: ${{ steps.conferir.outcome }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
+          persist-credentials: false
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
-          cache: npm
+          node-version-file: .node-version
+          package-manager-cache: false
 
+      # Sem programas de pacote na instalação, e Node fora do engines para a instalação (.npmrc).
       - run: npm ci
 
+      # Antes de baixar: o site deve ter os índices que a rodada anterior gravou (§19.4). Uma falha
+      # aqui não impede a rodada; a etapa "fechar" devolve a falha, com a frase (numa linha só).
+      - name: Conferir a publicação do site
+        id: publicacao
+        continue-on-error: true
+        shell: bash
+        run: |
+          trap 'echo "mensagem=$(tr "\n" " " < "$RUNNER_TEMP/publicacao.txt" | head -c 500)" >> "$GITHUB_OUTPUT"' EXIT
+          npm run --silent indices:conferir-publicacao 2>&1 | tee "$RUNNER_TEMP/publicacao.txt"
+
       # Com "shell: bash", o GitHub usa "set -eo pipefail": o código de saída do script atravessa o
-      # tee. "continue-on-error" deixa a execução seguir para gravar as séries boas; o último passo
-      # devolve a falha.
+      # tee. "continue-on-error" deixa a execução seguir para gravar as séries boas; a etapa
+      # "fechar" devolve a falha.
       - name: Baixar as séries do BCB
         id: baixar
         continue-on-error: true
@@ -86,6 +121,8 @@ jobs:
             *) RODADA="$AGENDAMENTO" ;;
           esac
           echo "RODADA=$RODADA" >> "$GITHUB_ENV"
+          echo "rodada=$RODADA" >> "$GITHUB_OUTPUT"
+          echo "base=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           npm run --silent indices:atualizar 2>&1 | tee "$RUNNER_TEMP/saida.txt"
 
       - name: Resumo da execução
@@ -95,6 +132,10 @@ jobs:
           {
             echo "## Atualização dos índices do BCB · rodada ${RODADA:-não identificada}"
             echo
+            if [ -f "$RUNNER_TEMP/publicacao.txt" ]; then
+              echo "**Publicação do site:** $(cat "$RUNNER_TEMP/publicacao.txt")"
+              echo
+            fi
             if [ -f "$RUNNER_TEMP/saida.txt" ]; then
               echo '```'
               cat "$RUNNER_TEMP/saida.txt"
@@ -116,53 +157,180 @@ jobs:
             git status --short -- dados
           fi
 
+      # "continue-on-error": a etapa "fechar" diz que as conferências falharam e devolve a falha.
       - name: Conferir formatação, lint, tipos e testes
+        id: conferir
         if: steps.mudancas.outputs.houve == 'true'
+        continue-on-error: true
         run: npm run verificar
 
-      # TZ: a data do commit (e a da reaplicação pelo rebase) fica no horário de Brasília.
+      # Para a etapa "gravar": as séries (dados/indices/*.json) e a saída do script, que vai no
+      # commit.
+      - name: Separar os arquivos para a gravação
+        if: steps.conferir.outcome == 'success'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/transporte/indices"
+          cp dados/indices/*.json "$RUNNER_TEMP/transporte/indices/"
+          cp "$RUNNER_TEMP/saida.txt" "$RUNNER_TEMP/transporte/saida.txt"
+
+      - name: Entregar os arquivos à etapa de gravação
+        if: steps.conferir.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: indices
+          path: ${{ runner.temp }}/transporte
+          if-no-files-found: error
+          retention-days: 1
+
+  gravar:
+    needs: baixar
+    if: needs.baixar.outputs.houve == 'true' && needs.baixar.outputs.conferir == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      commit: ${{ steps.gravar.outputs.commit }}
+    steps:
+      # Histórico completo, para comparar com o ponto de partida da rodada.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Receber os arquivos da etapa "baixar"
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: indices
+          path: ${{ runner.temp }}/transporte
+
+      # Só arquivos <código>.json, conferidos como JSON (o jq vem na máquina do GitHub). TZ: a data
+      # do commit (e a da reaplicação pelo rebase) fica no horário de Brasília. O token de escrita
+      # entra só aqui, no endereço do remoto, e sai dele ao fim do passo (trap).
       - name: Gravar na main
         id: gravar
-        if: steps.mudancas.outputs.houve == 'true'
         shell: bash
         env:
           TZ: America/Sao_Paulo
+          GH_TOKEN: ${{ github.token }}
+          RODADA: ${{ needs.baixar.outputs.rodada }}
+          BASE: ${{ needs.baixar.outputs.base }}
         run: |
+          trap 'git remote set-url origin "https://github.com/$GITHUB_REPOSITORY.git"' EXIT
+          if ! [[ "$BASE" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::A etapa \"baixar\" não informou o ponto de partida da rodada; nada foi gravado."
+            exit 1
+          fi
+          if ! git diff --quiet "$BASE" HEAD -- dados/indices; then
+            echo "::error::Outra gravação dos índices entrou na main depois do início desta rodada; nada foi gravado, para não voltar séries mais novas. Rode a rotina de novo."
+            exit 1
+          fi
+          for arquivo in "$RUNNER_TEMP/transporte/indices/"*; do
+            nome="$(basename "$arquivo")"
+            if ! [[ "$nome" =~ ^[0-9]+\.json$ ]]; then
+              echo "::error::Arquivo inesperado entre as séries: $nome."
+              exit 1
+            fi
+            jq empty "$arquivo"
+            cp "$arquivo" "dados/indices/$nome"
+          done
+          git remote set-url origin "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           MENSAGEM="$RUNNER_TEMP/mensagem.txt"
           {
             echo "indices: séries do BCB em $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (rodada $RODADA)"
             echo
-            cat "$RUNNER_TEMP/saida.txt"
+            cat "$RUNNER_TEMP/transporte/saida.txt"
             echo
             echo "Execução: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } > "$MENSAGEM"
-          git add dados
+          git add dados/indices
           git commit -F "$MENSAGEM"
           # Outro envio pode entrar entre o pull e o push: tenta de novo, até três vezes.
           for tentativa in 1 2 3; do
-            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             git rebase --abort 2>/dev/null || true
             sleep $((tentativa * 10))
           done
           echo "::error::Não foi possível gravar na main depois de 3 tentativas."
           exit 1
 
+  fechar:
+    needs: [baixar, gravar]
+    if: always() && needs.baixar.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    env:
+      TEM_HC: ${{ secrets.HC_URL != '' }}
+      TEM_CF: ${{ secrets.CF_DEPLOY_HOOK != '' }}
+    steps:
+      # O desfecho completa o resumo da etapa "baixar" (escrito antes das conferências e da
+      # gravação).
+      - name: Desfecho no resumo
+        shell: bash
+        env:
+          ETAPA_BAIXAR: ${{ needs.baixar.result }}
+          MUDOU: ${{ needs.baixar.outputs.houve }}
+          CONFERIR: ${{ needs.baixar.outputs.conferir }}
+          COMMIT: ${{ needs.gravar.outputs.commit }}
+        run: |
+          if [ "$ETAPA_BAIXAR" != "success" ]; then
+            DESFECHO="Nada foi gravado: a execução parou antes (veja a etapa \"baixar\")."
+          elif [ "$MUDOU" = "false" ]; then
+            DESFECHO="Nenhum arquivo de dados/ mudou; nada foi gravado."
+          elif [ "$CONFERIR" = "failure" ]; then
+            DESFECHO="Nada foi gravado: as conferências falharam (veja o passo \"Conferir formatação, lint, tipos e testes\")."
+          elif [ -n "$COMMIT" ]; then
+            DESFECHO="Gravado na main: $COMMIT."
+          else
+            DESFECHO="Nada foi gravado: o envio à main falhou (veja a etapa \"gravar\")."
+          fi
+          echo "**Desfecho:** $DESFECHO" >> "$GITHUB_STEP_SUMMARY"
+          echo "$DESFECHO"
+
       - name: Sinal de vida ao Healthchecks
-        if: steps.baixar.outcome == 'success' && github.event_name == 'schedule' && env.TEM_HC == 'true'
+        if: needs.baixar.result == 'success' && needs.baixar.outputs.baixar == 'success' && needs.baixar.outputs.conferir != 'failure' && (needs.gravar.result == 'success' || needs.gravar.result == 'skipped') && github.event_name == 'schedule' && env.TEM_HC == 'true'
         env:
           HC_URL: ${{ secrets.HC_URL }}
         run: curl -fsS -m 10 --retry 5 "$HC_URL" || true
 
+      # Depois do sinal: uma falha aqui deixa a execução vermelha, mas não apaga o "gravado".
       - name: Publicar pelo deploy hook
-        if: steps.gravar.outcome == 'success' && env.TEM_CF == 'true'
+        if: needs.gravar.outputs.commit != '' && env.TEM_CF == 'true'
         env:
           CF_DEPLOY_HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
         run: curl -fsS -m 30 --retry 3 --retry-all-errors -X POST "$CF_DEPLOY_HOOK"
 
       - name: Sinalizar problema nas séries
-        if: steps.baixar.outcome == 'failure'
+        if: always() && needs.baixar.outputs.baixar == 'failure'
         run: |
           echo "::error::Alguma série do BCB não foi atualizada (veja o resumo da execução e a saída do passo \"Baixar as séries do BCB\"); as demais, se mudaram, foram gravadas."
+          exit 1
+
+      - name: Sinalizar problema nas conferências
+        if: always() && needs.baixar.outputs.conferir == 'failure'
+        run: |
+          echo "::error::As conferências (formatação, lint, tipos e testes) falharam com as séries novas; nada foi gravado (veja o passo \"Conferir formatação, lint, tipos e testes\" da etapa \"baixar\")."
+          exit 1
+
+      # A etapa "gravar" cancelada (por exemplo, por tempo esgotado) não conta como falha sozinha.
+      - name: Sinalizar problema na gravação
+        if: always() && needs.gravar.result == 'cancelled'
+        run: |
+          echo "::error::A etapa \"gravar\" foi cancelada (por exemplo, por tempo esgotado); veja se o commit chegou à main."
+          exit 1
+
+      - name: Sinalizar problema na publicação do site
+        if: always() && needs.baixar.outputs.publicacao == 'failure'
+        env:
+          MENSAGEM: ${{ needs.baixar.outputs.mensagem-publicacao }}
+        run: |
+          echo "::error::${MENSAGEM:-A conferência da publicação do site falhou; veja o passo \"Conferir a publicação do site\".}"
           exit 1

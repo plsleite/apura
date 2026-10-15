@@ -1,7 +1,7 @@
 {
   "name": "apura",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Apura — Sistema de Cálculos Judiciais da Defensoria Pública de Mato Grosso do Sul",
   "type": "module",
   "engines": {
@@ -19,7 +19,8 @@
     "format:check": "prettier --check .",
     "verificar": "prettier --check . && eslint . && tsc -b && vitest run",
     "indices:atualizar": "node scripts/atualizar-indices.ts",
-    "indices:relatorio": "node scripts/relatorio-indices.ts"
+    "indices:relatorio": "node scripts/relatorio-indices.ts",
+    "indices:conferir-publicacao": "node scripts/conferir-publicacao.ts"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "5.3.0",

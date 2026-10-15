@@ -4,7 +4,13 @@ import type { OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
 import { periodosOrdenados, validarMetodologia } from "../../motor/periodos.ts";
 import { Avisos } from "../componentes/Avisos.tsx";
 import { CampoSelecao, CampoTexto, Opcao, useCampoValidado } from "../componentes/Campo.tsx";
-import { DATA_MAXIMA, formatarNumeroParaCampo, lerData, lerPercentual } from "../entrada.ts";
+import {
+  DATA_MAXIMA,
+  DATA_MINIMA,
+  formatarNumeroParaCampo,
+  lerData,
+  lerPercentual,
+} from "../entrada.ts";
 import {
   descreverIntervalo,
   dividirPeriodo,
@@ -90,7 +96,7 @@ export function EditorDePeriodos({
             setAvisoDaDivisao(null);
           }}
           erro={avisoDaDivisao}
-          min="1900-01-01"
+          min={DATA_MINIMA}
           max={DATA_MAXIMA}
         />
         <button type="button" className="botao secundario" onClick={dividir}>

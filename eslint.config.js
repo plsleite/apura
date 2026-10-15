@@ -15,6 +15,11 @@ export default defineConfig(
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   {
+    // Scripts servidos como estão, sem passar pelo Vite (public/): rodam no navegador.
+    files: ["public/**/*.js"],
+    languageOptions: { globals: globals.browser, sourceType: "script" },
+  },
+  {
     // O motor é puro (regra 4 do CLAUDE.md): sem relógio, sem rede, sem DOM, sem armazenamento.
     files: ["src/motor/**/*.ts"],
     rules: {

@@ -58,7 +58,9 @@ function metodologia(valor: unknown): OpcaoDeMetodologia {
     : PREFERENCIAS_PADRAO.metodologia;
 }
 
-/** As preferências gravadas, campo a campo conferido; o padrão para o que falta ou está estranho. */
+/**
+ * As preferências gravadas, campo a campo conferido; o padrão para o que falta ou está estranho.
+ */
 export function lerPreferencias(armazenamento: Storage | null): Preferencias {
   const lido = lerJson(armazenamento, CHAVE_PREFERENCIAS);
   if (typeof lido !== "object" || lido === null) return { ...PREFERENCIAS_PADRAO };
@@ -76,8 +78,8 @@ export function lerPreferencias(armazenamento: Storage | null): Preferencias {
 
 /**
  * Grava as preferências. Com "Lembrar" desligado, defensor e órgão são gravados vazios (as duas
- * opções, o tema e a metodologia continuam gravados, para valerem na próxima visita). Devolve false se não deu
- * para gravar.
+ * opções, o tema e a metodologia continuam gravados, para valerem na próxima visita). Devolve
+ * false se não deu para gravar.
  */
 export function gravarPreferencias(armazenamento: Storage | null, p: Preferencias): boolean {
   const gravadas: Preferencias = p.lembrar ? p : { ...p, defensor: "", orgao: "" };

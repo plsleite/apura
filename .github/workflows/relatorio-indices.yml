@@ -2,11 +2,14 @@
 # de Brasília, lê pela API do GitHub as execuções do workflow "Atualizar índices do BCB" do mês
 # anterior, junta os commits da rotina em dados/indices (git log, por isso o histórico completo) e
 # grava o relatório em docs/monitoramento/AAAA-MM.md, sem e-mail. Também pode ser disparado à mão em
-# "Actions", com um mês opcional (AAAA-MM, já encerrado; vazio = mês anterior). Só pode ser
-# executado e testado quando o repositório estiver no GitHub (fase 7): até lá, é só conferido por
-# leitura.
+# "Actions", com um mês opcional (AAAA-MM, já encerrado; vazio = mês anterior).
 # O commit começa com "[CF-Pages-Skip]" para o Cloudflare Pages não publicar o site por causa dele;
 # a pasta docs/ é ignorada pelo Prettier, por isso não há "npm run verificar" antes de gravar.
+# Segurança (§19.4 do design), como em atualizar-indices.yml: duas etapas (jobs). "montar", sem
+# poder de gravação (o token só lê as execuções), instala os pacotes e monta o relatório; "gravar",
+# numa máquina limpa, sem instalar nem rodar pacotes de terceiros, recebe o arquivo e grava na main,
+# com o token de escrita só no passo de gravação. Actions fixadas pelo SHA do commit da versão; o
+# checkout não guarda a credencial; instalação sem programas de pacote e sem cache.
 name: Relatório da rotina de índices
 
 on:
@@ -20,30 +23,36 @@ on:
         required: false
         type: string
 
-permissions:
-  actions: read
-  contents: write
+permissions: {}
 
 jobs:
-  relatorio:
+  montar:
     # Só a partir da main, e sempre a ponta dela (histórico completo para o git log).
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      mes: ${{ steps.mes.outputs.mes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
-          cache: npm
+          node-version-file: .node-version
+          package-manager-cache: false
 
+      # Sem programas de pacote na instalação, e Node fora do engines para a instalação (.npmrc).
       - run: npm ci
 
       - name: Escolher o mês
+        id: mes
         shell: bash
         env:
           MES_PEDIDO: ${{ inputs.mes }}
@@ -64,8 +73,10 @@ jobs:
             exit 1
           fi
           echo "MES=$MES" >> "$GITHUB_ENV"
+          echo "mes=$MES" >> "$GITHUB_OUTPUT"
           echo "Relatório de $MES."
 
+      # O token desta etapa só lê (actions: read, contents: read).
       - name: Ler as execuções da rotina
         shell: bash
         env:
@@ -80,14 +91,53 @@ jobs:
       - name: Montar o relatório
         run: npm run --silent indices:relatorio -- "$MES" "$RUNNER_TEMP/execucoes.json"
 
+      - name: Entregar o relatório à etapa de gravação
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: relatorio
+          path: docs/monitoramento/${{ steps.mes.outputs.mes }}.md
+          if-no-files-found: error
+          retention-days: 1
+
+  gravar:
+    needs: montar
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Receber o relatório da etapa "montar"
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: relatorio
+          path: ${{ runner.temp }}/transporte
+
+      # Só o arquivo AAAA-MM.md do mês pedido. O token de escrita entra só aqui, no endereço do
+      # remoto, e sai dele ao fim do passo (trap).
       - name: Gravar na main
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MES: ${{ needs.montar.outputs.mes }}
         run: |
+          trap 'git remote set-url origin "https://github.com/$GITHUB_REPOSITORY.git"' EXIT
+          if ! [[ "$MES" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]] || [ ! -f "$RUNNER_TEMP/transporte/$MES.md" ]; then
+            echo "::error::O relatório do mês ($MES) não chegou da etapa \"montar\"."
+            exit 1
+          fi
+          mkdir -p docs/monitoramento
+          cp "$RUNNER_TEMP/transporte/$MES.md" "docs/monitoramento/$MES.md"
           git add docs/monitoramento
           if git diff --cached --quiet; then
             echo "O relatório de $MES não mudou; nada a gravar."
             exit 0
           fi
+          git remote set-url origin "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "[CF-Pages-Skip] monitoramento: relatório da rotina de índices de $MES"
