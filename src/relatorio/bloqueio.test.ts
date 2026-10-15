@@ -57,4 +57,21 @@ describe("quando o botão “Relatório / PDF” fica desligado (§18.1)", () =>
     ).toBe(null);
     expect(motivo({})).toBe(null);
   });
+
+  it("pagamento posterior à data do cálculo sem valor válido bloqueia como os demais (§19.7, item 5)", () => {
+    const frase =
+      "1 pagamento está sem valor (veja a caixa de avisos): informe o valor para gerar o relatório.";
+    const posterior = (valorInformado: string | undefined) =>
+      motivo({
+        lancamentos: [
+          prestacao("2024-10-05"),
+          { ...pagamento("2026-11-10", "1.00"), valorInformado },
+        ],
+      });
+    expect(posterior(undefined)).toBe(frase);
+    expect(posterior("0")).toBe(frase);
+    expect(posterior("-5.00")).toBe(frase);
+    expect(posterior("abc")).toBe(frase);
+    expect(posterior("10.00")).toBe(null);
+  });
 });
