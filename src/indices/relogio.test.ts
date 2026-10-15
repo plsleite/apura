@@ -6,6 +6,7 @@ import {
   formatarDataHoraBrasilia,
   hojeEmBrasilia,
   compararInstantes,
+  minutosEntre,
 } from "./relogio.ts";
 
 const FORMATO_ISO_COM_DESLOCAMENTO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/;
@@ -193,5 +194,18 @@ describe("compararInstantes", () => {
     expect(compararInstantes("x", "2026-10-11T20:30:00-03:00")).toBe(1);
     expect(compararInstantes("2026-10-11", "2026-10-12")).toBe(-1);
     expect(compararInstantes("", "")).toBe(0);
+  });
+});
+
+describe("minutosEntre", () => {
+  it("conta os minutos entre dois instantes, em fusos diferentes", () => {
+    expect(minutosEntre("2026-10-11T10:47:00-03:00", "2026-10-11T14:17:00-03:00")).toBe(210);
+    expect(minutosEntre("2026-10-11T13:47:00Z", "2026-10-11T10:57:30-03:00")).toBe(10.5);
+    expect(minutosEntre("2026-10-11T14:17:00-03:00", "2026-10-11T10:47:00-03:00")).toBe(-210);
+  });
+
+  it("texto que não é data-hora com fuso: nulo", () => {
+    expect(minutosEntre("", "2026-10-11T10:47:00-03:00")).toBeNull();
+    expect(minutosEntre("2026-10-11", "2026-10-11T10:47:00-03:00")).toBeNull();
   });
 });

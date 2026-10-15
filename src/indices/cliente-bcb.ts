@@ -163,7 +163,7 @@ type ResultadoDoPedido =
   { ok: true; valores: ValorMensal[] } | { ok: false; motivo: string; repetir: boolean };
 
 /** Nome do que o fetch lançou ("TypeError", "TimeoutError", "AbortError"); texto cru se não tiver nome. */
-function nomeDoErro(erro: unknown): string {
+export function nomeDoErro(erro: unknown): string {
   if (typeof erro === "object" && erro !== null && "name" in erro) {
     const { name } = erro as { name?: unknown };
     if (typeof name === "string" && name !== "") return name;
@@ -172,7 +172,7 @@ function nomeDoErro(erro: unknown): string {
 }
 
 /** " (ECONNRESET)": código (ou, sem ele, a mensagem) da causa que o fetch do Node anexa ao TypeError "fetch failed"; vazio sem causa. */
-function causaDoErro(erro: unknown): string {
+export function causaDoErro(erro: unknown): string {
   if (typeof erro !== "object" || erro === null || !("cause" in erro)) return "";
   const { cause } = erro as { cause?: unknown };
   if (typeof cause !== "object" || cause === null) return "";

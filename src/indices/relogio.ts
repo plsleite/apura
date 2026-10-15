@@ -123,6 +123,16 @@ export function compararInstantes(a: string, b: string): number {
 }
 
 /**
+ * Minutos de `antes` até `depois` (negativo se `depois` for anterior), pelos instantes que as duas
+ * datas-hora ISO com fuso designam; nulo se alguma não for data-hora com fuso.
+ */
+export function minutosEntre(antes: string, depois: string): number | null {
+  const a = instanteDe(antes);
+  const b = instanteDe(depois);
+  return a === null || b === null ? null : (b - a) / 60_000;
+}
+
+/**
  * Data ("2026-10-31") e hora ("22:30") em Brasília de qualquer ISO de data-hora com "Z" ou
  * deslocamento; null para texto que não seja ISO válido (ou sem fuso). É a base de quem precisa
  * do dia ou do mês em Brasília (o mês parcial da SELIC na rotina, o dia de uma execução no
