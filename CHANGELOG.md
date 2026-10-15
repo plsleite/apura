@@ -4,6 +4,19 @@ O que muda no Apura para quem o usa, versão por versão, da mais nova para a ma
 numeração segue o versionamento semântico (0.1.0, 0.1.1, 0.2.0…): o último número sobe nas
 correções, e o do meio, nas novidades.
 
+## [0.1.1] · 2026-10-15
+
+Ajustes da tela depois do uso pelos testadores (§20 do design). Os números não mudam.
+
+- A barra do topo fica presa ao rolar a página, um pouco mais baixa que antes; o campo que
+  recebe o foco pelo teclado nunca fica escondido sob ela.
+- As seções da esquerda mudam de ordem: processo, base dos alimentos, encargos e data do cálculo,
+  prestações em atraso e pagamentos (os parâmetros vêm antes dos lançamentos).
+- Tabela sempre à vista: em telas a partir de 1024 px de largura e 600 px de altura, a coluna da
+  direita fica presa abaixo da barra, com rolagem própria; os cinco indicadores, o título de cada
+  tabela e a linha de títulos das colunas ficam à vista enquanto as linhas rolam, e, depois de
+  "Lançar em lote", a coluna rola até as linhas recém-lançadas. Em telas menores, tudo como antes.
+
 ## [0.1.0] · 2026-10-14
 
 Primeira versão para os testadores: o cálculo da execução de alimentos (demonstrativo
