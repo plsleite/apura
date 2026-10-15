@@ -296,7 +296,7 @@ jobs:
           echo "$DESFECHO"
 
       - name: Sinal de vida ao Healthchecks
-        if: needs.baixar.result == 'success' && needs.baixar.outputs.baixar == 'success' && needs.baixar.outputs.conferir != 'failure' && needs.gravar.result != 'failure' && github.event_name == 'schedule' && env.TEM_HC == 'true'
+        if: needs.baixar.result == 'success' && needs.baixar.outputs.baixar == 'success' && needs.baixar.outputs.conferir != 'failure' && (needs.gravar.result == 'success' || needs.gravar.result == 'skipped') && github.event_name == 'schedule' && env.TEM_HC == 'true'
         env:
           HC_URL: ${{ secrets.HC_URL }}
         run: curl -fsS -m 10 --retry 5 "$HC_URL" || true
@@ -318,6 +318,13 @@ jobs:
         if: always() && needs.baixar.outputs.conferir == 'failure'
         run: |
           echo "::error::As conferências (formatação, lint, tipos e testes) falharam com as séries novas; nada foi gravado (veja o passo \"Conferir formatação, lint, tipos e testes\" da etapa \"baixar\")."
+          exit 1
+
+      # A etapa "gravar" cancelada (por exemplo, por tempo esgotado) não conta como falha sozinha.
+      - name: Sinalizar problema na gravação
+        if: always() && needs.gravar.result == 'cancelled'
+        run: |
+          echo "::error::A etapa \"gravar\" foi cancelada (por exemplo, por tempo esgotado); veja se o commit chegou à main."
           exit 1
 
       - name: Sinalizar problema na publicação do site

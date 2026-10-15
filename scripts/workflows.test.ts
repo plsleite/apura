@@ -70,7 +70,7 @@ const expressoes = (texto: string) => texto.match(/\$\{\{[\s\S]*?\}\}/g) ?? [];
  * maiúsculas): `github.token`, `github['token']`, `secrets.GITHUB_TOKEN`, `toJSON(github)`…
  */
 const alcancaToken = (e: string) =>
-  /github\s*(\.\s*token|\[)|secrets\s*(\.\s*github_token|\[)|tojson\s*\(\s*(github|secrets)\s*\)/i.test(
+  /github\s*(\.\s*(token|\*)|\[)|secrets\s*(\.\s*github_token|\[)|tojson\s*\(\s*(github|secrets)\s*\)/i.test(
     e,
   );
 
@@ -94,6 +94,19 @@ const rodaPacotes = (texto: string) =>
   /\b(npm|npx|pnpm|yarn|bun|bunx|node|tsx|deno)\b|node_modules|setup-node/.test(texto);
 
 describe("workflows do GitHub Actions (§19.3, §19.4)", () => {
+  it("reconhece as grafias que alcançam a credencial", () => {
+    for (const e of [
+      "${{ github.token }}",
+      "${{ github['token'] }}",
+      "${{ secrets.github_token }}",
+      "${{ toJSON(github) }}",
+      "${{ join(github.*, ',') }}",
+    ]) {
+      expect(alcancaToken(e), e).toBe(true);
+    }
+    expect(alcancaToken("${{ github.event.schedule }}")).toBe(false);
+  });
+
   it("são os três previstos, com as etapas previstas", () => {
     expect(WORKFLOWS).toEqual(["atualizar-indices.yml", "relatorio-indices.yml", "testes.yml"]);
     expect([...etapas(ler("atualizar-indices.yml")).keys()]).toEqual([
@@ -224,6 +237,13 @@ describe("workflows do GitHub Actions (§19.3, §19.4)", () => {
     expect(sinal).toContain("needs.baixar.outputs.baixar == 'success'");
     expect(sinal).toContain("github.event_name == 'schedule'");
     expect(sinal).not.toContain("publicacao");
+    // a etapa "gravar" cancelada (tempo esgotado) também corta o sinal e deixa a execução vermelha
+    expect(sinal).toContain(
+      "(needs.gravar.result == 'success' || needs.gravar.result == 'skipped')",
+    );
+    expect(passo("Sinalizar problema na gravação")).toContain(
+      "if: always() && needs.gravar.result == 'cancelled'",
+    );
     expect(passo("Sinalizar problema nas séries")).toContain(
       "if: always() && needs.baixar.outputs.baixar == 'failure'",
     );
