@@ -23,6 +23,9 @@
   --foco: #1fa463;
   --titulos: "Ubuntu", "Segoe UI", system-ui, sans-serif;
   --corpo: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  /* altura da barra presa (§20.1): logo de 40 px, 10 px de espaço em cima e embaixo e a linha
+     dourada de 4 px; a página e a coluna da direita a usam para não esconder nada sob ela */
+  --barra-altura: 64px;
   color-scheme: light;
 }
 
@@ -80,6 +83,12 @@ body {
   line-height: 1.45;
 }
 
+/* ao rolar até um campo que recebe o foco (Tab), a página reserva a altura da barra presa, para o
+   campo nunca ficar escondido sob ela (WCAG 2.4.11) */
+html {
+  scroll-padding-top: calc(var(--barra-altura) + 8px);
+}
+
 h1,
 h2,
 h3 {
@@ -117,14 +126,20 @@ textarea {
   flex-direction: column;
 }
 
+/* A barra fica presa no topo ao rolar a página (§20.1), sem animação; para não tomar espaço
+   demais presa, ela ficou mais baixa de vez (64 px: logo de 40 px, antes 48). Abaixo de 1024 px,
+   onde ela quebra em mais de uma linha, volta a rolar com a página. */
 .barra {
+  position: sticky;
+  top: 0;
+  z-index: 9;
   background: var(--cabecalho-fundo);
   color: var(--cabecalho-texto);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 24px;
-  padding: 14px 24px;
+  padding: 10px 24px;
   /* linha dourada da faixa do relatório (§10.1) */
   border-bottom: 4px solid var(--ouro);
 }
@@ -142,9 +157,9 @@ textarea {
   min-width: 0;
 }
 
-/* logo horizontal branco: 48 px de altura, com respiro (§10.2, área de proteção do manual) */
+/* logo horizontal branco: 40 px de altura, com respiro (§10.2, área de proteção do manual) */
 .logo {
-  height: 48px;
+  height: 40px;
   width: auto;
   flex: none;
 }
@@ -155,7 +170,7 @@ textarea {
   padding-left: 20px;
   border-left: 1px solid rgba(255, 255, 255, 0.35);
   font-family: var(--titulos);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.01em;
@@ -164,7 +179,7 @@ textarea {
 .marca small {
   font-family: var(--corpo);
   font-weight: 400;
-  font-size: 13.5px;
+  font-size: 12.5px;
   letter-spacing: 0.02em;
   opacity: 0.9;
 }
@@ -1050,8 +1065,14 @@ td.dica {
     font-size: 20px;
   }
 
+  /* a barra quebra em duas linhas: volta a rolar com a página, e nada é reservado no topo */
   .barra {
+    position: static;
     padding: 12px 16px;
+  }
+
+  html {
+    scroll-padding-top: 0;
   }
 }
 
