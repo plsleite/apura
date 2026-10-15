@@ -1150,6 +1150,13 @@ td.dica {
     z-index: 2;
   }
 
+  /* na tabela que não cabe (transborda), a caixa que rola o cabeçalho é a .rolagem, que não rola
+     na vertical: o top acima faria a linha de títulos descer de vez sobre a primeira linha; ali ela
+     fica no lugar e rola com as linhas (o lápis e o ✕ continuam presos à direita) */
+  .tabela-rolagem > .rolagem.transborda thead th {
+    top: auto;
+  }
+
   /* o lápis e o ✕ continuam presos à direita (§18.6), também no cabeçalho, por cima dele */
   .tabela-rolagem thead th:last-child {
     right: 0;

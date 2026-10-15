@@ -117,6 +117,14 @@ describe("tabela sempre à vista: a coluna da direita presa, com rolagem própri
     );
   });
 
+  it("na tabela que não cabe na coluna (marcada transborda), a linha de títulos não desce: fica no topo da tabela, sem cobrir a primeira linha", () => {
+    // a .rolagem com overflow-x: auto é a caixa de rolagem do cabeçalho nos dois eixos e não rola
+    // na vertical: com top: var(--titulo-da-tabela), a linha de títulos desceria 35 px de vez,
+    // por cima da primeira prestação (achado da revisão final da fase 7b)
+    const cabecalho = declaracoes(bloco(larga(), ".tabela-rolagem > .rolagem.transborda thead th"));
+    expect(cabecalho.get("top")).toBe("auto");
+  });
+
   it("fora das telas largas e altas, a área rolável é dissolvida (não é caixa nem parada do Tab); abaixo de 1024 px as tabelas voltam a rolar sozinhas", () => {
     expect(declaracoes(bloco(css, ".coluna-rolavel")).get("display")).toBe("contents");
     expect(declaracoes(bloco(larga(), ".coluna-rolavel")).get("display")).toBe("flex");
