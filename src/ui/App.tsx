@@ -356,27 +356,33 @@ function Tela({
         </div>
         <div className="coluna-direita" key={`direita-${estado.calculo.id}-${aberturas}`}>
           <Indicadores totais={resultado.totais} dataElaboracao={estado.calculo.dataElaboracao} />
-          <TabelaLancamentos
-            tipo="prestacao"
-            linhas={linhas.filter((l) => l.lancamento.tipo === "prestacao")}
-            aoPersonalizar={personalizar}
-            aoExcluir={excluir}
-            aoEditar={editar}
-            aoSugerir={() => sugerirPrestacao(estado.calculo, estado.tabela)}
-            valorDaBase={valorDaBase}
-            aoIncluir={incluir}
-          />
-          <TabelaLancamentos
-            tipo="amortizacao"
-            linhas={linhas.filter((l) => l.lancamento.tipo === "amortizacao")}
-            aoPersonalizar={personalizar}
-            aoExcluir={excluir}
-            aoEditar={editar}
-            aoSugerir={() => sugerirPagamento(estado.calculo)}
-            valorDaBase={valorDaBase}
-            aoIncluir={incluir}
-          />
-          <Avisos avisos={avisosDaTela} />
+          {/* Tabela sempre à vista (§20.3): em telas largas e altas o CSS prende a coluna abaixo
+              da barra e dá a esta área (as duas tabelas e os avisos) uma rolagem própria; ela tem
+              nome e recebe o foco pelo teclado (nas colunas empilhadas, o CSS a dissolve, e o
+              navegador não a põe na ordem do Tab) */}
+          <div className="coluna-rolavel" role="region" aria-label="Tabelas e avisos" tabIndex={0}>
+            <TabelaLancamentos
+              tipo="prestacao"
+              linhas={linhas.filter((l) => l.lancamento.tipo === "prestacao")}
+              aoPersonalizar={personalizar}
+              aoExcluir={excluir}
+              aoEditar={editar}
+              aoSugerir={() => sugerirPrestacao(estado.calculo, estado.tabela)}
+              valorDaBase={valorDaBase}
+              aoIncluir={incluir}
+            />
+            <TabelaLancamentos
+              tipo="amortizacao"
+              linhas={linhas.filter((l) => l.lancamento.tipo === "amortizacao")}
+              aoPersonalizar={personalizar}
+              aoExcluir={excluir}
+              aoEditar={editar}
+              aoSugerir={() => sugerirPagamento(estado.calculo)}
+              valorDaBase={valorDaBase}
+              aoIncluir={incluir}
+            />
+            <Avisos avisos={avisosDaTela} />
+          </div>
         </div>
       </main>
       <Rodape situacaoDosIndices={estado.situacao.rodape} />

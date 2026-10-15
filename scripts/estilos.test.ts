@@ -80,3 +80,47 @@ describe("cabeçalho fixo (§20.1)", () => {
     expect(declaracoes(bloco(estreita, "html")).get("scroll-padding-top")).toBe("0");
   });
 });
+
+describe("tabela sempre à vista: a coluna da direita presa, com rolagem própria (§20.3)", () => {
+  const larga = () => bloco(css, "@media (min-width: 1024px) and (min-height: 600px)");
+
+  it("a partir de 1024 px de largura e 600 px de altura, a coluna da direita fica presa abaixo da barra e ocupa a altura que sobra", () => {
+    const coluna = declaracoes(bloco(larga(), ".coluna-direita"));
+    expect(coluna.get("position")).toBe("sticky");
+    expect(coluna.get("top")).toBe("calc(var(--barra-altura) + 16px)");
+    expect(coluna.get("max-height")).toBe("calc(100vh - var(--barra-altura) - 32px)");
+  });
+
+  it("a área rolável é uma só para a coluna inteira, e a rolagem dela não passa para a página ao chegar ao fim", () => {
+    const area = declaracoes(bloco(larga(), ".coluna-rolavel"));
+    expect(area.get("overflow")).toBe("auto");
+    expect(area.get("overscroll-behavior")).toBe("contain");
+    expect(area.get("scroll-padding-top")).toBe("var(--cabecalhos-da-tabela)");
+    // a tabela que cabe na coluna perde a rolagem lateral própria (senão o cabeçalho dela não
+    // teria como ficar preso); a que não cabe (marcada pelo componente) continua rolando de lado
+    expect(
+      declaracoes(bloco(larga(), ".tabela-rolagem > .rolagem:not(.transborda)")).get("overflow-x"),
+    ).toBe("visible");
+  });
+
+  it("o título de cada tabela e a linha de títulos das colunas ficam presos no topo da área, como o congelar painéis", () => {
+    const titulo = declaracoes(bloco(larga(), ".tabela-rolagem > .titulo-secao"));
+    expect(titulo.get("position")).toBe("sticky");
+    expect(titulo.get("top")).toBe("0");
+    expect(titulo.get("height")).toBe("var(--titulo-da-tabela)");
+    const cabecalho = declaracoes(bloco(larga(), ".tabela-rolagem thead th"));
+    expect(cabecalho.get("position")).toBe("sticky");
+    expect(cabecalho.get("top")).toBe("var(--titulo-da-tabela)");
+    // o lápis e o ✕ continuam presos à direita (§18.6), também no cabeçalho
+    expect(declaracoes(bloco(larga(), ".tabela-rolagem thead th:last-child")).get("right")).toBe(
+      "0",
+    );
+  });
+
+  it("fora das telas largas e altas, a área rolável é dissolvida (não é caixa nem parada do Tab); abaixo de 1024 px as tabelas voltam a rolar sozinhas", () => {
+    expect(declaracoes(bloco(css, ".coluna-rolavel")).get("display")).toBe("contents");
+    expect(declaracoes(bloco(larga(), ".coluna-rolavel")).get("display")).toBe("flex");
+    expect(declaracoes(bloco(estreita, ".coluna-direita")).get("display")).toBe("contents");
+    expect(declaracoes(bloco(css, ".tabela-rolagem > .rolagem")).get("overflow-x")).toBe("auto");
+  });
+});

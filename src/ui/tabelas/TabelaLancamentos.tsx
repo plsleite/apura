@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -152,6 +153,24 @@ export function TabelaLancamentos({
     else novo.add(id);
     setExpandidos(novo);
   };
+  // A tabela mais larga que a coluna rola de lado sozinha (classe `transborda` na caixa que a
+  // envolve); a que cabe, não, e o cabeçalho dela pode ficar preso ao rolar a coluna (§20.3; o
+  // CSS explica). Medido de novo quando a caixa ou a tabela mudam de largura (a tabela é sempre o
+  // mesmo elemento, mesmo vazia: um observador só, pela vida do componente); sem ResizeObserver
+  // (testes em jsdom), a tabela é tida como cabendo.
+  const caixaDaTabela = useRef<HTMLDivElement>(null);
+  const [transborda, setTransborda] = useState(false);
+  useLayoutEffect(() => {
+    const caixa = caixaDaTabela.current;
+    if (caixa === null || typeof ResizeObserver === "undefined") return;
+    const medir = () => setTransborda(tabelaTransborda(caixa));
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(caixa);
+    const tabela = caixa.querySelector("table");
+    if (tabela !== null) observador.observe(tabela);
+    return () => observador.disconnect();
+  }, []);
   const prestacoes = tipo === "prestacao";
   const titulo = prestacoes ? "Prestações" : "Amortizações (pagamentos)";
   const tituloId = prestacoes ? "titulo-tabela-prestacoes" : "titulo-tabela-amortizacoes";
@@ -220,13 +239,14 @@ export function TabelaLancamentos({
     <section className="tabela-rolagem" aria-labelledby={tituloId}>
       <div className="titulo-secao">
         <h2 id={tituloId}>{titulo}</h2>
-        <Ajuda assunto={titulo}>
+        {/* flutuante: o balão não fica cortado pela rolagem própria da coluna (§20.3) */}
+        <Ajuda assunto={titulo} flutuante>
           {prestacoes
             ? "Clique no vencimento ou no valor para corrigi-lo na própria linha: Enter grava, Esc desiste. Valor digitado fica marcado como informado à mão; apagado, volta a ser apurado pela base. ▸ mostra a memória do cálculo; o lápis ajusta descrição, rendimento, termos e regras próprias; o ✕ pede confirmação antes de excluir."
             : "Clique na data ou no valor para corrigi-lo na própria linha: Enter grava, Esc desiste. Cada pagamento é atualizado da sua data até a data do cálculo e abatido do total. ▸ mostra a memória do cálculo; o lápis ajusta descrição, termos e regras próprias; o ✕ pede confirmação antes de excluir."}
         </Ajuda>
       </div>
-      <div className="rolagem">
+      <div className={transborda ? "rolagem transborda" : "rolagem"} ref={caixaDaTabela}>
         {/* com alguma descrição (13º, férias), a primeira coluna prefere ser mais larga, para a
             descrição aparecer, sem empurrar o lápis e o ✕ para fora (§17.4) */}
         <table
@@ -384,6 +404,12 @@ export function TabelaLancamentos({
       </div>
     </section>
   );
+}
+
+/** A tabela dentro da caixa é mais larga que ela (precisa rolar de lado)? */
+export function tabelaTransborda(caixa: HTMLElement): boolean {
+  const tabela = caixa.querySelector("table");
+  return tabela !== null && tabela.getBoundingClientRect().width > caixa.clientWidth + 0.5;
 }
 
 /**

@@ -26,6 +26,10 @@
   /* altura da barra presa (§20.1): logo de 40 px, 10 px de espaço em cima e embaixo e a linha
      dourada de 4 px; a página e a coluna da direita a usam para não esconder nada sob ela */
   --barra-altura: 64px;
+  /* alturas do título de cada tabela e dele mais a linha de títulos das colunas, presos no topo
+     da área rolável (§20.3); a área as reserva ao rolar até um controle que recebe o foco */
+  --titulo-da-tabela: 35px;
+  --cabecalhos-da-tabela: 62px;
   color-scheme: light;
 }
 
@@ -251,6 +255,14 @@ textarea {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+
+/* a área rolável da coluna da direita (§20.3) só existe como caixa nas telas largas e altas (bloco
+   @media mais abaixo); fora delas é dissolvida: as tabelas e os avisos entram direto na coluna (ou
+   na grade, nas colunas empilhadas), e um elemento dissolvido não recebe foco nem entra na ordem
+   do Tab */
+.coluna-rolavel {
+  display: contents;
 }
 
 .rodape {
@@ -573,6 +585,9 @@ textarea {
 .tabela-rolagem > .rolagem {
   position: relative;
   overflow-x: auto;
+  /* ao rolar de lado até uma célula que recebe o foco, reserva a largura do lápis e do ✕, presos
+     à borda direita (§18.6), para a célula não ficar escondida sob eles */
+  scroll-padding-right: 72px;
 }
 
 .tabela-rolagem > .titulo-secao {
@@ -1073,6 +1088,72 @@ td.dica {
 
   html {
     scroll-padding-top: 0;
+  }
+}
+
+/* ---- Tabela sempre à vista (§20.3): a coluna da direita presa, com rolagem própria ---- */
+
+/* A partir de 1024 px de largura e 600 px de altura: a coluna da direita fica presa logo abaixo
+   da barra e ocupa a altura que sobra da tela; a página continua rolando pela esquerda. Os cinco
+   indicadores ficam parados no topo da coluna; o que vem embaixo (as duas tabelas e os avisos)
+   fica numa área com rolagem própria, uma só para a coluna inteira. Em tela mais baixa, ou mais
+   estreita, nada fica preso (as colunas empilham abaixo de 1024 px, como antes). */
+@media (min-width: 1024px) and (min-height: 600px) {
+  .coluna-direita {
+    position: sticky;
+    top: calc(var(--barra-altura) + 16px);
+    max-height: calc(100vh - var(--barra-altura) - 32px);
+  }
+
+  .coluna-direita > .indicadores {
+    flex: none;
+  }
+
+  /* a área rolável: a rolagem não passa para a página ao chegar ao fim (overscroll-behavior),
+     e, ao rolar até um controle que recebe o foco, a área reserva a altura dos cabeçalhos presos */
+  .coluna-rolavel {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scroll-padding-top: var(--cabecalhos-da-tabela);
+  }
+
+  /* Um cabeçalho só fica preso em relação à caixa que rola. A rolagem lateral própria de cada
+     tabela (overflow-x: auto na .rolagem), que a tabela mais larga que a coluna precisa, faz da
+     .rolagem essa caixa, e ela não rola na vertical: o cabeçalho ficaria solto. Por isso a tabela
+     que cabe na coluna (a partir de cerca de 1150 px de tela, com valores na casa do milhar) perde
+     a rolagem própria, e o cabeçalho se prende à área rolável da coluna; a tabela que não cabe
+     (o componente mede e marca `transborda`) rola de lado sozinha, como antes, com o título preso
+     e o cabeçalho rolando junto com as linhas. */
+  .tabela-rolagem > .rolagem:not(.transborda) {
+    overflow-x: visible;
+  }
+
+  /* presos no topo da área, como o "congelar painéis" da planilha: o título da tabela e, logo
+     abaixo, a linha de títulos das colunas (os números rolam por baixo dos dois) */
+  .tabela-rolagem > .titulo-secao {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    height: var(--titulo-da-tabela);
+    background: var(--superficie);
+    border-radius: 7px 7px 0 0;
+  }
+
+  .tabela-rolagem thead th {
+    position: sticky;
+    top: var(--titulo-da-tabela);
+    z-index: 2;
+  }
+
+  /* o lápis e o ✕ continuam presos à direita (§18.6), também no cabeçalho, por cima dele */
+  .tabela-rolagem thead th:last-child {
+    right: 0;
+    z-index: 3;
   }
 }
 

@@ -115,6 +115,61 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     ).toBeDefined();
   });
 
+  it("o balão ⓘ do título da tabela flutua em posição fixa, para não ficar cortado pela rolagem da coluna (§20.3)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await user.click(screen.getByRole("button", { name: "Ajuda: Prestações" }));
+    expect(screen.getByText(/Clique no vencimento ou no valor/).className).toBe("balao flutuante");
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Ajuda: Amortizações (pagamentos)" }));
+    expect(screen.getByText(/Clique na data ou no valor/).className).toBe("balao flutuante");
+  });
+
+  it('a tabela mais larga que a caixa é marcada "transborda" (rola de lado sozinha); a que cabe, não (§20.3)', async () => {
+    // o jsdom não mede: ResizeObserver e as larguras são simulados. A caixa de cada tabela tem
+    // 540 px; a tabela de prestações mede 603 (não cabe) e a de pagamentos, 500 (cabe).
+    const observadores: Array<() => void> = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(aoMudar: () => void) {
+          observadores.push(aoMudar);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    let larguraDasPrestacoes = 603;
+    const retangulo = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: Element) {
+        const prestacoes =
+          this.closest("section")?.getAttribute("aria-labelledby") === "titulo-tabela-prestacoes";
+        const w = this.tagName !== "TABLE" ? 0 : prestacoes ? larguraDasPrestacoes : 500;
+        const caixa = { top: 0, bottom: 0, left: 0, right: w, width: w, height: 0 };
+        return { ...caixa, x: 0, y: 0, toJSON: () => caixa } as DOMRect;
+      });
+    const clientWidth = vi
+      .spyOn(Element.prototype, "clientWidth", "get")
+      .mockImplementation(function (this: Element) {
+        return this.classList.contains("rolagem") ? 540 : 0;
+      });
+    try {
+      await montarCaso(userEvent.setup());
+      const caixas = () =>
+        [...document.querySelectorAll(".tabela-rolagem > .rolagem")].map((c) => c.className);
+      expect(caixas()).toEqual(["rolagem transborda", "rolagem"]);
+      // a medida é refeita quando a caixa ou a tabela mudam de largura: a tabela passa a caber
+      larguraDasPrestacoes = 540;
+      act(() => observadores.forEach((aoMudar) => aoMudar()));
+      expect(caixas()).toEqual(["rolagem", "rolagem"]);
+    } finally {
+      retangulo.mockRestore();
+      clientWidth.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("▸ expande a memória (base, índices, juros e avisos) e volta a esconder", async () => {
     const user = userEvent.setup();
     await montarCaso(user);

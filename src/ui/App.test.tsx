@@ -56,6 +56,22 @@ describe("App (fundação da tela)", () => {
     );
   });
 
+  it("a coluna da direita tem os indicadores no topo e, embaixo, uma área rolável com nome, que recebe foco pelo teclado, com as duas tabelas e os avisos (§20.3)", () => {
+    render(<App ambiente={ambienteDeTeste()} />);
+    const direita = document.querySelector(".coluna-direita") as HTMLElement;
+    const area = within(direita).getByRole("region", { name: "Tabelas e avisos" });
+    expect(area.className).toBe("coluna-rolavel");
+    expect(area.tabIndex).toBe(0);
+    // os indicadores ficam fora da área rolável, antes dela (parados no topo da coluna)
+    const resumo = within(direita).getByLabelText("Resumo do cálculo");
+    expect(area.contains(resumo)).toBe(false);
+    expect(resumo.compareDocumentPosition(area) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // dentro dela, as duas tabelas e a caixa de avisos
+    expect(within(area).getByRole("region", { name: "Prestações" })).toBeDefined();
+    expect(within(area).getByRole("region", { name: "Amortizações (pagamentos)" })).toBeDefined();
+    expect(within(area).getByRole("region", { name: "Avisos" })).toBeDefined();
+  });
+
   it("mostra na caixa de avisos os meses já divulgados que ainda não chegaram ao Apura", () => {
     render(<App ambiente={ambienteDeTeste({ limites: { "433": "2026-07" } })} />);
     const avisos = screen.getByRole("region", { name: "Avisos" });
