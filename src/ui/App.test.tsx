@@ -34,6 +34,28 @@ describe("App (fundação da tela)", () => {
     );
   });
 
+  it("as cinco seções da esquerda vêm na ordem da §20: processo, base, encargos, prestações, pagamentos (decisão de 15/10/2026)", () => {
+    render(<App ambiente={ambienteDeTeste()} />);
+    const esquerda = document.querySelector(".coluna-esquerda") as HTMLElement;
+    const titulos = within(esquerda)
+      .getAllByRole("heading", { level: 2 })
+      .map((h) => h.textContent);
+    expect(titulos).toEqual([
+      "1 · Processo",
+      "2 · Base dos alimentos",
+      "3 · Encargos e data do cálculo",
+      "4 · Prestações em atraso",
+      "5 · Pagamentos",
+    ]);
+    // a tabela vazia aponta para a seção certa
+    expect(screen.getByText(/Nenhuma prestação lançada/).textContent).toBe(
+      'Nenhuma prestação lançada: use "Lançar em lote" na seção 4 ou "+ Prestação".',
+    );
+    expect(screen.getByText(/Nenhum pagamento lançado/).textContent).toBe(
+      'Nenhum pagamento lançado: use "Lançar em lote" na seção 5 ou "+ Pagamento".',
+    );
+  });
+
   it("mostra na caixa de avisos os meses já divulgados que ainda não chegaram ao Apura", () => {
     render(<App ambiente={ambienteDeTeste({ limites: { "433": "2026-07" } })} />);
     const avisos = screen.getByRole("region", { name: "Avisos" });
@@ -89,7 +111,7 @@ describe("App (fundação da tela)", () => {
       return campos.length;
     };
     conferir();
-    const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     await user.click(prestacoes.getByLabelText("Meses em atraso"));
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
     await user.type(prestacoes.getByLabelText("Quantos meses"), "2");

@@ -14,7 +14,7 @@ import {
 import { intervaloDoLote, MAXIMO_DE_MESES } from "./LotePrestacoes.tsx";
 
 /**
- * Seção "4 · Pagamentos" (§6.2, §9.2): valor por mês e o intervalo de pagamentos, com o primeiro e
+ * Seção "5 · Pagamentos" (§6.2, §9.2): valor por mês e o intervalo de pagamentos, com o primeiro e
  * o último pagamento em datas completas, como o intervalo de vencimentos das prestações (decisão de
  * 13/10/2026): um pagamento por mês, no dia do primeiro (no último dia, nos meses mais curtos), até
  * o último. "Lançar em lote", cumulativo. Um segundo pagamento no mesmo mês entra como pagamento
@@ -72,7 +72,7 @@ export function LotePagamentosSecao({
   return (
     <section className="secao" aria-labelledby="titulo-pagamentos">
       <div className="titulo-secao">
-        <h2 id="titulo-pagamentos">4 · Pagamentos</h2>
+        <h2 id="titulo-pagamentos">5 · Pagamentos</h2>
         <Ajuda assunto="Pagamentos">
           Lança um pagamento por mês, do primeiro ao último pagamento, no dia do primeiro (no último
           dia do mês, quando ele é mais curto). Cada pagamento é atualizado da sua data até a data

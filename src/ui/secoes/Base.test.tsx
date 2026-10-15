@@ -353,7 +353,7 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     render(<App ambiente={ambienteDeTeste()} />);
     await user.type(screen.getByLabelText("Valor fixado"), "500");
     fireEvent.change(screen.getByLabelText("Fixado em"), { target: { value: "2024-03-10" } });
-    const lote = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const lote = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     fireEvent.change(lote.getByLabelText("Primeiro vencimento"), {
       target: { value: "2024-11-05" },
     });

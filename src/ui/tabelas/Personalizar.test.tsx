@@ -10,7 +10,7 @@ afterEach(cleanup);
 async function montarCaso(user: ReturnType<typeof userEvent.setup>) {
   render(<App ambiente={ambienteDeTeste()} />);
   await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
-  const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+  const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
   await user.click(prestacoes.getByLabelText("Meses em atraso"));
   await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
   await user.type(prestacoes.getByLabelText("Quantos meses"), "2");
@@ -52,7 +52,7 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
       "Prestações com valor informado à mão, não apurado pela base dos alimentos: set/2026.",
     );
     // relançar o lote não sobrescreve a edição
-    const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
     expect(
       within(linhaDaPrestacao("prestação de 05/09/2026 (Valor diverso)")).getAllByRole("cell")[1]
@@ -161,7 +161,7 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
     await user.click(screen.getByLabelText("% dos rendimentos"));
     await user.type(screen.getByLabelText("Percentual dos rendimentos"), "30");
     await user.type(screen.getByLabelText("Rendimento mensal padrão (obrigatório)"), "1.000,00");
-    const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     await user.click(prestacoes.getByLabelText("Meses em atraso"));
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
     await user.type(prestacoes.getByLabelText("Quantos meses"), "3");

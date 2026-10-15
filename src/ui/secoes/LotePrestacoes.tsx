@@ -16,7 +16,7 @@ import { DATA_MAXIMA, DATA_MINIMA, lerData, lerInteiro } from "../entrada.ts";
 export const MAXIMO_DE_MESES = 600;
 
 /**
- * Seção "3 · Prestações em atraso" (§6.1, §9.2). Por padrão, o intervalo de vencimentos, com o
+ * Seção "4 · Prestações em atraso" (§6.1, §9.2). Por padrão, o intervalo de vencimentos, com o
  * primeiro e o último vencimento em datas completas: as prestações vencem todo mês no dia do
  * primeiro (no último dia, nos meses mais curtos), até o último vencimento informado. Em "Meses
  * em atraso", aparecem o dia do vencimento e quantos meses (decisão de 13/10/2026). "Lançar em
@@ -85,7 +85,7 @@ export function LotePrestacoesSecao({
   return (
     <section className="secao" aria-labelledby="titulo-prestacoes">
       <div className="titulo-secao">
-        <h2 id="titulo-prestacoes">3 · Prestações em atraso</h2>
+        <h2 id="titulo-prestacoes">4 · Prestações em atraso</h2>
         <Ajuda assunto="Prestações em atraso">
           Cada "Lançar em lote" acrescenta as prestações do período à tabela ao lado, sem apagar as
           anteriores (ex.: jan a mar; depois jul a set); um mês de vencimento já lançado não é

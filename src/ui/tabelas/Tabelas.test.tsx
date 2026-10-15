@@ -51,7 +51,7 @@ function esperado() {
 async function montarCaso(user: ReturnType<typeof userEvent.setup>) {
   render(<App ambiente={ambienteDeTeste()} />);
   await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
-  const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+  const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
   await user.click(prestacoes.getByLabelText("Meses em atraso"));
   await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
   await user.type(prestacoes.getByLabelText("Quantos meses"), "2");
@@ -141,7 +141,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
   it("um pagamento entra na tabela de amortizações com as mesmas colunas e abate do total; excluir recalcula", async () => {
     const user = userEvent.setup();
     await montarCaso(user);
-    const pagamentos = within(screen.getByRole("region", { name: /4 · Pagamentos/ }));
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
     await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
     fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
       target: { value: "2026-09-05" },
@@ -246,7 +246,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     expect(screen.queryByRole("button", { name: /05\/10\/2026/ })).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "+ Prestação" }));
     // relançado o lote, 05/10/2026 volta com a memória fechada e o ✕ desarmado
-    const lote = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const lote = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     await user.click(lote.getByRole("button", { name: "Lançar em lote" }));
     expect(
       screen
@@ -365,7 +365,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     ).toBeDefined();
     expect(screen.queryByRole("button", { name: /05\/09\/2026/ })).toBeNull();
     // pagamento não fica sem valor
-    const pagamentos = within(screen.getByRole("region", { name: /4 · Pagamentos/ }));
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
     await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
     fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
       target: { value: "2026-09-05" },
@@ -500,7 +500,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     expect(
       screen.getByLabelText("Percentual do salário mínimo").getAttribute("aria-invalid"),
     ).toBeNull();
-    const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     await user.click(prestacoes.getByLabelText("Meses em atraso"));
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
     await user.type(prestacoes.getByLabelText("Quantos meses"), "2");
@@ -537,7 +537,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
   it("amortizações maiores que as prestações: total devido e total geral saem como R$ 0,00, com o aviso do motor", async () => {
     const user = userEvent.setup();
     await montarCaso(user);
-    const pagamentos = within(screen.getByRole("region", { name: /4 · Pagamentos/ }));
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
     await user.type(pagamentos.getByLabelText("Valor por mês"), "5.000,00");
     fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
       target: { value: "2026-09-05" },

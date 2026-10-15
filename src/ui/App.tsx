@@ -82,8 +82,10 @@ export default function App({ ambiente = ambientePadrao() }: { ambiente?: Ambien
 }
 
 /**
- * Tela única em duas colunas (§9): esquerda, dados do caso e lançamentos em lote; direita,
- * resultado e lançamentos individuais. Recálculo a cada alteração, sem botão "Calcular" (§4.3).
+ * Tela única em duas colunas (§9): esquerda, dados do caso e lançamentos em lote, na ordem da §20
+ * (processo, base, encargos e data do cálculo, prestações, pagamentos: os parâmetros antes dos
+ * lançamentos); direita, resultado e lançamentos individuais. Recálculo a cada alteração, sem botão
+ * "Calcular" (§4.3).
  */
 function Tela({
   ambiente,
@@ -322,16 +324,6 @@ function Tela({
             faltas={faltas}
             aoMudar={(base) => despachar({ tipo: "base", base, em: agora() })}
           />
-          <LotePrestacoesSecao
-            ultimoLote={estado.calculo.lotes.ultimoLotePrestacoes}
-            avisos={estado.loteRecente === "prestacoes" ? estado.avisosDoLote : []}
-            aoLancar={(lote) => despachar({ tipo: "lancarPrestacoes", lote, em: agora() })}
-          />
-          <LotePagamentosSecao
-            ultimoLote={estado.calculo.lotes.ultimoLoteAmortizacoes}
-            avisos={estado.loteRecente === "pagamentos" ? estado.avisosDoLote : []}
-            aoLancar={(lote) => despachar({ tipo: "lancarPagamentos", lote, em: agora() })}
-          />
           <Encargos
             calculo={estado.calculo}
             aoMudarAcrescimo={(campo, valor) =>
@@ -350,6 +342,16 @@ function Tela({
               });
               mudarPreferencias({ metodologia: opcao });
             }}
+          />
+          <LotePrestacoesSecao
+            ultimoLote={estado.calculo.lotes.ultimoLotePrestacoes}
+            avisos={estado.loteRecente === "prestacoes" ? estado.avisosDoLote : []}
+            aoLancar={(lote) => despachar({ tipo: "lancarPrestacoes", lote, em: agora() })}
+          />
+          <LotePagamentosSecao
+            ultimoLote={estado.calculo.lotes.ultimoLoteAmortizacoes}
+            avisos={estado.loteRecente === "pagamentos" ? estado.avisosDoLote : []}
+            aoLancar={(lote) => despachar({ tipo: "lancarPagamentos", lote, em: agora() })}
           />
         </div>
         <div className="coluna-direita" key={`direita-${estado.calculo.id}-${aberturas}`}>

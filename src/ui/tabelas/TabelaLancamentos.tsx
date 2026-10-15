@@ -253,8 +253,8 @@ export function TabelaLancamentos({
               <tr>
                 <td colSpan={8} className="texto">
                   {prestacoes
-                    ? 'Nenhuma prestação lançada: use "Lançar em lote" na seção 3 ou "+ Prestação".'
-                    : 'Nenhum pagamento lançado: use "Lançar em lote" na seção 4 ou "+ Pagamento".'}
+                    ? 'Nenhuma prestação lançada: use "Lançar em lote" na seção 4 ou "+ Prestação".'
+                    : 'Nenhum pagamento lançado: use "Lançar em lote" na seção 5 ou "+ Pagamento".'}
                 </td>
               </tr>
             ) : null}
