@@ -129,6 +129,8 @@ describe("reduzir: lotes cumulativos e lançamentos", () => {
       em: DEPOIS,
     });
     expect(estado.calculo.lancamentos.map((l) => l.id)).toEqual(["p-2026-08", "p-2026-09"]);
+    // os ids das linhas recém-lançadas, para a tela rolar até elas (§20.3)
+    expect(estado.idsDoLote).toEqual(["p-2026-08", "p-2026-09"]);
     expect(estado.calculo.lotes.ultimoLotePrestacoes).toEqual({
       diaVencimento: 5,
       de: "2026-08",
@@ -150,6 +152,8 @@ describe("reduzir: lotes cumulativos e lançamentos", () => {
       "Meses de vencimento já lançados, não repetidos: ago/2026.",
     ]);
     expect(estado.loteRecente).toBe("prestacoes");
+    // só as novas, não as já lançadas
+    expect(estado.idsDoLote).toEqual(["p-2026-06", "p-2026-07"]);
     expect(estado.calculo.lancamentos.every((l) => l.valorInformado === undefined)).toBe(true);
   });
 
@@ -166,6 +170,7 @@ describe("reduzir: lotes cumulativos e lançamentos", () => {
     expect(estado.calculo.lotes.ultimoLoteAmortizacoes?.valorMensal).toBe("400.00");
     expect(estado.avisosDoLote).toEqual([]);
     expect(estado.loteRecente).toBe("pagamentos");
+    expect(estado.idsDoLote).toEqual(["a-2026-08", "a-2026-09"]);
   });
 
   it("inclui avulsos com id livre e origem 'avulso', intercalados na ordem cronológica", () => {
@@ -397,6 +402,7 @@ describe("reduzir: novo e abrir", () => {
       situacao: outros.situacao,
       avisosDoLote: [],
       loteRecente: null,
+      idsDoLote: [],
       avisosDaAbertura: [],
       tocado: false,
     });
@@ -410,6 +416,7 @@ describe("reduzir: novo e abrir", () => {
     });
     expect(estado.avisosDaAbertura).toHaveLength(1);
     expect(estado.avisosDoLote).toEqual([]);
+    expect(estado.idsDoLote).toEqual([]);
     expect(estado.tocado).toBe(false);
   });
 });

@@ -170,6 +170,62 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     }
   });
 
+  it('depois de "Lançar em lote", a área da coluna rola até a primeira linha recém-lançada, sem mexer na página; relançar sem novidade não rola (§20.3)', async () => {
+    // o jsdom não calcula leiaute: a área é tida como rolável (conteúdo de 2000 px numa caixa de
+    // 500 px) e começa em 100 px da janela; cada linha da tabela está em 500 px
+    const scrollHeight = vi
+      .spyOn(Element.prototype, "scrollHeight", "get")
+      .mockImplementation(function (this: Element) {
+        return this.classList.contains("coluna-rolavel") ? 2000 : 0;
+      });
+    const clientHeight = vi
+      .spyOn(Element.prototype, "clientHeight", "get")
+      .mockImplementation(function (this: Element) {
+        return this.classList.contains("coluna-rolavel") ? 500 : 0;
+      });
+    const retangulo = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: Element) {
+        const top = this.classList.contains("coluna-rolavel")
+          ? 100
+          : this.tagName === "TR"
+            ? 500
+            : 0;
+        const caixa = { top, bottom: top, left: 0, right: 0, width: 0, height: 0 };
+        return { ...caixa, x: 0, y: top, toJSON: () => caixa } as DOMRect;
+      });
+    try {
+      const user = userEvent.setup();
+      await montarCaso(user);
+      const area = screen.getByRole("region", { name: "Tabelas e avisos" });
+      // o lote de 2 meses lança 05/09 e 05/10/2026: a linha de 05/09 (500 px) vai ao topo da área
+      // (100 px), descontada a reserva dos cabeçalhos presos (sem CSS no jsdom, zero): 400 px de
+      // rolagem, só na área (a página não é tocada: nada de scrollIntoView)
+      expect(area.scrollTop).toBe(400);
+      expect(window.scrollY).toBe(0);
+      // o mesmo lote de novo: nada de novo, nada rola
+      area.scrollTop = 0;
+      const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+      await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+      expect(area.scrollTop).toBe(0);
+      // um lote de pagamentos rola até o primeiro pagamento novo
+      const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
+      await user.type(pagamentos.getByLabelText("Valor por mês"), "400,00");
+      fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
+        target: { value: "2026-08-10" },
+      });
+      fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
+        target: { value: "2026-09-10" },
+      });
+      await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+      expect(area.scrollTop).toBe(400);
+    } finally {
+      scrollHeight.mockRestore();
+      clientHeight.mockRestore();
+      retangulo.mockRestore();
+    }
+  });
+
   it("▸ expande a memória (base, índices, juros e avisos) e volta a esconder", async () => {
     const user = userEvent.setup();
     await montarCaso(user);

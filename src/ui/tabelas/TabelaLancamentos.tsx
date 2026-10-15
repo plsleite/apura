@@ -105,6 +105,7 @@ export function TabelaLancamentos({
   aoSugerir,
   valorDaBase,
   aoIncluir,
+  idsDoLote,
 }: {
   tipo: Lancamento["tipo"];
   linhas: LinhaDaTabela[];
@@ -115,6 +116,11 @@ export function TabelaLancamentos({
   /** valor que a base dá para um vencimento ("" quando não dá): acompanha a data da linha nova */
   valorDaBase: (data: DataISO) => TextoDecimal;
   aoIncluir: (lancamento: NovoLancamento) => void;
+  /**
+   * ids das linhas que o último "Lançar em lote" acrescentou a esta tabela (a mesma lista até o
+   * próximo lote): a área rolável da coluna rola até a primeira delas (§20.3)
+   */
+  idsDoLote?: string[];
 }) {
   const [expandidos, setExpandidos] = useState<ReadonlySet<string>>(new Set());
   // Exclusão em dois cliques, sem janela pop-up e sem mexer na linha (decisões de 13/10/2026): o
@@ -171,6 +177,24 @@ export function TabelaLancamentos({
     if (tabela !== null) observador.observe(tabela);
     return () => observador.disconnect();
   }, []);
+  // Depois de "Lançar em lote", a área rolável da coluna rola até a primeira linha nova, que fica
+  // logo abaixo dos cabeçalhos presos (a reserva do scroll-padding-top da área). Só a área rola,
+  // nunca a página (scrollIntoView rolaria também a janela e tiraria a pessoa do formulário), e só
+  // quando a área tem o que rolar (nas colunas empilhadas ou em tela baixa ela é dissolvida pelo
+  // CSS e não tem altura). A lista muda de identidade a cada lote, e é isso que dispara a rolagem.
+  useEffect(() => {
+    const alvo = idsDoLote?.[0];
+    const caixa = caixaDaTabela.current;
+    if (alvo === undefined || caixa === null) return;
+    const linha = [...caixa.querySelectorAll("tr[data-id]")].find(
+      (tr) => tr.getAttribute("data-id") === alvo,
+    );
+    const area = linha?.closest<HTMLElement>(".coluna-rolavel");
+    if (!linha || !area || area.scrollHeight <= area.clientHeight) return;
+    const reserva = Number.parseFloat(getComputedStyle(area).scrollPaddingTop) || 0;
+    area.scrollTop +=
+      linha.getBoundingClientRect().top - area.getBoundingClientRect().top - reserva;
+  }, [idsDoLote]);
   const prestacoes = tipo === "prestacao";
   const titulo = prestacoes ? "Prestações" : "Amortizações (pagamentos)";
   const tituloId = prestacoes ? "titulo-tabela-prestacoes" : "titulo-tabela-amortizacoes";
@@ -496,7 +520,7 @@ function Linha({
         ? formatarMoedaParaCampo(calculado.valorBase)
         : "";
   return (
-    <tr>
+    <tr data-id={lancamento.id}>
       <td className="texto">
         <div className="celula-vencimento">
           <button

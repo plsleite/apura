@@ -64,6 +64,9 @@ import { LotePagamentosSecao } from "./secoes/LotePagamentos.tsx";
 import { LotePrestacoesSecao } from "./secoes/LotePrestacoes.tsx";
 import { Processo } from "./secoes/Processo.tsx";
 
+/** A tabela que não recebeu o último lote: a mesma lista vazia sempre, para a rolagem não disparar. */
+const SEM_LOTE: string[] = [];
+
 /**
  * O Apura, com a tela de erro de reserva em volta (§18.6): um defeito do programa ao montar a tela
  * troca a página pela reserva, que oferece salvar o último cálculo exibido. O `ambiente` é
@@ -370,6 +373,7 @@ function Tela({
               aoSugerir={() => sugerirPrestacao(estado.calculo, estado.tabela)}
               valorDaBase={valorDaBase}
               aoIncluir={incluir}
+              idsDoLote={estado.loteRecente === "prestacoes" ? estado.idsDoLote : SEM_LOTE}
             />
             <TabelaLancamentos
               tipo="amortizacao"
@@ -380,6 +384,7 @@ function Tela({
               aoSugerir={() => sugerirPagamento(estado.calculo)}
               valorDaBase={valorDaBase}
               aoIncluir={incluir}
+              idsDoLote={estado.loteRecente === "pagamentos" ? estado.idsDoLote : SEM_LOTE}
             />
             <Avisos avisos={avisosDaTela} />
           </div>
