@@ -26,6 +26,7 @@ import type {
 import { Ajuda } from "../componentes/Ajuda.tsx";
 import {
   DATA_MAXIMA,
+  DATA_MINIMA,
   formatarDataParaCampo,
   formatarMoedaParaCampo,
   lerData,
@@ -284,7 +285,7 @@ export function TabelaLancamentos({
                     <input
                       ref={campoDaDataNova}
                       type="date"
-                      min="1900-01-01"
+                      min={DATA_MINIMA}
                       max={DATA_MAXIMA}
                       value={rascunho.data}
                       onChange={(e) => mudarDataNova(e.target.value)}

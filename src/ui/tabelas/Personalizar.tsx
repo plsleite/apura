@@ -13,6 +13,7 @@ import { Ajuda } from "../componentes/Ajuda.tsx";
 import { CampoTexto, Opcao } from "../componentes/Campo.tsx";
 import {
   DATA_MAXIMA,
+  DATA_MINIMA,
   formatarMoedaParaCampo,
   lerData,
   lerValorPositivo,
@@ -147,7 +148,7 @@ export function Personalizar({
       valor={termos[campo]}
       aoMudar={(v) => setTermos({ ...termos, [campo]: v })}
       erro={erros[campo]}
-      min="1900-01-01"
+      min={DATA_MINIMA}
       max={DATA_MAXIMA}
     />
   );
@@ -162,7 +163,7 @@ export function Personalizar({
           valor={data}
           aoMudar={setData}
           erro={erros.data}
-          min="1900-01-01"
+          min={DATA_MINIMA}
           max={DATA_MAXIMA}
         />
         <CampoTexto

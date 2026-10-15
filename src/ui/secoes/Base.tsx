@@ -11,6 +11,7 @@ import { periodosDaBaseOrdenados } from "../../motor/base.ts";
 import { CampoSelecao, CampoTexto, Opcao, useCampoValidado } from "../componentes/Campo.tsx";
 import {
   DATA_MAXIMA,
+  DATA_MINIMA,
   formatarMoedaParaCampo,
   formatarNumeroParaCampo,
   lerData,
@@ -178,7 +179,7 @@ export function BaseDosAlimentos({
             setAvisoDaDivisao(null);
           }}
           erro={avisoDaDivisao}
-          min="1900-01-01"
+          min={DATA_MINIMA}
           max={DATA_MAXIMA}
         />
         <button type="button" className="botao secundario" onClick={dividir}>
@@ -314,7 +315,7 @@ function ValorFixo({
           aoMudar={data.aoMudar}
           aoSair={data.aoSair}
           erro={data.erro}
-          min="1900-01-01"
+          min={DATA_MINIMA}
           max={DATA_MAXIMA}
         />
         <CampoSelecao
