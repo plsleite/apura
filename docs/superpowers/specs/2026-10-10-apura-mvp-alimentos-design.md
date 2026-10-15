@@ -506,18 +506,18 @@ Gerado a partir do que foi aplicado, nunca de parâmetros do sistema: não cita 
 ```
 apura/
   CLAUDE.md  README.md  package.json  vite.config.ts  tsconfig.json  .gitignore
-  .github/workflows/        testes.yml · publicar.yml · atualizar-indices.yml · relatorio-indices.yml
+  .github/workflows/        testes.yml · atualizar-indices.yml · relatorio-indices.yml (sem publicar.yml: a publicação é a integração Git do Cloudflare, §19.2)
   dados/indices/            433.json · 188.json · 189.json · 1619.json · 29543.json · 4390.json
   docs/identidade-visual/   manual e logos
   docs/referencia/          relatório de exemplo (HTML e PDF), casos de referência transcritos
   docs/superpowers/specs/   este documento
   docs/superpowers/plans/   planos de implementação
   docs/monitoramento/       relatórios mensais da rotina de índices
-  public/                   fontes (woff2), logos otimizados
-  scripts/                  atualizar-indices.ts · relatorio-indices.ts
+  public/                   _headers (cabeçalhos do site) · tema.js · logos otimizados
+  scripts/                  atualizar-indices.ts · relatorio-indices.ts · conferir-publicacao.ts
   src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
   src/motor/                lote.ts · base.ts · correcao.ts · juros.ts · calcular.ts · casos/
-  src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
+  src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts · publicacao.ts
   src/metodologias/         lei-14905-2024.v1.json · igpm-juros-1.v1.json · padrao.ts
   src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ · secoes/ · tabelas/ · componentes/ · testes/
   src/relatorio/            texto.ts · metodologia.ts · tabelas.ts · matriz.ts · bloqueio.ts · Relatorio.tsx · relatorio.css · testes/
@@ -930,7 +930,7 @@ Os seis menores adiados da fase 6 e as duas sobras da fase 5b entram nesta fase 
 
 ### 19.9 Ensaio e registro
 
-Como nas fases 5b e 6, o código desta fase é ensaiado numa cópia do repositório fora dele, antes do plano: os acertos da §19.7, a versão e o `CHANGELOG.md`, o `versao.json` e a conferência da publicação, o `testes.yml`, os dois workflows endurecidos e os testes de leitura deles, o `.node-version`, o `.npmrc` e o `_headers`. A conferência inclui o `actionlint` e o site montado e servido localmente com os mesmos cabeçalhos do `_headers`, aberto no navegador integrado (abrir, editar, salvar, abrir arquivo, relatório e impressão). Depois vêm uma revisão adversária independente e a reconstrução tarefa por tarefa, para o plano trazer as falhas e as contagens medidas. A primeira revisão (14/10/2026) achou quatro problemas importantes e oito menores; os que mudam texto ou regra aprovada foram decididos pelo responsável e estão acima (§19.4, a rotina em etapas; §19.7, itens 2 e 4); os demais foram corrigidos no ensaio, com teste. Uma segunda revisão, só das mudanças, achou três importantes (o deploy hook dentro da etapa de gravação; brechas no teste dos workflows) e seis menores; os dois de texto foram aprovados pelo responsável (§19.7, itens 2 e 4), os técnicos corrigidos com teste, e dois ficam como notas para a revisão de um mês da rotina (a estimativa de minutos do relatório mensal, que conta o tempo da execução e não o de cada etapa; e a frase que compara as falhas do relatório mensal com o alarme do Healthchecks, que deixa de bater nos dias de site atrasado). O que só se confere com o GitHub e o Cloudflare de verdade fica para a execução (§19.8). Plano em `docs/superpowers/plans/2026-10-14-fase-7-publicacao.md`.
+Como nas fases 5b e 6, o código desta fase é ensaiado numa cópia do repositório fora dele, antes do plano: os acertos da §19.7, a versão e o `CHANGELOG.md`, o `versao.json` e a conferência da publicação, o `testes.yml`, os dois workflows endurecidos e os testes de leitura deles, o `.node-version`, o `.npmrc` e o `_headers`. A conferência inclui o `actionlint` e o site montado e servido localmente com os mesmos cabeçalhos do `_headers`, aberto no navegador integrado (abrir, editar, salvar, abrir arquivo, relatório e impressão). Depois vêm uma revisão adversária independente e a reconstrução tarefa por tarefa, para o plano trazer as falhas e as contagens medidas. A primeira revisão (14/10/2026) achou quatro problemas importantes e oito menores; os que mudam texto ou regra aprovada foram decididos pelo responsável e estão acima (§19.4, a rotina em etapas; §19.7, itens 2 e 4); os demais foram corrigidos no ensaio, com teste. Uma segunda revisão, só das mudanças, achou três importantes (o deploy hook dentro da etapa de gravação; brechas no teste dos workflows) e seis menores; os dois de texto foram aprovados pelo responsável (§19.7, itens 2 e 4), os técnicos corrigidos com teste, e dois ficam como notas para a revisão de um mês da rotina (a estimativa de minutos do relatório mensal, que conta o tempo da execução e não o de cada etapa; e a frase que compara as falhas do relatório mensal com o alarme do Healthchecks, que deixa de bater nos dias de site atrasado). O que só se confere com o GitHub e o Cloudflare de verdade fica para a execução (§19.8). Plano em `docs/superpowers/plans/2026-10-14-fase-7-publicacao.md`, executado em 14–15/10/2026 direto na sessão, por escolha do responsável; fase 7 concluída em 15/10/2026, com o site em `https://apura-dpems.pages.dev` (ver a seção "Estado" do plano). O agendador do GitHub não criou nenhuma rodada agendada no primeiro dia (§15: disparo por outro agendador, a decidir com o responsável).
 
 ---
 

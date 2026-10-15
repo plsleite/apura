@@ -21,11 +21,14 @@ npm run verificar      # formatação, lint, tipos e testes
 npm run build          # gera o site estático em dist/
 npm run indices:atualizar -- 189   # atualiza a cópia embutida de uma série do BCB
 npm run indices:relatorio -- 2026-09 execucoes.json   # relatório mensal da rotina de um mês já encerrado (normalmente feito pelo workflow; o script não recusa o mês corrente, o workflow sim)
+SITE_URL=https://apura-dpems.pages.dev npm run indices:conferir-publicacao   # o site publicado tem os índices da main?
 ```
 
-Os índices do BCB são atualizados por uma rotina do GitHub Actions
-(`.github/workflows/atualizar-indices.yml`); o app não consulta o BCB. Depois da fase 7, a `main`
-recebe commits dessa rotina quase todo dia útil.
+O Apura 0.1.0 está publicado em https://apura-dpems.pages.dev (Cloudflare Pages, a cada mudança na
+`main`, depois das conferências e dos testes). Os índices do BCB são atualizados por uma rotina do
+GitHub Actions (`.github/workflows/atualizar-indices.yml`); o app não consulta o BCB, e a `main`
+recebe commits dessa rotina quase todo dia útil. A integração contínua (`testes.yml`) roda a cada
+envio. O que muda de versão em versão está no `CHANGELOG.md`.
 
 ## Documentação
 

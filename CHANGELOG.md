@@ -4,7 +4,7 @@ O que muda no Apura para quem o usa, versão por versão, da mais nova para a ma
 numeração segue o versionamento semântico (0.1.0, 0.1.1, 0.2.0…): o último número sobe nas
 correções, e o do meio, nas novidades.
 
-## [0.1.0] · 2026-10-14
+## [0.1.0] · 2026-10-15
 
 Primeira versão para os testadores: o cálculo da execução de alimentos (demonstrativo
 discriminado e atualizado do crédito, art. 524 do CPC), que roda inteiro no navegador.
