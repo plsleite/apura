@@ -146,7 +146,7 @@ describe("destaque das linhas do último lote (§20.5)", () => {
     expect(declaracoes(bloco(css, ".tabela-rolagem tbody tr.recem-lancada")).get("animation")).toBe(
       "destaque-da-linha 3s ease-in-out 1s both",
     );
-    expect(passos("destaque-da-linha")).toEqual(["var(--destaque)", "transparent"]);
+    expect(passos("destaque-da-linha")).toEqual(["var(--destaque-do-lote)", "transparent"]);
   });
 
   it("a célula do lápis e do ✕, presa à direita com fundo próprio, tem o mesmo destaque e termina na cor da superfície, não transparente", () => {
@@ -155,15 +155,20 @@ describe("destaque das linhas do último lote (§20.5)", () => {
         "animation",
       ),
     ).toBe("destaque-da-celula-presa 3s ease-in-out 1s both");
-    expect(passos("destaque-da-celula-presa")).toEqual(["var(--destaque)", "var(--superficie)"]);
+    expect(passos("destaque-da-celula-presa")).toEqual([
+      "var(--destaque-do-lote)",
+      "var(--superficie)",
+    ]);
   });
 
   it("o verde do destaque é uma cor do tema: verde-claro no claro e um verde escuro discreto no escuro (pelo sistema ou pela escolha)", () => {
-    const claro = declaracoes(bloco(css, ":root")).get("--destaque");
+    const claro = declaracoes(bloco(css, ":root")).get("--destaque-do-lote");
     const escuroPeloSistema = declaracoes(
       bloco(bloco(css, "@media (prefers-color-scheme: dark)"), ':root:not([data-theme="light"])'),
-    ).get("--destaque");
-    const escuroEscolhido = declaracoes(bloco(css, ':root[data-theme="dark"]')).get("--destaque");
+    ).get("--destaque-do-lote");
+    const escuroEscolhido = declaracoes(bloco(css, ':root[data-theme="dark"]')).get(
+      "--destaque-do-lote",
+    );
     expect(claro).toMatch(/^#[0-9a-f]{6}$/);
     expect(escuroPeloSistema).toMatch(/^#[0-9a-f]{6}$/);
     expect(escuroPeloSistema).not.toBe(claro);

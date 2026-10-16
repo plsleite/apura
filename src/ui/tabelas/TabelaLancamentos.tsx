@@ -130,6 +130,15 @@ export function TabelaLancamentos({
   // cálculo muda (linhas novas vindas do App). Só um ✕ fica armado por vez.
   const [armado, setArmado] = useState<string | null>(null);
   const desarmar = useCallback(() => setArmado(null), []);
+  // Destaque das linhas do último "Lançar em lote" (§20.5): a classe recem-lancada, cujo fundo
+  // verde o CSS apaga em cerca de 4 segundos. A marca sai de cada linha quando a animação dela
+  // termina, para que nada a refaça (o navegador recomeça a animação de uma linha que volta a
+  // aparecer, como ao fechar o relatório, ou que muda de lugar, como ao mudar a data), e sai de
+  // todas no lote seguinte, que traz uma lista nova (vazia quando o lote não acrescenta nada).
+  const [loteVisto, setLoteVisto] = useState(idsDoLote);
+  const [destacadas, setDestacadas] = useState<ReadonlySet<string>>(() => new Set(idsDoLote));
+  const apagarDestaque = (id: string) =>
+    setDestacadas((atuais) => new Set([...atuais].filter((outro) => outro !== id)));
   const [linhasVistas, setLinhasVistas] = useState(linhas);
   if (linhas !== linhasVistas) {
     setLinhasVistas(linhas);
@@ -140,20 +149,17 @@ export function TabelaLancamentos({
     if ([...expandidos].some((id) => !presentes.has(id))) {
       setExpandidos(new Set([...expandidos].filter((id) => presentes.has(id))));
     }
+    // o destaque também: a linha excluída antes do fim da animação nunca recebe o fim dela, e a
+    // prestação incluída depois no mesmo mês ganha o mesmo id
+    if ([...destacadas].some((id) => !presentes.has(id))) {
+      setDestacadas(new Set([...destacadas].filter((id) => presentes.has(id))));
+    }
   }
-  // Destaque das linhas do último "Lançar em lote" (§20.5): a classe recem-lancada, cujo fundo
-  // verde o CSS apaga em cerca de 4 segundos. A marca sai de cada linha quando a animação dela
-  // termina, para que nada a refaça (o navegador recomeça a animação de uma linha que volta a
-  // aparecer, como ao fechar o relatório, ou que muda de lugar, como ao mudar a data), e sai de
-  // todas no lote seguinte, que traz uma lista nova (vazia quando o lote não acrescenta nada).
-  const [loteVisto, setLoteVisto] = useState(idsDoLote);
-  const [destacadas, setDestacadas] = useState<ReadonlySet<string>>(() => new Set(idsDoLote));
+  // depois da poda acima: quando o lote chega, a lista dele prevalece
   if (idsDoLote !== loteVisto) {
     setLoteVisto(idsDoLote);
     setDestacadas(new Set(idsDoLote));
   }
-  const apagarDestaque = (id: string) =>
-    setDestacadas((atuais) => new Set([...atuais].filter((outro) => outro !== id)));
   const [rascunho, setRascunho] = useState<Rascunho | null>(null);
   const idDosErros = useId();
   const campoDaDataNova = useRef<HTMLInputElement>(null);

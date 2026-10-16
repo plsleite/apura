@@ -21,7 +21,7 @@
   --aviso-fundo: #fff8e1;
   --aviso-borda: #d8bb73;
   /* fundo das linhas recém-lançadas em lote, que se apaga em seguida (§20.5) */
-  --destaque: #dcf2e3;
+  --destaque-do-lote: #dcf2e3;
   --foco: #1fa463;
   --titulos: "Ubuntu", "Segoe UI", system-ui, sans-serif;
   --corpo: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
@@ -52,7 +52,7 @@
     --cabecalho-texto: #ffffff;
     --aviso-fundo: #2a2410;
     --aviso-borda: #a88d4a;
-    --destaque: #1c3d27;
+    --destaque-do-lote: #1c3d27;
     --foco: #5cc385;
     color-scheme: dark;
   }
@@ -72,7 +72,7 @@
   --cabecalho-texto: #ffffff;
   --aviso-fundo: #2a2410;
   --aviso-borda: #a88d4a;
-  --destaque: #1c3d27;
+  --destaque-do-lote: #1c3d27;
   --foco: #5cc385;
   color-scheme: dark;
 }
@@ -913,7 +913,7 @@ td.dica {
 
 @keyframes destaque-da-linha {
   from {
-    background-color: var(--destaque);
+    background-color: var(--destaque-do-lote);
   }
   to {
     background-color: transparent;
@@ -922,7 +922,7 @@ td.dica {
 
 @keyframes destaque-da-celula-presa {
   from {
-    background-color: var(--destaque);
+    background-color: var(--destaque-do-lote);
   }
   to {
     background-color: var(--superficie);
