@@ -9,9 +9,9 @@ correções, e o do meio, nas novidades.
 Ajuste da tela (§20.5 do design). Os números não mudam.
 
 - Depois de "Lançar em lote", as linhas recém-lançadas ganham um fundo verde-claro (no tema
-  escuro, um verde escuro discreto), que fica parado um segundo e se apaga em três. Quem pediu ao
-  sistema menos movimento vê o verde cheio pelos mesmos quatro segundos, sem esmaecer. Um lote
-  que não acrescenta linha nenhuma não destaca nada.
+  escuro, um verde escuro discreto), que fica parado meio segundo e se apaga em um e meio. Quem
+  pediu ao sistema menos movimento vê o verde cheio pelos mesmos dois segundos, sem esmaecer.
+  Um lote que não acrescenta linha nenhuma não destaca nada.
 
 ## [0.1.1] · 2026-10-15
 
