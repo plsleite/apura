@@ -78,8 +78,21 @@ impressão (`imprimir`) e a recarga (`recarregar`) entram pelo `Ambiente`; tela 
 (`componentes/Reserva.tsx`, `TelaDeErro.tsx`), região viva (`componentes/Anuncios.tsx`, fora das
 colunas) e lápis/✕ presos à direita das tabelas; a raiz do relatório tem a classe `demonstrativo`
 (a `relatorio` é do botão da barra) (939 testes passando e 10 pulados).
-Próxima: fase 7 (publicação). A tabela de fases do roteiro é a referência; atualize-a e esta seção
-ao concluir cada fase.
+Fase 7 (publicação, §19 do design) concluída em 2026-10-15: o Apura 0.1.0 está em
+`https://apura-dpems.pages.dev` (Cloudflare Pages com integração Git; aberto a quem tiver o endereço,
+sem indexação; pré-visualizações de branch restritas ao responsável), a partir do repositório privado
+`plsleite/apura`; a montagem no Cloudflare roda `npm run verificar && npm run build` com o Node do
+`.node-version`, e o `public/_headers` manda os cabeçalhos de segurança (política de conteúdo: o app
+só carrega o que vem do próprio site; por isso o script do tema fica em `public/tema.js`, e nada de
+script embutido no `index.html`); `testes.yml` roda a cada envio; a rotina de índices roda em três
+etapas (baixar e conferir, sem escrita; gravar, numa máquina limpa sem pacotes; fechar) e confere a
+cada rodada se o site tem os índices da `main` (`versao.json`, `src/indices/publicacao.ts`);
+avisos por e-mail do GitHub, do Healthchecks.io e do Cloudflare (§19.5); as frases do relatório da
+§19.7, o salário mínimo usado no lugar do que faltou (`salarioMinimoAnterior`) e o "Salvar" no
+Safari (1002 testes passando e 10 pulados). Pendências com data no roteiro (o agendador do GitHub
+dispara as rodadas com 3 a 4 horas de atraso; acompanhado nos relatórios mensais). Próxima: depois do MVP
+(roteiro e visão, §6). A tabela de fases do roteiro é a referência; atualize-a e esta seção ao
+concluir cada fase.
 
 ## Comandos
 
@@ -96,8 +109,10 @@ ao concluir cada fase.
 | `npm run build` | gera o site estático em `dist/` |
 | `npm run indices:atualizar` | baixa as séries do BCB para `dados/indices/` (é o que a rotina diária roda); grava série por série só o que mudou; `-- 189 433` limita às séries indicadas |
 | `npm run indices:relatorio -- AAAA-MM <execucoes.json>` | monta o relatório mensal da rotina de um mês já encerrado (o script não recusa o mês corrente, o workflow sim) em `docs/monitoramento/` (é o que o workflow mensal roda) |
+| `SITE_URL=https://apura-dpems.pages.dev npm run indices:conferir-publicacao` | confere se o site publicado tem os índices de `dados/indices/` (é o primeiro passo de cada rodada da rotina) |
+| `actionlint .github/workflows/*.yml` | confere a sintaxe dos workflows (Homebrew); rode sempre que um workflow mudar, junto com `scripts/workflows.test.ts` |
 
-Depois da fase 7, a `main` do GitHub recebe commits do robô quase todo dia útil (`dados/indices/`)
+A `main` do GitHub (`plsleite/apura`) recebe commits do robô quase todo dia útil (`dados/indices/`)
 e, no dia 2 de cada mês, o relatório da rotina (`docs/monitoramento/`): traga essas atualizações
 para a `main` local antes de integrar uma branch, e não rode `npm run indices:atualizar` em
 branches de trabalho.
@@ -105,19 +120,19 @@ branches de trabalho.
 ## Mapa de pastas
 
 ```
-.github/workflows/        atualizar-indices.yml (rotina de índices, seg–sex) · relatorio-indices.yml (relatório mensal)
+.github/workflows/        testes.yml (a cada envio) · atualizar-indices.yml (rotina de índices, seg–sex, em etapas) · relatorio-indices.yml (relatório mensal)
 dados/indices/            cópia embutida das séries do BCB (JSON gerado pelo script)
 docs/identidade-visual/   manual e logos da DPE-MS
 docs/referencia/          briefing original, relatório de exemplo
 docs/superpowers/specs/   design e visão
 docs/superpowers/plans/   planos de implementação (um por fase)
 docs/monitoramento/       relatórios mensais da rotina de índices (gerados pelo workflow)
-public/logos/             logos da DPE-MS gerados do PNG do manual: o da barra da tela e o da faixa do relatório
-scripts/                  atualizar-indices.ts · relatorio-indices.ts (com o teste dele)
+public/                   _headers (cabeçalhos do site no Cloudflare) · tema.js (tema lembrado, antes do app) · logos/ (da barra da tela e da faixa do relatório)
+scripts/                  atualizar-indices.ts · relatorio-indices.ts · conferir-publicacao.ts · testes que leem o repositório (versao, site, workflows, relatorio-indices)
 src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
 src/motor/                periodos.ts · correcao.ts · juros.ts · lote.ts · base.ts · calcular.ts · casos/ (casos de referência)
 src/motor/testes/         dados de teste: IGP-M e salário mínimo de 2017–2018 e as seis séries de 2024–2026 usadas pelos testes unitários
-src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts
+src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts · publicacao.ts
 src/indices/testes/       respostas reais do SGS gravadas em 10 e 11/10/2026 e execuções sintéticas da rotina
 src/metodologias/         lei-14905-2024.v1.json · igpm-juros-1.v1.json · padrao.ts
 src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · TelaDeErro.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ (calculo.ts · base.ts · faltas.ts · metodologia.ts · novaLinha.ts) · secoes/ · tabelas/ · componentes/ · testes/ (ambiente de teste)
@@ -163,6 +178,13 @@ src/relatorio/            texto.ts · metodologia.ts · tabelas.ts · matriz.ts 
    no Node sem compilação e precisa disso).
 9. **Dados pessoais.** Nenhum número de processo real nem nome de parte em testes, casos de
    referência ou documentação.
+10. **Versões, dependências e workflows (§19.6).** Cada mudança para quem usa sobe a versão
+    (`npm version <x.y.z> --no-git-tag-version --ignore-scripts`) e ganha a seção no `CHANGELOG.md`
+    (o teste exige); a etiqueta `v<x.y.z>` vai no commit publicado. Versão nova de pacote, action ou
+    Node só com 14 dias de publicada: `npm install <pacote>@<versão> --before=<data de 14 dias
+    atrás>`; action pelo SHA do commit da etiqueta, com a versão num comentário (o GitHub exige SHA);
+    Node pelo `.node-version`. Workflow que grava não instala nem roda pacotes; o token só no passo
+    que grava (`scripts/workflows.test.ts`, `actionlint`).
 
 ## Pontos de validação jurídica
 

@@ -17,7 +17,7 @@ Ajustes da tela depois do uso pelos testadores (§20 do design). Os números nã
   tabela e a linha de títulos das colunas ficam à vista enquanto as linhas rolam, e, depois de
   "Lançar em lote", a coluna rola até as linhas recém-lançadas. Em telas menores, tudo como antes.
 
-## [0.1.0] · 2026-10-14
+## [0.1.0] · 2026-10-15
 
 Primeira versão para os testadores: o cálculo da execução de alimentos (demonstrativo
 discriminado e atualizado do crédito, art. 524 do CPC), que roda inteiro no navegador.
