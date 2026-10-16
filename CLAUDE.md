@@ -90,7 +90,7 @@ cada rodada se o site tem os índices da `main` (`versao.json`, `src/indices/pub
 avisos por e-mail do GitHub, do Healthchecks.io e do Cloudflare (§19.5); as frases do relatório da
 §19.7, o salário mínimo usado no lugar do que faltou (`salarioMinimoAnterior`) e o "Salvar" no
 Safari (1002 testes passando e 10 pulados). Pendências com data no roteiro (o agendador do GitHub
-ainda não disparou nenhuma rodada; decisão sobre disparo externo marcada). Próxima: depois do MVP
+dispara as rodadas com 3 a 4 horas de atraso; acompanhado nos relatórios mensais). Próxima: depois do MVP
 (roteiro e visão, §6). A tabela de fases do roteiro é a referência; atualize-a e esta seção ao
 concluir cada fase.
 
