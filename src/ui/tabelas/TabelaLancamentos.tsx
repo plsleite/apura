@@ -118,7 +118,8 @@ export function TabelaLancamentos({
   aoIncluir: (lancamento: NovoLancamento) => void;
   /**
    * ids das linhas que o último "Lançar em lote" acrescentou a esta tabela (a mesma lista até o
-   * próximo lote): a área rolável da coluna rola até a primeira delas (§20.3)
+   * próximo lote): a área rolável da coluna rola até a primeira delas (§20.3), e elas ficam
+   * destacadas por alguns segundos (§20.5)
    */
   idsDoLote?: string[];
 }) {
@@ -140,6 +141,19 @@ export function TabelaLancamentos({
       setExpandidos(new Set([...expandidos].filter((id) => presentes.has(id))));
     }
   }
+  // Destaque das linhas do último "Lançar em lote" (§20.5): a classe recem-lancada, cujo fundo
+  // verde o CSS apaga em cerca de 4 segundos. A marca sai de cada linha quando a animação dela
+  // termina, para que nada a refaça (o navegador recomeça a animação de uma linha que volta a
+  // aparecer, como ao fechar o relatório, ou que muda de lugar, como ao mudar a data), e sai de
+  // todas no lote seguinte, que traz uma lista nova (vazia quando o lote não acrescenta nada).
+  const [loteVisto, setLoteVisto] = useState(idsDoLote);
+  const [destacadas, setDestacadas] = useState<ReadonlySet<string>>(() => new Set(idsDoLote));
+  if (idsDoLote !== loteVisto) {
+    setLoteVisto(idsDoLote);
+    setDestacadas(new Set(idsDoLote));
+  }
+  const apagarDestaque = (id: string) =>
+    setDestacadas((atuais) => new Set([...atuais].filter((outro) => outro !== id)));
   const [rascunho, setRascunho] = useState<Rascunho | null>(null);
   const idDosErros = useId();
   const campoDaDataNova = useRef<HTMLInputElement>(null);
@@ -310,6 +324,8 @@ export function TabelaLancamentos({
                   aoAlternar={() => alternar(linha.lancamento.id)}
                   aoPersonalizar={() => aoPersonalizar(linha.lancamento.id)}
                   aoEditar={(mudancas) => aoEditar(linha.lancamento.id, mudancas)}
+                  destacada={destacadas.has(linha.lancamento.id)}
+                  aoApagarDestaque={() => apagarDestaque(linha.lancamento.id)}
                   armado={armado === linha.lancamento.id}
                   aoArmar={() => setArmado(linha.lancamento.id)}
                   aoDesarmar={desarmar}
@@ -450,6 +466,8 @@ function Linha({
   aoAlternar,
   aoPersonalizar,
   aoEditar,
+  destacada,
+  aoApagarDestaque,
   armado,
   aoArmar,
   aoDesarmar,
@@ -460,6 +478,9 @@ function Linha({
   aoAlternar: () => void;
   aoPersonalizar: () => void;
   aoEditar: (mudancas: MudancasDoLancamento) => void;
+  /** linha do último lote, ainda com o destaque (§20.5) */
+  destacada: boolean;
+  aoApagarDestaque: () => void;
   armado: boolean;
   aoArmar: () => void;
   /** função estável (o prazo de 4 segundos não recomeça a cada desenho da tabela) */
@@ -520,7 +541,14 @@ function Linha({
         ? formatarMoedaParaCampo(calculado.valorBase)
         : "";
   return (
-    <tr data-id={lancamento.id}>
+    <tr
+      data-id={lancamento.id}
+      className={destacada ? "recem-lancada" : undefined}
+      onAnimationEnd={(evento) => {
+        // só o fim da animação da própria linha (o da célula do lápis e do ✕ também sobe até aqui)
+        if (destacada && evento.target === evento.currentTarget) aoApagarDestaque();
+      }}
+    >
       <td className="texto">
         <div className="celula-vencimento">
           <button

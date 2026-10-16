@@ -20,6 +20,8 @@
   --cabecalho-texto: #ffffff;
   --aviso-fundo: #fff8e1;
   --aviso-borda: #d8bb73;
+  /* fundo das linhas recém-lançadas em lote, que se apaga em seguida (§20.5) */
+  --destaque: #dcf2e3;
   --foco: #1fa463;
   --titulos: "Ubuntu", "Segoe UI", system-ui, sans-serif;
   --corpo: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
@@ -50,6 +52,7 @@
     --cabecalho-texto: #ffffff;
     --aviso-fundo: #2a2410;
     --aviso-borda: #a88d4a;
+    --destaque: #1c3d27;
     --foco: #5cc385;
     color-scheme: dark;
   }
@@ -69,6 +72,7 @@
   --cabecalho-texto: #ffffff;
   --aviso-fundo: #2a2410;
   --aviso-borda: #a88d4a;
+  --destaque: #1c3d27;
   --foco: #5cc385;
   color-scheme: dark;
 }
@@ -892,6 +896,46 @@ td.dica {
 /* a linha nova é tingida: a célula fixa do ✓/✕ acompanha o tom dela */
 .tabela-rolagem tr.linha-nova td.acoes-linha {
   background: var(--linha-alternada);
+}
+
+/* Linhas do último "Lançar em lote" (§20.5): fundo verde-claro na linha inteira, parado 1 s e
+   apagado em 3 s. O fill-mode both pinta o verde já durante a espera. A célula do lápis e do ✕,
+   presa à direita, tem fundo próprio por cima do da linha: recebe o mesmo verde e termina na cor
+   da superfície (a dela), não transparente, senão os números rolariam à vista por baixo dela. O
+   componente tira a classe quando a animação da linha termina, para nada a refazer. */
+.tabela-rolagem tbody tr.recem-lancada {
+  animation: destaque-da-linha 3s ease-in-out 1s both;
+}
+
+.tabela-rolagem tbody tr.recem-lancada > td.acoes-linha {
+  animation: destaque-da-celula-presa 3s ease-in-out 1s both;
+}
+
+@keyframes destaque-da-linha {
+  from {
+    background-color: var(--destaque);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes destaque-da-celula-presa {
+  from {
+    background-color: var(--destaque);
+  }
+  to {
+    background-color: var(--superficie);
+  }
+}
+
+/* quem pede menos movimento ao sistema: o verde fica cheio pelos mesmos 4 s (a espera e a
+   duração) e some de uma vez, sem esmaecer */
+@media (prefers-reduced-motion: reduce) {
+  .tabela-rolagem tbody tr.recem-lancada,
+  .tabela-rolagem tbody tr.recem-lancada > td.acoes-linha {
+    animation-timing-function: step-end;
+  }
 }
 
 .botao-icone {

@@ -226,6 +226,66 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     }
   });
 
+  /** Os ids das linhas destacadas como recém-lançadas, na ordem das tabelas (§20.5). */
+  const destacadas = () =>
+    [...document.querySelectorAll("tr.recem-lancada")].map((tr) => tr.getAttribute("data-id"));
+
+  /**
+   * O fim de uma animação CSS no elemento. O React escuta "animationend" no navegador, mas, no
+   * jsdom, que não tem AnimationEvent, escuta o nome com o prefixo webkit: dispara os dois.
+   */
+  const fimDaAnimacao = (elemento: Element) => {
+    fireEvent.animationEnd(elemento);
+    fireEvent(elemento, new Event("webkitAnimationEnd", { bubbles: true }));
+  };
+
+  it('depois de "Lançar em lote", só as linhas do último lote ficam destacadas; no lote seguinte o destaque sai das antigas, e relançar sem linha nova não destaca nada (§20.5)', async () => {
+    const user = userEvent.setup();
+    // o lote de 2 meses lança 05/09 e 05/10/2026
+    await montarCaso(user);
+    expect(destacadas()).toEqual(["p-2026-09", "p-2026-10"]);
+    // 4 meses: só 05/07 e 05/08 são novos (os outros dois meses já estão ocupados)
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+    await user.clear(prestacoes.getByLabelText("Quantos meses"));
+    await user.type(prestacoes.getByLabelText("Quantos meses"), "4");
+    await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+    expect(destacadas()).toEqual(["p-2026-07", "p-2026-08"]);
+    // o mesmo lote de novo: nenhuma linha nova, nada destacado
+    await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+    expect(destacadas()).toEqual([]);
+    // um lote de pagamentos destaca só os pagamentos novos
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
+    await user.type(pagamentos.getByLabelText("Valor por mês"), "400,00");
+    fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
+      target: { value: "2026-08-10" },
+    });
+    fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
+      target: { value: "2026-09-10" },
+    });
+    await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+    expect(destacadas()).toEqual(["a-2026-08", "a-2026-09"]);
+  });
+
+  it("o destaque sai da linha quando o esmaecimento dela termina, e editar a linha depois não o traz de volta (§20.5)", async () => {
+    // sem a marca, nada refaz a animação: nem voltar do relatório (a tela das colunas fica
+    // escondida e volta), nem a linha trocar de lugar ao mudar a data
+    const user = userEvent.setup();
+    await montarCaso(user);
+    const linha = document.querySelector('tr[data-id="p-2026-09"]') as HTMLElement;
+    // o fim da animação da célula do lápis e do ✕, que sobe até a linha, não conta
+    fimDaAnimacao(linha.querySelector("td.acoes-linha") as HTMLElement);
+    expect(destacadas()).toEqual(["p-2026-09", "p-2026-10"]);
+    fimDaAnimacao(linha);
+    expect(destacadas()).toEqual(["p-2026-10"]);
+    // editar o valor recalcula tudo, e a linha continua sem destaque
+    await user.click(
+      screen.getByRole("button", { name: "Editar valor da prestação de 05/09/2026 (R$ 1.000,00)" }),
+    );
+    await user.clear(screen.getByLabelText("Valor da prestação de 05/09/2026"));
+    await user.type(screen.getByLabelText("Valor da prestação de 05/09/2026"), "1.200,00{Enter}");
+    expect(destacadas()).toEqual(["p-2026-10"]);
+  });
+
   it("▸ expande a memória (base, índices, juros e avisos) e volta a esconder", async () => {
     const user = userEvent.setup();
     await montarCaso(user);
