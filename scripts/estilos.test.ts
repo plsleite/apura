@@ -132,3 +132,58 @@ describe("tabela sempre à vista: a coluna da direita presa, com rolagem própri
     expect(declaracoes(bloco(css, ".tabela-rolagem > .rolagem")).get("overflow-x")).toBe("auto");
   });
 });
+
+describe("destaque das linhas do último lote (§20.5)", () => {
+  /** A cor de fundo dos passos `from` e `to` de uma animação. */
+  const passos = (nome: string) => {
+    const corpo = bloco(css, `@keyframes ${nome}`);
+    return [bloco(corpo, "from"), bloco(corpo, "to")].map((p) =>
+      declaracoes(p).get("background-color"),
+    );
+  };
+
+  it("as linhas novas ganham um fundo verde-claro que fica parado meio segundo e se apaga em 1,5 s (2 s no total, decisão de 16/10/2026); o verde já aparece durante a espera (fill-mode both)", () => {
+    expect(declaracoes(bloco(css, ".tabela-rolagem tbody tr.recem-lancada")).get("animation")).toBe(
+      "destaque-da-linha 1.5s ease-in-out 0.5s both",
+    );
+    expect(passos("destaque-da-linha")).toEqual(["var(--destaque-do-lote)", "transparent"]);
+  });
+
+  it("a célula do lápis e do ✕, presa à direita com fundo próprio, tem o mesmo destaque e termina na cor da superfície, não transparente", () => {
+    expect(
+      declaracoes(bloco(css, ".tabela-rolagem tbody tr.recem-lancada > td.acoes-linha")).get(
+        "animation",
+      ),
+    ).toBe("destaque-da-celula-presa 1.5s ease-in-out 0.5s both");
+    expect(passos("destaque-da-celula-presa")).toEqual([
+      "var(--destaque-do-lote)",
+      "var(--superficie)",
+    ]);
+  });
+
+  it("o verde do destaque é uma cor do tema: verde-claro no claro e um verde escuro discreto no escuro (pelo sistema ou pela escolha)", () => {
+    const claro = declaracoes(bloco(css, ":root")).get("--destaque-do-lote");
+    const escuroPeloSistema = declaracoes(
+      bloco(bloco(css, "@media (prefers-color-scheme: dark)"), ':root:not([data-theme="light"])'),
+    ).get("--destaque-do-lote");
+    const escuroEscolhido = declaracoes(bloco(css, ':root[data-theme="dark"]')).get(
+      "--destaque-do-lote",
+    );
+    expect(claro).toMatch(/^#[0-9a-f]{6}$/);
+    expect(escuroPeloSistema).toMatch(/^#[0-9a-f]{6}$/);
+    expect(escuroPeloSistema).not.toBe(claro);
+    expect(escuroEscolhido).toBe(escuroPeloSistema);
+  });
+
+  it("quem prefere menos movimento vê o verde cheio pelos mesmos 2 s, e ele some de uma vez, sem esmaecer", () => {
+    // step-end: o primeiro passo (verde) vale do começo da espera até o fim, e então o último
+    expect(
+      declaracoes(
+        bloco(
+          bloco(css, "@media (prefers-reduced-motion: reduce)"),
+          ".tabela-rolagem tbody tr.recem-lancada, .tabela-rolagem tbody tr.recem-lancada > td.acoes-linha",
+        ),
+      ).get("animation-timing-function"),
+    ).toBe("step-end");
+  });
+});

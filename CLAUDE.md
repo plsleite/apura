@@ -104,7 +104,14 @@ que não cabe marcada `transborda` (rola de lado sozinha, com a linha de título
 página); fora dessas telas a área é dissolvida (`display: contents`, regra base) e tudo fica como
 antes; os balões ⓘ dos títulos das tabelas flutuam; `scripts/estilos.test.ts` lê a folha de
 estilos e prende essas declarações (o jsdom não calcula leiaute; o efeito é conferido no
-navegador). Versão 0.1.1 (1015 testes passando e 10 pulados). Próxima: a definir com os
+navegador). Versão 0.1.1 (1015 testes passando e 10 pulados).
+Versão 0.1.2 (ajuste direto, §20.5 do design, 15 e 16/10/2026): depois de "Lançar em lote", as
+linhas novas (`idsDoLote`) ganham a classe `recem-lancada`, com fundo `--destaque-do-lote`
+(verde-claro; verde escuro discreto no tema escuro) parado 0,5 s e apagado em 1,5 s
+(`animation-fill-mode: both`; a célula presa do lápis e do ✕ termina na cor da superfície; com `prefers-reduced-motion`,
+`step-end`); a `TabelaLancamentos` tira a classe no `animationend` da própria linha, para nada
+refazer o destaque, e a esquece quando a linha sai da tabela (1022 testes passando e 10
+pulados). Próxima: a definir com os
 testadores (ver a §6 da visão do produto). A tabela de fases do roteiro é a referência; atualize-a e esta seção ao
 concluir cada fase.
 
