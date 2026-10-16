@@ -29,6 +29,7 @@ Este arquivo diz em que ponto o projeto está e como retomar o trabalho em qualq
 | 5b · Ajustes da interface depois do uso | pagamento sugerido no mês seguinte, base dos alimentos por períodos, escolha da metodologia padrão de encargos (guardada no navegador), etiquetas das linhas numa linha só (§17 do design) | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-13-fase-5b-ajustes-da-interface.md` |
 | 6 · Relatório e PDF | componente, metodologia gerada, matriz de índices, marca, fontes, impressão; tela de erro de reserva, região viva e ajustes visuais (§18 do design) | concluída em 2026-10-13 · plano: `docs/superpowers/plans/2026-10-13-fase-6-relatorio-e-pdf.md` |
 | 7 · Publicação | GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores; rotina em etapas, conferência da publicação, monitoramento; acertos do relatório (§19 do design) | concluída em 2026-10-15 · plano: `docs/superpowers/plans/2026-10-14-fase-7-publicacao.md` · site: `https://apura-dpems.pages.dev` · repositório: `plsleite/apura` (privado) |
+| 7b · Ajustes da tela | cabeçalho fixo, nova ordem das seções (parâmetros antes dos lançamentos), tabela sempre à vista (coluna da direita presa, com rolagem própria e cabeçalhos presos); versão 0.1.1 (§20 do design) | concluída em 2026-10-15 · plano: `docs/superpowers/plans/2026-10-15-fase-7b-ajustes-da-tela.md` |
 
 Depois do MVP: ver a seção 6 da visão do produto (art. 524, servidor e usuários, cálculo livre, honorários, danos morais, integrações).
 
