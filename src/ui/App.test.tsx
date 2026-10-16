@@ -34,6 +34,44 @@ describe("App (fundação da tela)", () => {
     );
   });
 
+  it("as cinco seções da esquerda vêm na ordem da §20: processo, base, encargos, prestações, pagamentos (decisão de 15/10/2026)", () => {
+    render(<App ambiente={ambienteDeTeste()} />);
+    const esquerda = document.querySelector(".coluna-esquerda") as HTMLElement;
+    const titulos = within(esquerda)
+      .getAllByRole("heading", { level: 2 })
+      .map((h) => h.textContent);
+    expect(titulos).toEqual([
+      "1 · Processo",
+      "2 · Base dos alimentos",
+      "3 · Encargos e data do cálculo",
+      "4 · Prestações em atraso",
+      "5 · Pagamentos",
+    ]);
+    // a tabela vazia aponta para a seção certa
+    expect(screen.getByText(/Nenhuma prestação lançada/).textContent).toBe(
+      'Nenhuma prestação lançada: use "Lançar em lote" na seção 4 ou "+ Prestação".',
+    );
+    expect(screen.getByText(/Nenhum pagamento lançado/).textContent).toBe(
+      'Nenhum pagamento lançado: use "Lançar em lote" na seção 5 ou "+ Pagamento".',
+    );
+  });
+
+  it("a coluna da direita tem os indicadores no topo e, embaixo, uma área rolável com nome, que recebe foco pelo teclado, com as duas tabelas e os avisos (§20.3)", () => {
+    render(<App ambiente={ambienteDeTeste()} />);
+    const direita = document.querySelector(".coluna-direita") as HTMLElement;
+    const area = within(direita).getByRole("region", { name: "Tabelas e avisos" });
+    expect(area.className).toBe("coluna-rolavel");
+    expect(area.tabIndex).toBe(0);
+    // os indicadores ficam fora da área rolável, antes dela (parados no topo da coluna)
+    const resumo = within(direita).getByLabelText("Resumo do cálculo");
+    expect(area.contains(resumo)).toBe(false);
+    expect(resumo.compareDocumentPosition(area) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // dentro dela, as duas tabelas e a caixa de avisos
+    expect(within(area).getByRole("region", { name: "Prestações" })).toBeDefined();
+    expect(within(area).getByRole("region", { name: "Amortizações (pagamentos)" })).toBeDefined();
+    expect(within(area).getByRole("region", { name: "Avisos" })).toBeDefined();
+  });
+
   it("mostra na caixa de avisos os meses já divulgados que ainda não chegaram ao Apura", () => {
     render(<App ambiente={ambienteDeTeste({ limites: { "433": "2026-07" } })} />);
     const avisos = screen.getByRole("region", { name: "Avisos" });
@@ -89,7 +127,7 @@ describe("App (fundação da tela)", () => {
       return campos.length;
     };
     conferir();
-    const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     await user.click(prestacoes.getByLabelText("Meses em atraso"));
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
     await user.type(prestacoes.getByLabelText("Quantos meses"), "2");

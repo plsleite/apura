@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -104,6 +105,7 @@ export function TabelaLancamentos({
   aoSugerir,
   valorDaBase,
   aoIncluir,
+  idsDoLote,
 }: {
   tipo: Lancamento["tipo"];
   linhas: LinhaDaTabela[];
@@ -114,6 +116,11 @@ export function TabelaLancamentos({
   /** valor que a base dá para um vencimento ("" quando não dá): acompanha a data da linha nova */
   valorDaBase: (data: DataISO) => TextoDecimal;
   aoIncluir: (lancamento: NovoLancamento) => void;
+  /**
+   * ids das linhas que o último "Lançar em lote" acrescentou a esta tabela (a mesma lista até o
+   * próximo lote): a área rolável da coluna rola até a primeira delas (§20.3)
+   */
+  idsDoLote?: string[];
 }) {
   const [expandidos, setExpandidos] = useState<ReadonlySet<string>>(new Set());
   // Exclusão em dois cliques, sem janela pop-up e sem mexer na linha (decisões de 13/10/2026): o
@@ -152,6 +159,42 @@ export function TabelaLancamentos({
     else novo.add(id);
     setExpandidos(novo);
   };
+  // A tabela mais larga que a coluna rola de lado sozinha (classe `transborda` na caixa que a
+  // envolve); a que cabe, não, e o cabeçalho dela pode ficar preso ao rolar a coluna (§20.3; o
+  // CSS explica). Medido de novo quando a caixa ou a tabela mudam de largura (a tabela é sempre o
+  // mesmo elemento, mesmo vazia: um observador só, pela vida do componente); sem ResizeObserver
+  // (testes em jsdom), a tabela é tida como cabendo.
+  const caixaDaTabela = useRef<HTMLDivElement>(null);
+  const [transborda, setTransborda] = useState(false);
+  useLayoutEffect(() => {
+    const caixa = caixaDaTabela.current;
+    if (caixa === null || typeof ResizeObserver === "undefined") return;
+    const medir = () => setTransborda(tabelaTransborda(caixa));
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(caixa);
+    const tabela = caixa.querySelector("table");
+    if (tabela !== null) observador.observe(tabela);
+    return () => observador.disconnect();
+  }, []);
+  // Depois de "Lançar em lote", a área rolável da coluna rola até a primeira linha nova, que fica
+  // logo abaixo dos cabeçalhos presos (a reserva do scroll-padding-top da área). Só a área rola,
+  // nunca a página (scrollIntoView rolaria também a janela e tiraria a pessoa do formulário), e só
+  // quando a área tem o que rolar (nas colunas empilhadas ou em tela baixa ela é dissolvida pelo
+  // CSS e não tem altura). A lista muda de identidade a cada lote, e é isso que dispara a rolagem.
+  useEffect(() => {
+    const alvo = idsDoLote?.[0];
+    const caixa = caixaDaTabela.current;
+    if (alvo === undefined || caixa === null) return;
+    const linha = [...caixa.querySelectorAll("tr[data-id]")].find(
+      (tr) => tr.getAttribute("data-id") === alvo,
+    );
+    const area = linha?.closest<HTMLElement>(".coluna-rolavel");
+    if (!linha || !area || area.scrollHeight <= area.clientHeight) return;
+    const reserva = Number.parseFloat(getComputedStyle(area).scrollPaddingTop) || 0;
+    area.scrollTop +=
+      linha.getBoundingClientRect().top - area.getBoundingClientRect().top - reserva;
+  }, [idsDoLote]);
   const prestacoes = tipo === "prestacao";
   const titulo = prestacoes ? "Prestações" : "Amortizações (pagamentos)";
   const tituloId = prestacoes ? "titulo-tabela-prestacoes" : "titulo-tabela-amortizacoes";
@@ -220,13 +263,14 @@ export function TabelaLancamentos({
     <section className="tabela-rolagem" aria-labelledby={tituloId}>
       <div className="titulo-secao">
         <h2 id={tituloId}>{titulo}</h2>
-        <Ajuda assunto={titulo}>
+        {/* flutuante: o balão não fica cortado pela rolagem própria da coluna (§20.3) */}
+        <Ajuda assunto={titulo} flutuante>
           {prestacoes
             ? "Clique no vencimento ou no valor para corrigi-lo na própria linha: Enter grava, Esc desiste. Valor digitado fica marcado como informado à mão; apagado, volta a ser apurado pela base. ▸ mostra a memória do cálculo; o lápis ajusta descrição, rendimento, termos e regras próprias; o ✕ pede confirmação antes de excluir."
             : "Clique na data ou no valor para corrigi-lo na própria linha: Enter grava, Esc desiste. Cada pagamento é atualizado da sua data até a data do cálculo e abatido do total. ▸ mostra a memória do cálculo; o lápis ajusta descrição, termos e regras próprias; o ✕ pede confirmação antes de excluir."}
         </Ajuda>
       </div>
-      <div className="rolagem">
+      <div className={transborda ? "rolagem transborda" : "rolagem"} ref={caixaDaTabela}>
         {/* com alguma descrição (13º, férias), a primeira coluna prefere ser mais larga, para a
             descrição aparecer, sem empurrar o lápis e o ✕ para fora (§17.4) */}
         <table
@@ -253,8 +297,8 @@ export function TabelaLancamentos({
               <tr>
                 <td colSpan={8} className="texto">
                   {prestacoes
-                    ? 'Nenhuma prestação lançada: use "Lançar em lote" na seção 3 ou "+ Prestação".'
-                    : 'Nenhum pagamento lançado: use "Lançar em lote" na seção 4 ou "+ Pagamento".'}
+                    ? 'Nenhuma prestação lançada: use "Lançar em lote" na seção 4 ou "+ Prestação".'
+                    : 'Nenhum pagamento lançado: use "Lançar em lote" na seção 5 ou "+ Pagamento".'}
                 </td>
               </tr>
             ) : null}
@@ -386,6 +430,12 @@ export function TabelaLancamentos({
   );
 }
 
+/** A tabela dentro da caixa é mais larga que ela (precisa rolar de lado)? */
+export function tabelaTransborda(caixa: HTMLElement): boolean {
+  const tabela = caixa.querySelector("table");
+  return tabela !== null && tabela.getBoundingClientRect().width > caixa.clientWidth + 0.5;
+}
+
 /**
  * Enter ou Espaço segurados (tecla repetida) num botão não o acionam de novo: segurar Enter em
  * "+ Prestação" ou depois do Enter que exclui pelo ✕ (o foco vai ao "+") não acrescenta linhas.
@@ -470,7 +520,7 @@ function Linha({
         ? formatarMoedaParaCampo(calculado.valorBase)
         : "";
   return (
-    <tr>
+    <tr data-id={lancamento.id}>
       <td className="texto">
         <div className="celula-vencimento">
           <button

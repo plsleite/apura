@@ -90,8 +90,22 @@ cada rodada se o site tem os índices da `main` (`versao.json`, `src/indices/pub
 avisos por e-mail do GitHub, do Healthchecks.io e do Cloudflare (§19.5); as frases do relatório da
 §19.7, o salário mínimo usado no lugar do que faltou (`salarioMinimoAnterior`) e o "Salvar" no
 Safari (1002 testes passando e 10 pulados). Pendências com data no roteiro (o agendador do GitHub
-dispara as rodadas com 3 a 4 horas de atraso; acompanhado nos relatórios mensais). Próxima: depois do MVP
-(roteiro e visão, §6). A tabela de fases do roteiro é a referência; atualize-a e esta seção ao
+dispara as rodadas com 3 a 4 horas de atraso; acompanhado nos relatórios mensais).
+Fase 7b (ajustes da tela, §20 do design) concluída em 2026-10-15: a barra superior fica presa no
+topo, mais baixa (64 px, `--barra-altura`), com `scroll-padding-top` na raiz para o campo em foco
+nunca ficar sob ela; as seções da esquerda na ordem processo, base, encargos e data do cálculo,
+prestações, pagamentos; em telas a partir de 1024×600 px a coluna da direita fica presa abaixo da
+barra, com os indicadores parados no topo e uma área rolável (`.coluna-rolavel`, região "Tabelas e
+avisos", focável) com as duas tabelas e os avisos, o título e a linha de títulos de cada tabela
+presos (`--titulo-da-tabela`, `--cabecalhos-da-tabela`), `overscroll-behavior: contain`, a tabela
+que não cabe marcada `transborda` (rola de lado sozinha, com a linha de títulos no topo dela,
+`top: auto`; a que cabe deixa o cabeçalho preso) e, depois de "Lançar em lote", a rolagem só da
+área até a primeira linha nova (`idsDoLote` no estado; nunca `scrollIntoView`, que rolaria a
+página); fora dessas telas a área é dissolvida (`display: contents`, regra base) e tudo fica como
+antes; os balões ⓘ dos títulos das tabelas flutuam; `scripts/estilos.test.ts` lê a folha de
+estilos e prende essas declarações (o jsdom não calcula leiaute; o efeito é conferido no
+navegador). Versão 0.1.1 (1015 testes passando e 10 pulados). Próxima: a definir com os
+testadores (ver a §6 da visão do produto). A tabela de fases do roteiro é a referência; atualize-a e esta seção ao
 concluir cada fase.
 
 ## Comandos
@@ -128,7 +142,7 @@ docs/superpowers/specs/   design e visão
 docs/superpowers/plans/   planos de implementação (um por fase)
 docs/monitoramento/       relatórios mensais da rotina de índices (gerados pelo workflow)
 public/                   _headers (cabeçalhos do site no Cloudflare) · tema.js (tema lembrado, antes do app) · logos/ (da barra da tela e da faixa do relatório)
-scripts/                  atualizar-indices.ts · relatorio-indices.ts · conferir-publicacao.ts · testes que leem o repositório (versao, site, workflows, relatorio-indices)
+scripts/                  atualizar-indices.ts · relatorio-indices.ts · conferir-publicacao.ts · testes que leem o repositório (versao, site, workflows, estilos, relatorio-indices)
 src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
 src/motor/                periodos.ts · correcao.ts · juros.ts · lote.ts · base.ts · calcular.ts · casos/ (casos de referência)
 src/motor/testes/         dados de teste: IGP-M e salário mínimo de 2017–2018 e as seis séries de 2024–2026 usadas pelos testes unitários

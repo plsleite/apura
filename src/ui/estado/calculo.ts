@@ -32,6 +32,8 @@ export interface Estado {
   /** avisos do último "Lançar em lote" (competências puladas, lote vazio) e qual formulário o fez */
   avisosDoLote: string[];
   loteRecente: "prestacoes" | "pagamentos" | null;
+  /** ids das linhas que o último "Lançar em lote" acrescentou (a tela rola até a primeira, §20.3) */
+  idsDoLote: string[];
   /** avisos da abertura de um arquivo (índices que mudaram, dados que não puderam ser lidos) */
   avisosDaAbertura: string[];
   /** true depois da primeira edição desde "novo" ou "abrir": só então o cálculo vai para os recentes */
@@ -129,6 +131,7 @@ export function estadoInicial(calculo: Calculo, indices: Indices): Estado {
     situacao: indices.situacao,
     avisosDoLote: [],
     loteRecente: null,
+    idsDoLote: [],
     avisosDaAbertura: [],
     tocado: false,
   };
@@ -215,6 +218,7 @@ export function reduzir(estado: Estado, acao: Acao): Estado {
         },
         avisosDoLote: lote.avisos,
         loteRecente: "prestacoes",
+        idsDoLote: lote.lancamentos.map((l) => l.id),
       };
     }
     case "lancarPagamentos": {
@@ -232,6 +236,7 @@ export function reduzir(estado: Estado, acao: Acao): Estado {
         },
         avisosDoLote: lote.avisos,
         loteRecente: "pagamentos",
+        idsDoLote: lote.lancamentos.map((l) => l.id),
       };
     }
     case "incluirLancamento": {

@@ -12,7 +12,7 @@ import {
 import { opcaoDaMetodologia, resumirMetodologia } from "../estado/metodologia.ts";
 
 /**
- * Seção "5 · Encargos e data do cálculo" (§9.2; explicações nos balões ⓘ): metodologia escolhida
+ * Seção "3 · Encargos e data do cálculo" (§9.2, na ordem da §20; explicações nos balões ⓘ): metodologia escolhida
  * entre as duas opções pré-carregadas (§17.3; ajustada, nenhuma fica marcada e o resumo em uma
  * frase aparece) e "Ajustar" (abre o editor de períodos), multa e honorários do art. 523,
  * §1º, do CPC (10% cada por padrão, decisão de 13/10/2026), data de elaboração e observações para
@@ -56,7 +56,7 @@ export function Encargos({
   return (
     <section className="secao" aria-labelledby="titulo-encargos">
       <div className="titulo-secao">
-        <h2 id="titulo-encargos">5 · Encargos e data do cálculo</h2>
+        <h2 id="titulo-encargos">3 · Encargos e data do cálculo</h2>
       </div>
       <fieldset className="grupo metodologia-de-encargos">
         <legend>

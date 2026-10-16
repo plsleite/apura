@@ -33,11 +33,11 @@ describe("intervalo de vencimentos (decisão de 13/10/2026)", () => {
   });
 });
 
-describe("3 · Prestações em atraso e 4 · Pagamentos: lotes cumulativos (§6.1, §6.2)", () => {
+describe("4 · Prestações em atraso e 5 · Pagamentos: lotes cumulativos (§6.1, §6.2)", () => {
   it("lança por 'meses em atraso', acumula sem repetir e mostra os avisos do lote embaixo do formulário", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);
-    const prestacoes = secao(/3 · Prestações em atraso/);
+    const prestacoes = secao(/4 · Prestações em atraso/);
     // o padrão é o intervalo de vencimentos, sem o dia; "Meses em atraso" mostra o dia
     expect(
       (prestacoes.getByLabelText("Intervalo de vencimentos") as HTMLInputElement).checked,
@@ -74,7 +74,7 @@ describe("3 · Prestações em atraso e 4 · Pagamentos: lotes cumulativos (§6.
   it("valida antes de chamar o motor: dia fora de 1 a 31, meses vazios, datas vazias, intervalo invertido ou longo demais", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);
-    const prestacoes = secao(/3 · Prestações em atraso/);
+    const prestacoes = secao(/4 · Prestações em atraso/);
     const erros = () => prestacoes.getAllByRole("alert").map((a) => a.textContent);
     await user.click(prestacoes.getByLabelText("Meses em atraso"));
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "32");
@@ -109,8 +109,8 @@ describe("3 · Prestações em atraso e 4 · Pagamentos: lotes cumulativos (§6.
   it("pagamentos: intervalo de pagamentos por datas, como o das prestações; lote cumulativo com aviso; valor e datas validados (decisão de 13/10/2026)", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);
-    const prestacoes = secao(/3 · Prestações em atraso/);
-    const pagamentos = secao(/4 · Pagamentos/);
+    const prestacoes = secao(/4 · Prestações em atraso/);
+    const pagamentos = secao(/5 · Pagamentos/);
     expect(pagamentos.queryByLabelText("Dia do pagamento")).toBeNull();
     await user.click(prestacoes.getByLabelText("Meses em atraso"));
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "7");

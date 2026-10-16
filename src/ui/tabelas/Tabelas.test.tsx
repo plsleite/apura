@@ -51,7 +51,7 @@ function esperado() {
 async function montarCaso(user: ReturnType<typeof userEvent.setup>) {
   render(<App ambiente={ambienteDeTeste()} />);
   await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
-  const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+  const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
   await user.click(prestacoes.getByLabelText("Meses em atraso"));
   await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
   await user.type(prestacoes.getByLabelText("Quantos meses"), "2");
@@ -115,6 +115,117 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     ).toBeDefined();
   });
 
+  it("o balão ⓘ do título da tabela flutua em posição fixa, para não ficar cortado pela rolagem da coluna (§20.3)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await user.click(screen.getByRole("button", { name: "Ajuda: Prestações" }));
+    expect(screen.getByText(/Clique no vencimento ou no valor/).className).toBe("balao flutuante");
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Ajuda: Amortizações (pagamentos)" }));
+    expect(screen.getByText(/Clique na data ou no valor/).className).toBe("balao flutuante");
+  });
+
+  it('a tabela mais larga que a caixa é marcada "transborda" (rola de lado sozinha); a que cabe, não (§20.3)', async () => {
+    // o jsdom não mede: ResizeObserver e as larguras são simulados. A caixa de cada tabela tem
+    // 540 px; a tabela de prestações mede 603 (não cabe) e a de pagamentos, 500 (cabe).
+    const observadores: Array<() => void> = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(aoMudar: () => void) {
+          observadores.push(aoMudar);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    let larguraDasPrestacoes = 603;
+    const retangulo = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: Element) {
+        const prestacoes =
+          this.closest("section")?.getAttribute("aria-labelledby") === "titulo-tabela-prestacoes";
+        const w = this.tagName !== "TABLE" ? 0 : prestacoes ? larguraDasPrestacoes : 500;
+        const caixa = { top: 0, bottom: 0, left: 0, right: w, width: w, height: 0 };
+        return { ...caixa, x: 0, y: 0, toJSON: () => caixa } as DOMRect;
+      });
+    const clientWidth = vi
+      .spyOn(Element.prototype, "clientWidth", "get")
+      .mockImplementation(function (this: Element) {
+        return this.classList.contains("rolagem") ? 540 : 0;
+      });
+    try {
+      await montarCaso(userEvent.setup());
+      const caixas = () =>
+        [...document.querySelectorAll(".tabela-rolagem > .rolagem")].map((c) => c.className);
+      expect(caixas()).toEqual(["rolagem transborda", "rolagem"]);
+      // a medida é refeita quando a caixa ou a tabela mudam de largura: a tabela passa a caber
+      larguraDasPrestacoes = 540;
+      act(() => observadores.forEach((aoMudar) => aoMudar()));
+      expect(caixas()).toEqual(["rolagem", "rolagem"]);
+    } finally {
+      retangulo.mockRestore();
+      clientWidth.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('depois de "Lançar em lote", a área da coluna rola até a primeira linha recém-lançada, sem mexer na página; relançar sem novidade não rola (§20.3)', async () => {
+    // o jsdom não calcula leiaute: a área é tida como rolável (conteúdo de 2000 px numa caixa de
+    // 500 px) e começa em 100 px da janela; cada linha da tabela está em 500 px
+    const scrollHeight = vi
+      .spyOn(Element.prototype, "scrollHeight", "get")
+      .mockImplementation(function (this: Element) {
+        return this.classList.contains("coluna-rolavel") ? 2000 : 0;
+      });
+    const clientHeight = vi
+      .spyOn(Element.prototype, "clientHeight", "get")
+      .mockImplementation(function (this: Element) {
+        return this.classList.contains("coluna-rolavel") ? 500 : 0;
+      });
+    const retangulo = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: Element) {
+        const top = this.classList.contains("coluna-rolavel")
+          ? 100
+          : this.tagName === "TR"
+            ? 500
+            : 0;
+        const caixa = { top, bottom: top, left: 0, right: 0, width: 0, height: 0 };
+        return { ...caixa, x: 0, y: top, toJSON: () => caixa } as DOMRect;
+      });
+    try {
+      const user = userEvent.setup();
+      await montarCaso(user);
+      const area = screen.getByRole("region", { name: "Tabelas e avisos" });
+      // o lote de 2 meses lança 05/09 e 05/10/2026: a linha de 05/09 (500 px) vai ao topo da área
+      // (100 px), descontada a reserva dos cabeçalhos presos (sem CSS no jsdom, zero): 400 px de
+      // rolagem, só na área (a página não é tocada: nada de scrollIntoView)
+      expect(area.scrollTop).toBe(400);
+      expect(window.scrollY).toBe(0);
+      // o mesmo lote de novo: nada de novo, nada rola
+      area.scrollTop = 0;
+      const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+      await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+      expect(area.scrollTop).toBe(0);
+      // um lote de pagamentos rola até o primeiro pagamento novo
+      const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
+      await user.type(pagamentos.getByLabelText("Valor por mês"), "400,00");
+      fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
+        target: { value: "2026-08-10" },
+      });
+      fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
+        target: { value: "2026-09-10" },
+      });
+      await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+      expect(area.scrollTop).toBe(400);
+    } finally {
+      scrollHeight.mockRestore();
+      clientHeight.mockRestore();
+      retangulo.mockRestore();
+    }
+  });
+
   it("▸ expande a memória (base, índices, juros e avisos) e volta a esconder", async () => {
     const user = userEvent.setup();
     await montarCaso(user);
@@ -141,7 +252,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
   it("um pagamento entra na tabela de amortizações com as mesmas colunas e abate do total; excluir recalcula", async () => {
     const user = userEvent.setup();
     await montarCaso(user);
-    const pagamentos = within(screen.getByRole("region", { name: /4 · Pagamentos/ }));
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
     await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
     fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
       target: { value: "2026-09-05" },
@@ -246,7 +357,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     expect(screen.queryByRole("button", { name: /05\/10\/2026/ })).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "+ Prestação" }));
     // relançado o lote, 05/10/2026 volta com a memória fechada e o ✕ desarmado
-    const lote = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const lote = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     await user.click(lote.getByRole("button", { name: "Lançar em lote" }));
     expect(
       screen
@@ -365,7 +476,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     ).toBeDefined();
     expect(screen.queryByRole("button", { name: /05\/09\/2026/ })).toBeNull();
     // pagamento não fica sem valor
-    const pagamentos = within(screen.getByRole("region", { name: /4 · Pagamentos/ }));
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
     await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
     fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
       target: { value: "2026-09-05" },
@@ -500,7 +611,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     expect(
       screen.getByLabelText("Percentual do salário mínimo").getAttribute("aria-invalid"),
     ).toBeNull();
-    const prestacoes = within(screen.getByRole("region", { name: /3 · Prestações em atraso/ }));
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
     await user.click(prestacoes.getByLabelText("Meses em atraso"));
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
     await user.type(prestacoes.getByLabelText("Quantos meses"), "2");
@@ -537,7 +648,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
   it("amortizações maiores que as prestações: total devido e total geral saem como R$ 0,00, com o aviso do motor", async () => {
     const user = userEvent.setup();
     await montarCaso(user);
-    const pagamentos = within(screen.getByRole("region", { name: /4 · Pagamentos/ }));
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
     await user.type(pagamentos.getByLabelText("Valor por mês"), "5.000,00");
     fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
       target: { value: "2026-09-05" },

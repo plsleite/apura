@@ -23,6 +23,13 @@
   --foco: #1fa463;
   --titulos: "Ubuntu", "Segoe UI", system-ui, sans-serif;
   --corpo: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  /* altura da barra presa (§20.1): logo de 40 px, 10 px de espaço em cima e embaixo e a linha
+     dourada de 4 px; a página e a coluna da direita a usam para não esconder nada sob ela */
+  --barra-altura: 64px;
+  /* alturas do título de cada tabela e dele mais a linha de títulos das colunas, presos no topo
+     da área rolável (§20.3); a área as reserva ao rolar até um controle que recebe o foco */
+  --titulo-da-tabela: 35px;
+  --cabecalhos-da-tabela: 62px;
   color-scheme: light;
 }
 
@@ -80,6 +87,12 @@ body {
   line-height: 1.45;
 }
 
+/* ao rolar até um campo que recebe o foco (Tab), a página reserva a altura da barra presa, para o
+   campo nunca ficar escondido sob ela (WCAG 2.4.11) */
+html {
+  scroll-padding-top: calc(var(--barra-altura) + 8px);
+}
+
 h1,
 h2,
 h3 {
@@ -117,14 +130,20 @@ textarea {
   flex-direction: column;
 }
 
+/* A barra fica presa no topo ao rolar a página (§20.1), sem animação; para não tomar espaço
+   demais presa, ela ficou mais baixa de vez (64 px: logo de 40 px, antes 48). Abaixo de 1024 px,
+   onde ela quebra em mais de uma linha, volta a rolar com a página. */
 .barra {
+  position: sticky;
+  top: 0;
+  z-index: 9;
   background: var(--cabecalho-fundo);
   color: var(--cabecalho-texto);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 24px;
-  padding: 14px 24px;
+  padding: 10px 24px;
   /* linha dourada da faixa do relatório (§10.1) */
   border-bottom: 4px solid var(--ouro);
 }
@@ -142,9 +161,9 @@ textarea {
   min-width: 0;
 }
 
-/* logo horizontal branco: 48 px de altura, com respiro (§10.2, área de proteção do manual) */
+/* logo horizontal branco: 40 px de altura, com respiro (§10.2, área de proteção do manual) */
 .logo {
-  height: 48px;
+  height: 40px;
   width: auto;
   flex: none;
 }
@@ -155,7 +174,7 @@ textarea {
   padding-left: 20px;
   border-left: 1px solid rgba(255, 255, 255, 0.35);
   font-family: var(--titulos);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.01em;
@@ -164,7 +183,7 @@ textarea {
 .marca small {
   font-family: var(--corpo);
   font-weight: 400;
-  font-size: 13.5px;
+  font-size: 12.5px;
   letter-spacing: 0.02em;
   opacity: 0.9;
 }
@@ -236,6 +255,14 @@ textarea {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+
+/* a área rolável da coluna da direita (§20.3) só existe como caixa nas telas largas e altas (bloco
+   @media mais abaixo); fora delas é dissolvida: as tabelas e os avisos entram direto na coluna (ou
+   na grade, nas colunas empilhadas), e um elemento dissolvido não recebe foco nem entra na ordem
+   do Tab */
+.coluna-rolavel {
+  display: contents;
 }
 
 .rodape {
@@ -558,6 +585,9 @@ textarea {
 .tabela-rolagem > .rolagem {
   position: relative;
   overflow-x: auto;
+  /* ao rolar de lado até uma célula que recebe o foco, reserva a largura do lápis e do ✕, presos
+     à borda direita (§18.6), para a célula não ficar escondida sob eles */
+  scroll-padding-right: 72px;
 }
 
 .tabela-rolagem > .titulo-secao {
@@ -1050,8 +1080,87 @@ td.dica {
     font-size: 20px;
   }
 
+  /* a barra quebra em duas linhas: volta a rolar com a página, e nada é reservado no topo */
   .barra {
+    position: static;
     padding: 12px 16px;
+  }
+
+  html {
+    scroll-padding-top: 0;
+  }
+}
+
+/* ---- Tabela sempre à vista (§20.3): a coluna da direita presa, com rolagem própria ---- */
+
+/* A partir de 1024 px de largura e 600 px de altura: a coluna da direita fica presa logo abaixo
+   da barra e ocupa a altura que sobra da tela; a página continua rolando pela esquerda. Os cinco
+   indicadores ficam parados no topo da coluna; o que vem embaixo (as duas tabelas e os avisos)
+   fica numa área com rolagem própria, uma só para a coluna inteira. Em tela mais baixa, ou mais
+   estreita, nada fica preso (as colunas empilham abaixo de 1024 px, como antes). */
+@media (min-width: 1024px) and (min-height: 600px) {
+  .coluna-direita {
+    position: sticky;
+    top: calc(var(--barra-altura) + 16px);
+    max-height: calc(100vh - var(--barra-altura) - 32px);
+  }
+
+  .coluna-direita > .indicadores {
+    flex: none;
+  }
+
+  /* a área rolável: a rolagem não passa para a página ao chegar ao fim (overscroll-behavior),
+     e, ao rolar até um controle que recebe o foco, a área reserva a altura dos cabeçalhos presos */
+  .coluna-rolavel {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scroll-padding-top: var(--cabecalhos-da-tabela);
+  }
+
+  /* Um cabeçalho só fica preso em relação à caixa que rola. A rolagem lateral própria de cada
+     tabela (overflow-x: auto na .rolagem), que a tabela mais larga que a coluna precisa, faz da
+     .rolagem essa caixa, e ela não rola na vertical: o cabeçalho ficaria solto. Por isso a tabela
+     que cabe na coluna (a partir de cerca de 1150 px de tela, com valores na casa do milhar) perde
+     a rolagem própria, e o cabeçalho se prende à área rolável da coluna; a tabela que não cabe
+     (o componente mede e marca `transborda`) rola de lado sozinha, como antes, com o título preso
+     e o cabeçalho rolando junto com as linhas. */
+  .tabela-rolagem > .rolagem:not(.transborda) {
+    overflow-x: visible;
+  }
+
+  /* presos no topo da área, como o "congelar painéis" da planilha: o título da tabela e, logo
+     abaixo, a linha de títulos das colunas (os números rolam por baixo dos dois) */
+  .tabela-rolagem > .titulo-secao {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    height: var(--titulo-da-tabela);
+    background: var(--superficie);
+    border-radius: 7px 7px 0 0;
+  }
+
+  .tabela-rolagem thead th {
+    position: sticky;
+    top: var(--titulo-da-tabela);
+    z-index: 2;
+  }
+
+  /* na tabela que não cabe (transborda), a caixa que rola o cabeçalho é a .rolagem, que não rola
+     na vertical: o top acima faria a linha de títulos descer de vez sobre a primeira linha; ali ela
+     fica no lugar e rola com as linhas (o lápis e o ✕ continuam presos à direita) */
+  .tabela-rolagem > .rolagem.transborda thead th {
+    top: auto;
+  }
+
+  /* o lápis e o ✕ continuam presos à direita (§18.6), também no cabeçalho, por cima dele */
+  .tabela-rolagem thead th:last-child {
+    right: 0;
+    z-index: 3;
   }
 }
 

@@ -402,17 +402,19 @@ Não há inserção manual de índices no MVP (§3.2).
 
 ### 9.1 Layout
 
-Página única em duas colunas (em telas estreitas, as colunas empilham com o resumo no topo). **Esquerda: dados do caso e lançamentos em lote. Direita: resultado e lançamentos individuais.** Recálculo a cada alteração, sem botão "Calcular".
+Página única em duas colunas (em telas estreitas, as colunas empilham com o resumo no topo). Desde a fase 7b, a barra superior fica presa no topo e, em telas largas e altas, a coluna da direita fica presa abaixo dela, com rolagem própria (§20). **Esquerda: dados do caso e lançamentos em lote. Direita: resultado e lançamentos individuais.** Recálculo a cada alteração, sem botão "Calcular".
 
 Barra superior: nome do sistema ("Apura · Sistema de Cálculos Judiciais · DPE-MS"), "Novo cálculo", "Abrir…" (recentes e arquivo), "Salvar" (arquivo `apura-<processo>-<data>.json`), "Relatório / PDF".
 
 ### 9.2 Seções da esquerda
 
+Na ordem da fase 7b (§20.2; até ela, prestações e pagamentos vinham antes dos encargos):
+
 1. **Processo**: defensor(a) e órgão (lembrados no navegador, com "Lembrar neste navegador" e "Esquecer"), nº do processo, exequente (alimentando), executado (alimentante); opção "Guardar cálculos recentes neste navegador". Ajuda: partes e processo não são gravados em servidor algum.
 2. **Base dos alimentos**: três opções; só os campos da opção escolhida aparecem; ajuda sobre reajuste e salário mínimo. Desde a fase 5b, "Dividir em" cria períodos com formas diferentes (§17.2).
-3. **Prestações em atraso**: dia do vencimento; "Meses em atraso" ou "De / até"; botão "Lançar em lote" (cumulativo).
-4. **Pagamentos**: valor por mês, dia do pagamento, de / até; botão "Lançar em lote".
-5. **Encargos e data do cálculo**: metodologia com resumo em uma frase e "Ajustar…", que abre o editor de períodos: lista de períodos (de/até) com índice de correção e regra de juros (tipo e taxa) em cada um, "Dividir em uma data" e "Remover divisão", incidência no mês inicial e tratamento da deflação; multa e honorários (padrão 0, sugestão 10); data de elaboração; observações para o relatório.
+3. **Encargos e data do cálculo**: metodologia escolhida entre as duas opções (§17.3) e "Ajustar", que abre o editor de períodos: lista de períodos (de/até) com índice de correção e regra de juros (tipo e taxa) em cada um, "Dividir em uma data" e "Remover divisão", incidência no mês inicial e tratamento da deflação; multa e honorários (10% cada por padrão, decisão de 13/10/2026); data de elaboração; observações para o relatório.
+4. **Prestações em atraso**: o intervalo de vencimentos (primeiro e último vencimento) ou "Meses em atraso" com o dia do vencimento; botão "Lançar em lote" (cumulativo).
+5. **Pagamentos**: valor por mês, primeiro e último pagamento; botão "Lançar em lote" (cumulativo).
 
 ### 9.3 Lado direito
 
@@ -514,7 +516,7 @@ apura/
   docs/superpowers/plans/   planos de implementação
   docs/monitoramento/       relatórios mensais da rotina de índices
   public/                   _headers (cabeçalhos do site) · tema.js · logos otimizados
-  scripts/                  atualizar-indices.ts · relatorio-indices.ts · conferir-publicacao.ts
+  scripts/                  atualizar-indices.ts · relatorio-indices.ts · conferir-publicacao.ts · estilos.test.ts
   src/compartilhado/        decimal.ts · datas.ts · formatacao.ts · tipos.ts · divulgacao.ts
   src/motor/                lote.ts · base.ts · correcao.ts · juros.ts · calcular.ts · casos/
   src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts · publicacao.ts
@@ -572,6 +574,7 @@ Conteúdo: o que é o Apura e o estado do MVP; comandos (`npm install`, `npm run
    5b. **Ajustes da interface depois do uso** (§17): pagamento sugerido, base por períodos, escolha da metodologia padrão, etiquetas numa linha.
 6. **Relatório e PDF**: componente, metodologia gerada, matriz, marca, fontes, impressão.
 7. **Publicação**: GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores.
+   7b. **Ajustes da tela** (§20): cabeçalho fixo, nova ordem das seções, tabela sempre à vista; versão 0.1.1.
 
 ---
 
@@ -931,6 +934,39 @@ Os seis menores adiados da fase 6 e as duas sobras da fase 5b entram nesta fase 
 ### 19.9 Ensaio e registro
 
 Como nas fases 5b e 6, o código desta fase é ensaiado numa cópia do repositório fora dele, antes do plano: os acertos da §19.7, a versão e o `CHANGELOG.md`, o `versao.json` e a conferência da publicação, o `testes.yml`, os dois workflows endurecidos e os testes de leitura deles, o `.node-version`, o `.npmrc` e o `_headers`. A conferência inclui o `actionlint` e o site montado e servido localmente com os mesmos cabeçalhos do `_headers`, aberto no navegador integrado (abrir, editar, salvar, abrir arquivo, relatório e impressão). Depois vêm uma revisão adversária independente e a reconstrução tarefa por tarefa, para o plano trazer as falhas e as contagens medidas. A primeira revisão (14/10/2026) achou quatro problemas importantes e oito menores; os que mudam texto ou regra aprovada foram decididos pelo responsável e estão acima (§19.4, a rotina em etapas; §19.7, itens 2 e 4); os demais foram corrigidos no ensaio, com teste. Uma segunda revisão, só das mudanças, achou três importantes (o deploy hook dentro da etapa de gravação; brechas no teste dos workflows) e seis menores; os dois de texto foram aprovados pelo responsável (§19.7, itens 2 e 4), os técnicos corrigidos com teste, e dois ficam como notas para a revisão de um mês da rotina (a estimativa de minutos do relatório mensal, que conta o tempo da execução e não o de cada etapa; e a frase que compara as falhas do relatório mensal com o alarme do Healthchecks, que deixa de bater nos dias de site atrasado). O que só se confere com o GitHub e o Cloudflare de verdade fica para a execução (§19.8). Plano em `docs/superpowers/plans/2026-10-14-fase-7-publicacao.md`, executado em 14–15/10/2026 direto na sessão, por escolha do responsável; fase 7 concluída em 15/10/2026, com o site em `https://apura-dpems.pages.dev` (ver a seção "Estado" do plano). As duas primeiras rodadas agendadas rodaram com 3 a 4 horas de atraso; os atrasos são acompanhados nos relatórios mensais, e o disparo por outro agendador (§15) fica para se crescerem.
+
+---
+
+## 20. Ajustes da tela depois do uso (fase 7b)
+
+Decididos pelo responsável em 15/10/2026, depois do uso da versão 0.1.0 pelos testadores. Três ajustes, só na interface (`src/ui/` e `src/ui/estilos.css`): o motor, o relatório, a impressão e os números não mudam. Onde esta seção e as anteriores divergirem, vale esta. Versão 0.1.1.
+
+### 20.1 Cabeçalho fixo
+
+- A barra superior fica presa no topo ao rolar a página (`position: sticky`), sem animação de encolher. Para não tomar espaço demais presa, ficou mais baixa de vez: 64 px (logo em 40 px, antes 48; nome do sistema em 22 px). Com isso ela cabe numa linha só a partir de 1024 px de largura (a de antes, de 80 px, pedia 1041 px e quebrava em duas linhas em 1024). A altura fica na variável `--barra-altura`, que a página e a coluna da direita usam.
+- Em telas estreitas (abaixo de 1024 px), onde a barra quebra em mais de uma linha, ela não fica presa.
+- Ao navegar com o teclado, o campo que recebe o foco nunca fica escondido sob a barra: a página reserva a altura da barra mais 8 px ao rolar até o foco (`scroll-padding-top` na raiz; critério 2.4.11 do WCAG), e nada abaixo de 1024 px.
+- A impressão do relatório não muda (a barra já não saía no papel).
+
+### 20.2 Nova ordem das seções da esquerda
+
+1 · Processo, 2 · Base dos alimentos, 3 · Encargos e data do cálculo, 4 · Prestações em atraso, 5 · Pagamentos: os parâmetros vêm antes dos lançamentos. A §9.2 passou a listar as seções nessa ordem, e as frases da tela que citam o número de uma seção acompanharam ("use "Lançar em lote" na seção 4" e "na seção 5", nas tabelas vazias); a base continua "seção 2" nos avisos do que falta, e o processo, "seção 1". Os testes de componente procuram as seções pelos nomes novos e conferem a ordem dos títulos.
+
+### 20.3 Tabela sempre à vista ("só a direita presa")
+
+- **Quando.** Em telas a partir de 1024 px de largura e 600 px de altura (`@media (min-width: 1024px) and (min-height: 600px)`), a coluna da direita fica presa logo abaixo da barra (`top` = barra + 16 px) e ocupa a altura que sobra da tela (`max-height` = `100vh` − barra − 32 px); a página continua rolando pela esquerda. Abaixo de 1024 px as colunas empilham, como antes; abaixo de 600 px de altura a coluna rola com a página (nada preso, sem a variante intermediária "indicadores rolam junto").
+- **O que fica parado e o que rola.** Os cinco indicadores ficam parados no topo da coluna, fora da área rolável. Embaixo deles, uma área com rolagem própria, uma só para a coluna inteira (as duas tabelas e a caixa de avisos), sem rolagem dentro de rolagem; a pessoa rola as linhas com o mouse sobre ela, e a rolagem não passa para a página ao chegar ao fim (`overscroll-behavior: contain`). A área tem nome para o leitor de tela (região "Tabelas e avisos") e recebe o foco pelo teclado (`tabIndex` 0); fora das telas largas e altas (colunas empilhadas, ou tela mais baixa que 600 px) ela é dissolvida pelo CSS (`display: contents`, a regra base) e não entra na ordem do Tab. Ao rolar até um controle que recebe o foco, a área reserva a altura dos cabeçalhos presos (`scroll-padding-top`); a caixa de cada tabela, quando rola de lado, reserva a largura do lápis e do ✕ (`scroll-padding-right`).
+- **Congelar painéis.** Ficam presos no topo da área o título de cada tabela ("Prestações", "Amortizações (pagamentos)", com altura fixa de 35 px e fundo opaco) e, logo abaixo, a linha de títulos das colunas; os números rolam por baixo. O lápis e o ✕ continuam presos à direita (§18.6), também no cabeçalho.
+- **Cabeçalho preso e rolagem lateral.** Um cabeçalho só fica preso em relação à caixa que rola. Até a fase 7, cada tabela rolava de lado dentro da própria caixa (`overflow-x: auto`), para a tabela mais larga que a coluna; essa caixa não rola na vertical, e o cabeçalho não tinha como ficar preso. Decisão: a tabela que cabe na coluna perde a rolagem lateral própria (`overflow-x: visible`), e o cabeçalho se prende à área da coluna; a tabela que não cabe (o componente mede com `ResizeObserver` e marca a caixa com `transborda`) continua rolando de lado sozinha, com o título preso e a linha de títulos rolando junto com as linhas. Nessa tabela a linha de títulos fica no topo dela (`top: auto`): a caixa que a rolaria é a da rolagem lateral, que não rola na vertical, e o `top` dos cabeçalhos presos a faria descer de vez sobre a primeira linha (achado da revisão final, corrigido com teste). Uma etiqueta numa linha ("valor informado") alarga a coluna Vencimento e pode levar a tabela a não caber também em 1280 px; vale o mesmo. Medido em 15/10/2026 com valores na casa do milhar: a tabela de prestações tem 603 px; a coluna tem 542 px em 1024, 684 em 1280, 730 em 1366 e 773 em 1920 px de tela. Em 1280, 1366 e 1920 px tudo fica preso; só de 1024 a cerca de 1150 px a linha de títulos rola. A alternativa de rolar de lado a coluna inteira, como uma folha única, foi ensaiada e descartada: o navegador mede a largura intrínseca da tabela de modo instável (603 px no leiaute, 728 px na medida de conteúdo que a folha exigiria), o `container-type` necessário para prender os títulos à esquerda muda a referência dos balões em posição fixa, e, sem isso, o título, o "+ Prestação" e os avisos saíam da vista ao rolar de lado.
+- **Balões.** Os balões não ficam cortados pela área rolável: os ⓘ dos títulos das tabelas passam a flutuar em posição fixa, como os das etiquetas (§17.4), e os painéis ("Personalizar") já são fixos. Limites aceitos: o balão de erro de uma célula em edição, na última linha visível, fica em parte abaixo da borda da área e se alcança rolando; e um balão flutuante aberto dentro da coluna presa que suba até a barra (só quando não cabe embaixo e é mais alto que a tela menos a barra) passa por baixo dela, porque a coluna presa é um contexto de empilhamento próprio (a solução estrutural, montar os balões fora da coluna, fica para depois, se incomodar).
+- **Depois de "Lançar em lote"** (decisão D4 de 15/10/2026), só a área da coluna rola, pelo `scrollTop`, até a primeira linha recém-lançada, que fica logo abaixo dos cabeçalhos presos; a página não se move (não se usa `scrollIntoView`, que rolaria também a janela e tiraria a pessoa do formulário). O estado da tela guarda os ids das linhas do último lote (`idsDoLote`), zerados em "Novo cálculo" e "Abrir"; relançar um lote sem linha nova não rola, e nada rola onde a área é dissolvida (colunas empilhadas, tela baixa).
+- **Limites registrados na conferência** (para decidir depois, se incomodarem): no fim da página, com o rodapé à vista, a coluna presa sobe a altura do rodapé (35 px) e o topo dos indicadores passa sob a barra, comportamento padrão do `sticky` ao fim do contêiner; com uma tabela curta em 1024×768, a área ainda rola alguns pixels (pela caixa de avisos) e, por `overscroll-behavior: contain`, a roda sobre ela não rola a página; a marca `transborda` tem folga de 0,5 px, e com outro zoom uma tabela pode ser marcada sem precisar (só deixa de prender a linha de títulos).
+- **Limites fora do Chromium** (não conferidos no ensaio): `overscroll-behavior` só no Safari 16 em diante (antes, a rolagem encadeia para a página, como era); `position: sticky` na última célula do cabeçalho nos dois eixos (`top` e `right`) conferida só no Chromium.
+- **Testes.** O jsdom não calcula leiaute: os testes de componente conferem a ordem das seções, a estrutura da coluna (indicadores antes da área; a área com nome e foco, com as duas tabelas e os avisos), o balão flutuante do título, a marca `transborda` (com `ResizeObserver` e as larguras simulados) e a rolagem da área depois do lote (alturas e posições simuladas; a página parada); um teste de leitura da folha de estilos (`scripts/estilos.test.ts`) prende as declarações que sustentam o comportamento (barra e coluna presas, `scroll-padding-top`, `overflow: auto` e `overscroll-behavior: contain`, títulos e cabeçalhos presos, e o contrário abaixo de 1024 px): prova que a regra está escrita, não que o navegador a aplica. O efeito visual (preso, rolagem, cortes, foco sob a barra) é conferido no navegador integrado, em 1920×1080, 1366×768, 1280×720, 1024×768, 1366×560 e 375 px, nos temas claro e escuro, com uma tabela curta e uma longa (40 prestações e 20 pagamentos), só com o teclado, e com o relatório e a impressão conferidos como inalterados.
+
+### 20.4 Registro
+
+Fase "7b · Ajustes da tela" na tabela do roteiro, depois da 7, com plano próprio em `docs/superpowers/plans/2026-10-15-fase-7b-ajustes-da-tela.md`, escrito depois de um ensaio do código numa cópia fora do repositório, conferido no navegador e revisado por um agente independente, como nas fases 5b, 6 e 7. Versão 0.1.1, com a seção no `CHANGELOG.md`.
 
 ---
 
