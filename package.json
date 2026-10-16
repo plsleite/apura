@@ -1,7 +1,7 @@
 {
   "name": "apura",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Apura — Sistema de Cálculos Judiciais da Defensoria Pública de Mato Grosso do Sul",
   "type": "module",
   "engines": {

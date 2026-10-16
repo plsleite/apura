@@ -4,6 +4,15 @@ O que muda no Apura para quem o usa, versão por versão, da mais nova para a ma
 numeração segue o versionamento semântico (0.1.0, 0.1.1, 0.2.0…): o último número sobe nas
 correções, e o do meio, nas novidades.
 
+## [0.1.2] · 2026-10-15
+
+Ajuste da tela (§20.5 do design). Os números não mudam.
+
+- Depois de "Lançar em lote", as linhas recém-lançadas ganham um fundo verde-claro (no tema
+  escuro, um verde escuro discreto), que fica parado um segundo e se apaga em três. Quem pediu ao
+  sistema menos movimento vê o verde cheio pelos mesmos quatro segundos, sem esmaecer. Um lote
+  que não acrescenta linha nenhuma não destaca nada.
+
 ## [0.1.1] · 2026-10-15
 
 Ajustes da tela depois do uso pelos testadores (§20 do design). Os números não mudam.
