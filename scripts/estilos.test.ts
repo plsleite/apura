@@ -142,9 +142,9 @@ describe("destaque das linhas do último lote (§20.5)", () => {
     );
   };
 
-  it("as linhas novas ganham um fundo verde-claro que fica parado 1 s e se apaga em 3 s; o verde já aparece durante a espera (fill-mode both)", () => {
+  it("as linhas novas ganham um fundo verde-claro que fica parado meio segundo e se apaga em 1,5 s (2 s no total, decisão de 16/10/2026); o verde já aparece durante a espera (fill-mode both)", () => {
     expect(declaracoes(bloco(css, ".tabela-rolagem tbody tr.recem-lancada")).get("animation")).toBe(
-      "destaque-da-linha 3s ease-in-out 1s both",
+      "destaque-da-linha 1.5s ease-in-out 0.5s both",
     );
     expect(passos("destaque-da-linha")).toEqual(["var(--destaque-do-lote)", "transparent"]);
   });
@@ -154,7 +154,7 @@ describe("destaque das linhas do último lote (§20.5)", () => {
       declaracoes(bloco(css, ".tabela-rolagem tbody tr.recem-lancada > td.acoes-linha")).get(
         "animation",
       ),
-    ).toBe("destaque-da-celula-presa 3s ease-in-out 1s both");
+    ).toBe("destaque-da-celula-presa 1.5s ease-in-out 0.5s both");
     expect(passos("destaque-da-celula-presa")).toEqual([
       "var(--destaque-do-lote)",
       "var(--superficie)",
@@ -175,7 +175,7 @@ describe("destaque das linhas do último lote (§20.5)", () => {
     expect(escuroEscolhido).toBe(escuroPeloSistema);
   });
 
-  it("quem prefere menos movimento vê o verde cheio por cerca de 4 s, e ele some de uma vez, sem esmaecer", () => {
+  it("quem prefere menos movimento vê o verde cheio pelos mesmos 2 s, e ele some de uma vez, sem esmaecer", () => {
     // step-end: o primeiro passo (verde) vale do começo da espera até o fim, e então o último
     expect(
       declaracoes(

@@ -131,7 +131,7 @@ export function TabelaLancamentos({
   const [armado, setArmado] = useState<string | null>(null);
   const desarmar = useCallback(() => setArmado(null), []);
   // Destaque das linhas do último "Lançar em lote" (§20.5): a classe recem-lancada, cujo fundo
-  // verde o CSS apaga em cerca de 4 segundos. A marca sai de cada linha quando a animação dela
+  // verde o CSS apaga em cerca de 2 segundos. A marca sai de cada linha quando a animação dela
   // termina, para que nada a refaça (o navegador recomeça a animação de uma linha que volta a
   // aparecer, como ao fechar o relatório, ou que muda de lugar, como ao mudar a data), e sai de
   // todas no lote seguinte, que traz uma lista nova (vazia quando o lote não acrescenta nada).

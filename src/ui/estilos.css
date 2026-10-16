@@ -898,17 +898,17 @@ td.dica {
   background: var(--linha-alternada);
 }
 
-/* Linhas do último "Lançar em lote" (§20.5): fundo verde-claro na linha inteira, parado 1 s e
-   apagado em 3 s. O fill-mode both pinta o verde já durante a espera. A célula do lápis e do ✕,
+/* Linhas do último "Lançar em lote" (§20.5): fundo verde-claro na linha inteira, parado meio
+   segundo e apagado em 1,5 s (2 s no total). O fill-mode both pinta o verde já durante a espera. A célula do lápis e do ✕,
    presa à direita, tem fundo próprio por cima do da linha: recebe o mesmo verde e termina na cor
    da superfície (a dela), não transparente, senão os números rolariam à vista por baixo dela. O
    componente tira a classe quando a animação da linha termina, para nada a refazer. */
 .tabela-rolagem tbody tr.recem-lancada {
-  animation: destaque-da-linha 3s ease-in-out 1s both;
+  animation: destaque-da-linha 1.5s ease-in-out 0.5s both;
 }
 
 .tabela-rolagem tbody tr.recem-lancada > td.acoes-linha {
-  animation: destaque-da-celula-presa 3s ease-in-out 1s both;
+  animation: destaque-da-celula-presa 1.5s ease-in-out 0.5s both;
 }
 
 @keyframes destaque-da-linha {
@@ -929,7 +929,7 @@ td.dica {
   }
 }
 
-/* quem pede menos movimento ao sistema: o verde fica cheio pelos mesmos 4 s (a espera e a
+/* quem pede menos movimento ao sistema: o verde fica cheio pelos mesmos 2 s (a espera e a
    duração) e some de uma vez, sem esmaecer */
 @media (prefers-reduced-motion: reduce) {
   .tabela-rolagem tbody tr.recem-lancada,
