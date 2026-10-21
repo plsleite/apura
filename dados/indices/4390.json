@@ -3,7 +3,7 @@
   "codigo": "4390",
   "nome": "SELIC acumulada no mês, % (mês corrente parcial)",
   "origem": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json",
-  "obtidoEm": "2026-10-20T03:39:48-03:00",
+  "obtidoEm": "2026-10-21T03:36:25-03:00",
   "valores": [
     {
       "competencia": "1986-08",
@@ -1935,7 +1935,7 @@
     },
     {
       "competencia": "2026-10",
-      "valor": "0.61"
+      "valor": "0.66"
     }
   ]
 }
