@@ -619,7 +619,8 @@ textarea {
   margin: 0;
 }
 
-/* o mesmo estilo dos títulos das seções (§21.3); a altura de 35 px do título preso é fixa */
+/* os títulos das tabelas seguem a marca, como os das seções (veja o comentário da regra
+   `.secao > .titulo-secao > h2`, acima, e a §21.3); a altura de 35 px do título preso é fixa */
 .tabela-rolagem > .titulo-secao > h2 {
   font-size: 13px;
   text-transform: uppercase;
