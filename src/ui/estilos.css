@@ -29,9 +29,11 @@
      dourada de 4 px; a página e a coluna da direita a usam para não esconder nada sob ela */
   --barra-altura: 64px;
   /* alturas do título de cada tabela e dele mais a linha de títulos das colunas, presos no topo
-     da área rolável (§20.3); a área as reserva ao rolar até um controle que recebe o foco */
+     da área rolável (§20.3); a área as reserva ao rolar até um controle que recebe o foco. Os
+     66 px são os 35 px do título mais a linha de títulos de cerca de 29,9 px (13 px), com 1 px
+     de folga (§21.3) */
   --titulo-da-tabela: 35px;
-  --cabecalhos-da-tabela: 62px;
+  --cabecalhos-da-tabela: 66px;
   color-scheme: light;
 }
 
@@ -81,6 +83,8 @@
   box-sizing: border-box;
 }
 
+/* a tela usa só cinco tamanhos de letra (§21.3): 12, 13, 15, 17 e 22 px, e nenhum texto em
+   maiúsculas forçadas; scripts/estilos.test.ts prende as duas regras */
 html,
 body {
   margin: 0;
@@ -187,7 +191,7 @@ textarea {
 .marca small {
   font-family: var(--corpo);
   font-weight: 400;
-  font-size: 12.5px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   opacity: 0.9;
 }
@@ -280,7 +284,7 @@ textarea {
   justify-content: space-between;
   gap: 6px 16px;
   padding: 8px 16px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--discreto);
   border-top: 1px solid var(--linha);
 }
@@ -296,9 +300,7 @@ textarea {
 
 .secao > h2,
 .secao > .titulo-secao > h2 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 17px;
   color: var(--verde);
   margin: 0 0 8px;
 }
@@ -344,9 +346,7 @@ textarea {
 
 .rotulo-do-campo,
 .grupo > legend {
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 13px;
   color: var(--discreto);
 }
 
@@ -572,9 +572,7 @@ textarea {
 
 .indicador dt {
   font-family: var(--titulos);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 13px;
   color: var(--discreto);
   min-height: 2.4em;
 }
@@ -583,7 +581,7 @@ textarea {
   margin: 4px 0 0;
   font-family: var(--titulos);
   font-weight: 700;
-  font-size: 18px;
+  font-size: 17px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -606,12 +604,12 @@ textarea {
 }
 
 .tabela-rolagem > .titulo-secao {
-  padding: 10px 12px 4px;
+  padding: 8px 12px 2px;
   margin: 0;
 }
 
 .tabela-rolagem > .titulo-secao > h2 {
-  font-size: 14px;
+  font-size: 17px;
   color: var(--verde);
 }
 
@@ -633,9 +631,7 @@ td {
 th {
   font-family: var(--titulos);
   font-weight: 500;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 13px;
   background: var(--cabecalho-fundo);
   color: var(--cabecalho-texto);
 }
@@ -733,7 +729,7 @@ tr.memoria ul {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   white-space: normal;
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 td:first-child .celula-em-edicao .erro {
@@ -772,7 +768,7 @@ td:first-child .celula-em-edicao .erro {
   max-width: 16em;
   white-space: normal;
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* a linha nunca quebra (§17.4): a descrição encolhe até caber, com reticências (inteira no
@@ -837,7 +833,7 @@ tr.linha-nova td {
 
 td.dica {
   color: var(--discreto);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .etiqueta {
@@ -845,7 +841,7 @@ td.dica {
   border-radius: 3px;
   padding: 0 5px;
   font-family: var(--corpo);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
   margin: 1px 0 1px 4px;
   white-space: nowrap;
@@ -986,9 +982,8 @@ td.dica {
 }
 
 .avisos h2 {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 15px;
+  font-weight: 700;
   margin-bottom: 4px;
 }
 
@@ -1026,9 +1021,13 @@ td.dica {
 }
 
 .dialogo > h2 {
-  font-size: 16px;
+  font-size: 17px;
   color: var(--verde);
   margin-bottom: 10px;
+}
+
+.dialogo h3 {
+  font-size: 15px;
 }
 
 .dialogo-acoes {
@@ -1063,7 +1062,7 @@ td.dica {
 
 .periodo > h3,
 .titulo-do-periodo > h3 {
-  font-size: 13px;
+  font-size: 15px;
   margin-bottom: 6px;
 }
 
@@ -1127,7 +1126,6 @@ td.dica {
 
   .marca {
     padding-left: 14px;
-    font-size: 20px;
   }
 
   /* a barra quebra em duas linhas: volta a rolar com a página, e nada é reservado no topo */
@@ -1215,9 +1213,7 @@ td.dica {
 }
 
 .rotulo-estatico {
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 13px;
   color: var(--discreto);
 }
 
@@ -1298,7 +1294,7 @@ td.dica {
 }
 
 .tela-de-erro h1 {
-  font-size: 20px;
+  font-size: 22px;
   margin-bottom: 8px;
 }
 

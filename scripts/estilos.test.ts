@@ -203,3 +203,44 @@ describe("sem exemplos dentro dos campos (§21.1)", () => {
     expect(vazio.get("font-style")).toBe("italic");
   });
 });
+
+describe("tipografia da tela (§21.3)", () => {
+  // o @media print fica de fora: é a impressão, que não muda
+  const tela = regras(css)
+    .filter((r) => r.cabecalho !== "@media print")
+    .map((r) => `${r.cabecalho} { ${r.corpo} }`)
+    .join(" ");
+
+  it("a tela usa só cinco tamanhos de letra: 12, 13, 15, 17 e 22 px", () => {
+    const tamanhos = new Set([...tela.matchAll(/font-size:\s*([^;}]+)/g)].map((m) => m[1]?.trim()));
+    expect([...tamanhos].sort()).toEqual(["12px", "13px", "15px", "17px", "22px"]);
+  });
+
+  it("nenhum texto da tela em maiúsculas forçadas", () => {
+    expect(tela).not.toMatch(/text-transform:\s*uppercase/);
+  });
+
+  it("rótulos e legendas em 13 px; títulos das seções e das tabelas em 17 px; cabeçalhos das tabelas e rótulos dos indicadores em 13 px", () => {
+    expect(declaracoes(bloco(css, ".rotulo-do-campo, .grupo > legend")).get("font-size")).toBe(
+      "13px",
+    );
+    expect(declaracoes(bloco(css, ".rotulo-estatico")).get("font-size")).toBe("13px");
+    const titulo = declaracoes(bloco(css, ".secao > h2, .secao > .titulo-secao > h2"));
+    expect(titulo.get("font-size")).toBe("17px");
+    expect(titulo.get("color")).toBe("var(--verde)");
+    expect(declaracoes(bloco(css, ".tabela-rolagem > .titulo-secao > h2")).get("font-size")).toBe(
+      "17px",
+    );
+    expect(declaracoes(bloco(css, "th")).get("font-size")).toBe("13px");
+    expect(declaracoes(bloco(css, ".indicador dt")).get("font-size")).toBe("13px");
+  });
+
+  it("o título da tabela continua em 35 px, e a reserva dos cabeçalhos presos acompanha a linha de títulos maior (§20.3)", () => {
+    const raiz = declaracoes(bloco(css, ":root"));
+    expect(raiz.get("--titulo-da-tabela")).toBe("35px");
+    expect(raiz.get("--cabecalhos-da-tabela")).toBe("66px");
+    expect(declaracoes(bloco(css, ".tabela-rolagem > .titulo-secao")).get("padding")).toBe(
+      "8px 12px 2px",
+    );
+  });
+});
