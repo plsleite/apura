@@ -31,6 +31,7 @@ Este arquivo diz em que ponto o projeto está e como retomar o trabalho em qualq
 | 7 · Publicação | GitHub Actions, Cloudflare Pages, versão 0.1.0 para os testadores; rotina em etapas, conferência da publicação, monitoramento; acertos do relatório (§19 do design) | concluída em 2026-10-15 · plano: `docs/superpowers/plans/2026-10-14-fase-7-publicacao.md` · site: `https://apura-dpems.pages.dev` · repositório: `plsleite/apura` (privado) |
 | 7b · Ajustes da tela | cabeçalho fixo, nova ordem das seções (parâmetros antes dos lançamentos), tabela sempre à vista (coluna da direita presa, com rolagem própria e cabeçalhos presos); versão 0.1.1 (§20 do design) | concluída em 2026-10-15 · plano: `docs/superpowers/plans/2026-10-15-fase-7b-ajustes-da-tela.md` |
 | 0.1.2 · Destaque das linhas do lote | depois de "Lançar em lote", as linhas novas ganham um fundo verde-claro, parado 0,5 s e apagado em 1,5 s; ajuste direto, sem plano de fase (§20.5 do design) | concluída em 2026-10-15 |
+| 7c · Limpeza da tela | sem exemplos nos campos, tela vazia sem repetição, tipografia sem maiúsculas miúdas, defensor(a), órgão e recentes sempre guardados, divisão da base e observações recolhidas, tema em ícone, lote de pagamentos sem descrição, balões ⓘ podados; versão 0.1.3 (§21 do design) | concluída em 2026-10-25 · plano: `docs/superpowers/plans/2026-10-25-fase-7c-limpeza-da-tela.md` |
 
 Depois do MVP: ver a seção 6 da visão do produto (art. 524, servidor e usuários, cálculo livre, honorários, danos morais, integrações).
 
