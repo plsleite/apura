@@ -183,6 +183,13 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     const user = userEvent.setup();
     render(<Harness inicial={{ ...fixa, valor: "500.00" }} espiao={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Dividir a base em períodos" }));
+    // sem data: o erro embaixo do campo, que continua aberto, e o botão não volta
+    await user.click(screen.getByRole("button", { name: "Dividir" }));
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Informe a data (dia, mês e ano a partir de 1900).",
+    );
+    expect(screen.getByLabelText("Dividir em")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Dividir a base em períodos" })).toBeNull();
     fireEvent.change(screen.getByLabelText("Dividir em"), { target: { value: "2025-01-01" } });
     await user.click(screen.getByRole("button", { name: "Dividir" }));
     expect(screen.queryByLabelText("Dividir em")).toBeNull();

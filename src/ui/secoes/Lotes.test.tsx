@@ -86,6 +86,12 @@ describe("4 · Prestações em atraso e 5 · Pagamentos: lotes cumulativos (§6.
     render(<App ambiente={ambienteDeTeste()} />);
     const prestacoes = secao(/4 · Prestações em atraso/);
     const erros = () => prestacoes.getAllByRole("alert").map((a) => a.textContent);
+    // o lote recusado não lança nada: a tabela continua sem a linha de títulos e sem linhas (§21.2)
+    const nadaLancado = () => {
+      const tabela = within(screen.getByRole("region", { name: "Prestações" }));
+      expect(tabela.queryAllByRole("columnheader")).toHaveLength(0);
+      expect(tabela.queryAllByRole("row")).toHaveLength(0);
+    };
     await user.click(prestacoes.getByLabelText("Meses em atraso"));
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "32");
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
@@ -93,21 +99,25 @@ describe("4 · Prestações em atraso e 5 · Pagamentos: lotes cumulativos (§6.
       "Informe um número inteiro de 1 a 31.",
       "Informe um número inteiro de 1 a 600.",
     ]);
+    nadaLancado();
     await user.click(prestacoes.getByLabelText("Intervalo de vencimentos"));
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
     expect(erros()).toEqual([
       "Informe a data (dia, mês e ano a partir de 1900).",
       "Informe a data (dia, mês e ano a partir de 1900).",
     ]);
+    nadaLancado();
     const primeiro = prestacoes.getByLabelText("Primeiro vencimento");
     const ultimo = prestacoes.getByLabelText("Último vencimento");
     fireEvent.change(primeiro, { target: { value: "2026-10-10" } });
     fireEvent.change(ultimo, { target: { value: "2026-09-10" } });
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
     expect(erros()).toEqual(["O último vencimento não pode ser anterior ao primeiro."]);
+    nadaLancado();
     fireEvent.change(primeiro, { target: { value: "1970-01-10" } });
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
     expect(erros()).toEqual(["No máximo 600 meses por lote."]);
+    nadaLancado();
   });
 
   it("pagamentos: intervalo de pagamentos por datas, como o das prestações; lote cumulativo com aviso; valor e datas validados (decisão de 13/10/2026)", async () => {
