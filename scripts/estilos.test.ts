@@ -197,8 +197,13 @@ describe("botão de tema como ícone (§21.7)", () => {
 });
 
 describe("sem exemplos dentro dos campos (§21.1)", () => {
-  it("o campo de data em branco tem a cor discreta e o itálico dos textos dentro dos campos", () => {
-    const vazio = declaracoes(bloco(css, '.campo input[type="date"][data-vazio]'));
+  it("o campo de data em branco, também o da linha nova das tabelas, tem a cor discreta e o itálico dos textos dentro dos campos", () => {
+    const vazio = declaracoes(
+      bloco(
+        css,
+        '.campo input[type="date"][data-vazio], .campo-linha-nova input[type="date"][data-vazio]',
+      ),
+    );
     expect(vazio.get("color")).toBe("var(--discreto)");
     expect(vazio.get("font-style")).toBe("italic");
   });
@@ -213,11 +218,18 @@ describe("tipografia da tela (§21.3)", () => {
 
   it("a tela usa só cinco tamanhos de letra: 12, 13, 15, 17 e 22 px", () => {
     const tamanhos = new Set([...tela.matchAll(/font-size:\s*([^;}]+)/g)].map((m) => m[1]?.trim()));
+    // o atalho `font:` com tamanho em px também conta (`font: inherit` não declara tamanho)
+    for (const [, valor = ""] of tela.matchAll(/(?<![\w-])font:\s*([^;}]+)/g)) {
+      const tamanho = /(?:^|\s)(\d*\.?\d+px)(?=\/|\s|$)/.exec(valor.trim())?.[1];
+      if (tamanho !== undefined) tamanhos.add(tamanho);
+    }
     expect([...tamanhos].sort()).toEqual(["12px", "13px", "15px", "17px", "22px"]);
   });
 
-  it("nenhum texto da tela em maiúsculas forçadas", () => {
-    expect(tela).not.toMatch(/text-transform:\s*uppercase/);
+  it("nenhum texto da tela em maiúsculas forçadas, nem em maiúsculas miúdas (font-variant ou o atalho font:)", () => {
+    expect(tela).not.toMatch(
+      /text-transform:\s*uppercase|font-variant[^;]*caps|(?<![\w-])font:[^;]*caps/,
+    );
   });
 
   it("rótulos e legendas em 13 px; títulos das seções e das tabelas em 17 px; cabeçalhos das tabelas e rótulos dos indicadores em 13 px", () => {
@@ -233,6 +245,12 @@ describe("tipografia da tela (§21.3)", () => {
     );
     expect(declaracoes(bloco(css, "th")).get("font-size")).toBe("13px");
     expect(declaracoes(bloco(css, ".indicador dt")).get("font-size")).toBe("13px");
+  });
+
+  it("o rótulo dos indicadores tem altura de linha 1,2: a altura mínima de 2,4em vale exatamente duas linhas, e os valores dos cartões ficam alinhados", () => {
+    const rotulo = declaracoes(bloco(css, ".indicador dt"));
+    expect(rotulo.get("line-height")).toBe("1.2");
+    expect(rotulo.get("min-height")).toBe("2.4em");
   });
 
   it("o título da tabela continua em 35 px, e a reserva dos cabeçalhos presos acompanha a linha de títulos maior (§20.3)", () => {
@@ -256,12 +274,14 @@ describe("tipografia da tela (§21.3)", () => {
     expect(declaracoes(bloco(css, ".indicador dd")).get("font-size")).toBe("17px");
   });
 
-  it("dicas, erros das células e rodapé em 13 px; etiquetas e subtítulo da marca em 12 px", () => {
+  it('dicas, erros das células, rodapé e a data de cada recente no "Abrir" em 13 px; etiquetas e subtítulo da marca em 12 px', () => {
     for (const seletor of [
       "td.dica",
       ".celula-em-edicao .erro",
       ".campo-linha-nova .erro",
       ".rodape",
+      // o <small> da data de cada recente, que sem regra teria o tamanho do navegador (cerca de 12,5 px)
+      ".lista-simples small",
     ]) {
       expect(declaracoes(bloco(css, seletor)).get("font-size"), seletor).toBe("13px");
     }

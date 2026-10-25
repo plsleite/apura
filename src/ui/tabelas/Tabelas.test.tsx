@@ -663,6 +663,24 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     expect(screen.queryByLabelText("Vencimento da nova prestação")).toBeNull();
   });
 
+  it("a data da linha nova apagada fica marcada (data-vazio), clara como as outras datas em branco (§21.1)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    for (const [botao, rotulo] of [
+      ["+ Prestação", "Vencimento da nova prestação"],
+      ["+ Pagamento", "Data do novo pagamento"],
+    ] as const) {
+      await user.click(screen.getByRole("button", { name: botao }));
+      const data = screen.getByLabelText(rotulo) as HTMLInputElement;
+      expect(data.value, rotulo).not.toBe("");
+      expect(data.hasAttribute("data-vazio"), rotulo).toBe(false);
+      fireEvent.change(data, { target: { value: "" } });
+      expect(data.hasAttribute("data-vazio"), rotulo).toBe(true);
+      fireEvent.change(data, { target: { value: "2026-09-05" } });
+      expect(data.hasAttribute("data-vazio"), rotulo).toBe(false);
+    }
+  });
+
   describe("Enter segurado (tecla repetida) não acrescenta linhas", () => {
     const memorias = (tipo: "prestação" | "pagamento") =>
       screen.queryAllByRole("button", { name: new RegExp(`^Memória d[ao] ${tipo} de `) }).length;

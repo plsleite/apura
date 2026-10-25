@@ -3,11 +3,12 @@ import { CHAVE_PREFERENCIAS, gravarJson, lerJson } from "./armazenamento.ts";
 
 /**
  * Preferências do usuário neste navegador (§5.5, §21.4): defensor(a) e órgão, sempre guardados;
- * o tema da tela (do sistema, claro ou escuro; padrão: do sistema; decisão de 12/10/2026); e a
- * metodologia de encargos padrão dos cálculos novos (padrão: a da Lei 14.905/2024; §17.3). Os
- * cinco cálculos recentes também são sempre guardados (`recentes.ts`). As opções "Lembrar neste
- * navegador" e "Guardar cálculos recentes" e o botão "Esquecer" saíram na §21.4: o que ficou
- * gravado delas é ignorado na leitura e some na gravação seguinte. Nada é transmitido.
+ * o tema da tela (igual ao computador, claro ou escuro; padrão: igual ao computador, guardado
+ * como "sistema"; decisão de 12/10/2026 e §21.7); e a metodologia de encargos padrão dos cálculos
+ * novos (padrão: a da Lei 14.905/2024; §17.3). Os cinco cálculos recentes também são sempre
+ * guardados (`recentes.ts`). As opções "Lembrar neste navegador" e "Guardar cálculos recentes" e
+ * o botão "Esquecer" saíram na §21.4: o que ficou gravado delas é ignorado na leitura e some na
+ * gravação seguinte. Nada é transmitido.
  */
 export type Tema = "sistema" | "claro" | "escuro";
 

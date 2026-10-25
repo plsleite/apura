@@ -1,9 +1,10 @@
 /* Apura · estilos da tela (fase 5). Cores do manual de identidade da DPE-MS (§10.2 do design):
    verde #1D6B34, amarelo-ouro #D8BB73, preto #373636, cinza #868686, vermelho #ED1C24; fundo claro
-   #F3F4F1 e tema escuro como no relatório de exemplo. Tema do sistema, claro ou escuro, pelo
-   botão da barra (decisões de 12 e 13/10/2026; o padrão é o do sistema). Fontes Ubuntu
-   (títulos e números) e Source Sans 3 (texto), embutidas pelo main.tsx. Barra no estilo da
-   faixa do relatório: verde, logo horizontal branco da DPE-MS e linha dourada embaixo. */
+   #F3F4F1 e tema escuro como no relatório de exemplo. Tema igual ao computador, claro ou
+   escuro, pelo botão da barra (decisões de 12 e 13/10/2026 e §21.7; o padrão é igual ao
+   computador, guardado como "sistema"). Fontes Ubuntu (títulos e números) e Source Sans 3
+   (texto), embutidas pelo main.tsx. Barra no estilo da faixa do relatório: verde, logo
+   horizontal branco da DPE-MS e linha dourada embaixo. */
 
 :root {
   --verde: #1d6b34;
@@ -30,8 +31,8 @@
   --barra-altura: 64px;
   /* alturas do título de cada tabela e dele mais a linha de títulos das colunas, presos no topo
      da área rolável (§20.3); a área as reserva ao rolar até um controle que recebe o foco. Os
-     66 px são os 35 px do título mais a linha de títulos de cerca de 29,9 px (13 px), com 1 px
-     de folga (§21.3) */
+     66 px são os 35 px do título mais a linha de títulos de 29,34 px, medidos no navegador
+     (13 px), com 1 px de folga (§21.3) */
   --titulo-da-tabela: 35px;
   --cabecalhos-da-tabela: 66px;
   color-scheme: light;
@@ -367,8 +368,10 @@ textarea {
   font-style: italic;
 }
 
-/* o formato do navegador ("dd/mm/aaaa") fica claro enquanto a data está em branco ou pela metade (§21.1) */
-.campo input[type="date"][data-vazio] {
+/* o formato do navegador ("dd/mm/aaaa") fica claro enquanto a data está em branco ou pela metade,
+   também na linha nova das tabelas (§21.1) */
+.campo input[type="date"][data-vazio],
+.campo-linha-nova input[type="date"][data-vazio] {
   color: var(--discreto);
   font-style: italic;
 }
@@ -570,9 +573,12 @@ textarea {
   color: var(--verde);
 }
 
+/* com a altura de linha 1,2, os 2,4em de altura mínima valem exatamente duas linhas: o rótulo
+   que quebra não empurra o valor do cartão para baixo dos vizinhos (§21.3) */
 .indicador dt {
   font-family: var(--titulos);
   font-size: 13px;
+  line-height: 1.2;
   color: var(--discreto);
   min-height: 2.4em;
 }
@@ -1051,6 +1057,12 @@ td.dica {
   align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid var(--linha);
+}
+
+/* a data de cada recente no "Abrir": sem esta regra, o <small> teria o tamanho do navegador
+   (cerca de 12,5 px), fora dos cinco da tela (§21.3) */
+.lista-simples small {
+  font-size: 13px;
 }
 
 .periodo {

@@ -348,6 +348,9 @@ export function TabelaLancamentos({
                       min={DATA_MINIMA}
                       max={DATA_MAXIMA}
                       value={rascunho.data}
+                      // em branco, o formato do navegador fica claro, como nos outros campos de
+                      // data (§21.1)
+                      data-vazio={rascunho.data === "" ? "" : undefined}
                       onChange={(e) => mudarDataNova(e.target.value)}
                       aria-label={
                         prestacoes ? "Vencimento da nova prestação" : "Data do novo pagamento"
