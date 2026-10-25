@@ -187,3 +187,11 @@ describe("destaque das linhas do último lote (§20.5)", () => {
     ).toBe("step-end");
   });
 });
+
+describe("botão de tema como ícone (§21.7)", () => {
+  it("o botão de tema não tem borda nem a largura mínima do texto de antes", () => {
+    const tema = declaracoes(bloco(css, ".botao-tema"));
+    expect(tema.get("border-color")).toBe("transparent");
+    expect(tema.has("min-width")).toBe(false);
+  });
+});

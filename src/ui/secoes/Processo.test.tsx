@@ -135,39 +135,51 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
       "Este navegador não permite guardar nada: os cálculos recentes não ficam guardados, e defensor(a), órgão e tema valem só até recarregar ou fechar a página.",
     );
     await user.type(screen.getByLabelText("Defensor(a) responsável"), "Ninguém");
-    // do sistema → claro → escuro
-    await user.click(screen.getByRole("button", { name: "Tema do sistema" }));
-    await user.click(screen.getByRole("button", { name: "Tema claro" }));
+    // igual ao computador → claro → escuro
+    await user.click(
+      screen.getByRole("button", { name: "Tema: igual ao computador. Clique para claro." }),
+    );
+    await user.click(screen.getByRole("button", { name: "Tema: claro. Clique para escuro." }));
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
     cleanup();
     document.documentElement.removeAttribute("data-theme");
     render(<App ambiente={ambienteDeTeste({ armazenamento: armazenamentoQueFalha() })} />);
     await user.type(screen.getByLabelText("Órgão de atuação"), "Órgão");
     expect((screen.getByLabelText("Órgão de atuação") as HTMLInputElement).value).toBe("Órgão");
-    await user.click(screen.getByRole("button", { name: "Tema do sistema" }));
+    await user.click(
+      screen.getByRole("button", { name: "Tema: igual ao computador. Clique para claro." }),
+    );
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
   });
 
-  it("o botão de tema alterna do sistema → claro → escuro → do sistema, aplica na raiz e fica guardado", async () => {
+  it("o botão de tema é um ícone: igual ao computador → claro → escuro → igual ao computador, com o nome e a dica dizendo o atual e o próximo (§21.7)", async () => {
     const user = userEvent.setup();
     const armazenamento = armazenamentoEmMemoria();
     render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
-    const botao = screen.getByRole("button", { name: /^Tema / });
-    expect(botao.textContent).toBe("Tema do sistema");
-    expect(botao.getAttribute("title")).toBe("Clique para mudar para o tema claro");
+    const botao = screen.getByRole("button", {
+      name: "Tema: igual ao computador. Clique para claro.",
+    });
+    const icone = () => botao.querySelector("svg")?.getAttribute("data-icone");
+    expect(botao.textContent).toBe("");
+    expect(botao.getAttribute("title")).toBe("Tema: igual ao computador. Clique para claro.");
+    expect(icone()).toBe("meio");
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
     await user.click(botao);
-    expect(botao.textContent).toBe("Tema claro");
+    expect(botao.getAttribute("aria-label")).toBe("Tema: claro. Clique para escuro.");
+    expect(botao.getAttribute("title")).toBe("Tema: claro. Clique para escuro.");
+    expect(icone()).toBe("sol");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
     expect((preferenciasGravadas(armazenamento) as { tema: string }).tema).toBe("claro");
     await user.click(botao);
-    expect(botao.textContent).toBe("Tema escuro");
+    expect(botao.getAttribute("aria-label")).toBe("Tema: escuro. Clique para igual ao computador.");
+    expect(icone()).toBe("lua");
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
     expect((preferenciasGravadas(armazenamento) as { tema: string }).tema).toBe("escuro");
-    // pelo teclado também: Enter no botão volta a "do sistema"
+    // pelo teclado também: Enter no botão volta a "igual ao computador"
     botao.focus();
     await user.keyboard("{Enter}");
-    expect(botao.textContent).toBe("Tema do sistema");
+    expect(botao.getAttribute("aria-label")).toBe("Tema: igual ao computador. Clique para claro.");
+    expect(icone()).toBe("meio");
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
     expect((preferenciasGravadas(armazenamento) as { tema: string }).tema).toBe("sistema");
   });
@@ -178,7 +190,7 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
       [CHAVE_PREFERENCIAS]: JSON.stringify({ tema: "escuro" }),
     });
     render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
-    expect(screen.getByRole("button", { name: /^Tema / }).textContent).toBe("Tema escuro");
+    expect(screen.getByRole("button", { name: /^Tema: escuro\./ })).toBeDefined();
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
     await user.type(screen.getByLabelText("Defensor(a) responsável"), "Alguém");
     expect(preferenciasGravadas(armazenamento)).toEqual({

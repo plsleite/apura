@@ -74,7 +74,7 @@ describe("tela de erro de reserva (§18.6)", () => {
     render(<App ambiente={ambiente} />);
     await user.type(screen.getByLabelText("Exequente (alimentando)"), "A. B.");
     quebrar = true;
-    await user.click(screen.getByRole("button", { name: "Tema do sistema" }));
+    await user.click(screen.getByRole("button", { name: /^Tema: igual ao computador\./ }));
     expect(screen.getByRole("alert").textContent).toContain("Algo deu errado no Apura.");
     await user.click(screen.getByRole("button", { name: "Salvar o cálculo" }));
     const salvo = JSON.parse(ambiente.baixados[0]?.conteudo ?? "{}") as {

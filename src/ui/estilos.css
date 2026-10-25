@@ -237,8 +237,13 @@ textarea {
   font-weight: 400;
 }
 
+/* botão de tema só com o ícone de 20 px (§21.7): sem contorno à mostra (a borda fica transparente,
+   para o botão ocupar o mesmo espaço), sem a altura de linha do texto; o fundo ao passar o mouse
+   vem de .botao-barra, e o anel de foco, de .barra :focus-visible */
 .botao-tema {
-  min-width: 10.5em;
+  border-color: transparent;
+  padding: 6px;
+  line-height: 0;
 }
 
 .principal {
