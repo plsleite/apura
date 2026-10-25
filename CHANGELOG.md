@@ -15,8 +15,9 @@ Limpeza da tela (§21 do design). Os números não mudam.
   e sem a linha de títulos das colunas. O cálculo em branco não traz mais o aviso "Nenhum
   lançamento.", e a caixa de avisos só aparece quando há o que avisar (por exemplo, um índice que
   ainda não chegou ao Apura).
-- Letras maiores e sem maiúsculas miúdas: rótulos, títulos das seções, cabeçalhos das tabelas e
-  nomes dos indicadores em letra normal, com menos tamanhos diferentes na tela. O relatório e a
+- Letras maiores e sem maiúsculas miúdas: rótulos, cabeçalhos das tabelas e nomes dos indicadores
+  em letras maiores e em caixa normal, com menos tamanhos diferentes na tela. Os títulos das seções
+  e das tabelas seguem em maiúsculas espaçadas, como a marca da Defensoria. O relatório e a
   impressão não mudam.
 - Defensor(a), órgão e os cinco últimos cálculos ficam sempre guardados neste navegador: saem
   "Lembrar neste navegador", "Esquecer" e "Guardar cálculos recentes neste navegador". O "Abrir"

@@ -117,8 +117,10 @@ os campos vêm sem exemplos dentro (ficam "pela base", "apurado pela base" e "us
 padrão"), e a data em branco ganha `data-vazio`, que o CSS pinta claro e em itálico; a tabela vazia
 mostra só o título, o ⓘ e o botão (sem `<thead>`; a `<table>` fica, para o `ResizeObserver`), e o
 motor não avisa mais "Nenhum lançamento."; a tela usa só cinco tamanhos de letra (12, 13, 15, 17 e
-22 px) e nada em maiúsculas forçadas, com `--cabecalhos-da-tabela` em 66 px (o relatório e a
-impressão não mudam); defensor(a), órgão e os cinco recentes são sempre guardados (`Preferencias`
+22 px) e maiúsculas forçadas só nos sete títulos (das cinco seções e das duas tabelas: 13 px,
+maiúsculas espaçadas, Ubuntu negrito verde, como a marca; revisto pelo responsável em 25/10/2026,
+depois de ver a tela), com `--cabecalhos-da-tabela` em 66 px (o relatório e a impressão não
+mudam); defensor(a), órgão e os cinco recentes são sempre guardados (`Preferencias`
 sem `lembrar` e `guardarRecentes`, que a leitura ignora e a gravação seguinte apaga; sem
 `esquecer`), e o "Abrir" diz que os recentes ficam só neste navegador; "Dividir a base em períodos"
 e "+ Observações para o relatório" abrem o campo com o foco nele (`autoFocus` em `CampoTexto` e
