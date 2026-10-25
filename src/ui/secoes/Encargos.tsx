@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Calculo } from "../../compartilhado/tipos.ts";
 import type { OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
@@ -16,7 +17,10 @@ import { opcaoDaMetodologia, resumirMetodologia } from "../estado/metodologia.ts
  * entre as duas opções pré-carregadas (§17.3; ajustada, nenhuma fica marcada e o resumo em uma
  * frase aparece) e "Ajustar" (abre o editor de períodos), multa e honorários do art. 523,
  * §1º, do CPC (10% cada por padrão, decisão de 13/10/2026), data de elaboração e observações para
- * o relatório.
+ * o relatório (§21.6): recolhidas num botão discreto, "+ Observações para o relatório", que abre a
+ * caixa com o foco nela; com texto (cálculo aberto de um arquivo ou dos recentes), a caixa já vem
+ * aberta, sem tomar o foco. A seção é remontada a cada "Novo cálculo" e "Abrir", e o estado
+ * recomeça dali.
  */
 export function Encargos({
   calculo,
@@ -53,6 +57,9 @@ export function Encargos({
     aoValidar: aoMudarDataElaboracao,
   });
   const opcao = opcaoDaMetodologia(calculo.metodologia);
+  const [observacoes, setObservacoes] = useState<"recolhidas" | "abertas" | "abertas pelo botão">(
+    calculo.observacoes === "" ? "recolhidas" : "abertas",
+  );
   return (
     <section className="secao" aria-labelledby="titulo-encargos">
       <div className="titulo-secao">
@@ -140,14 +147,26 @@ export function Encargos({
           max={DATA_MAXIMA}
         />
       </div>
-      <CampoArea
-        id="observacoes"
-        rotulo="Observações para o relatório"
-        valor={calculo.observacoes}
-        aoMudar={aoMudarObservacoes}
-        classe="largo"
-        ajuda='Texto livre que sai no bloco "Metodologia e fundamentos" do relatório (ex.: "Conforme sentença de fls. 45").'
-      />
+      {observacoes === "recolhidas" ? (
+        <div className="linha">
+          <button
+            type="button"
+            className="botao discreto"
+            onClick={() => setObservacoes("abertas pelo botão")}
+          >
+            + Observações para o relatório
+          </button>
+        </div>
+      ) : (
+        <CampoArea
+          id="observacoes"
+          rotulo="Observações para o relatório"
+          valor={calculo.observacoes}
+          aoMudar={aoMudarObservacoes}
+          classe="largo"
+          autoFocus={observacoes === "abertas pelo botão"}
+        />
+      )}
     </section>
   );
 }

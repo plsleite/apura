@@ -116,10 +116,54 @@ describe("5 · Encargos e data do cálculo (§9.2)", () => {
     expect(espiao).not.toHaveBeenCalled();
     fireEvent.blur(screen.getByLabelText("Data de elaboração"));
     expect(screen.getByRole("alert").textContent).toContain("Informe a data");
+    await user.click(screen.getByRole("button", { name: "+ Observações para o relatório" }));
     await user.type(screen.getByLabelText("Observações para o relatório"), "Conforme a sentença.");
     expect(espiao.mock.lastCall?.[0].observacoes).toBe("Conforme a sentença.");
     await user.click(screen.getByRole("button", { name: "Ajustar" }));
     expect(espiao.mock.lastCall?.[0].observacoes).toBe("ajustar!");
+  });
+
+  it("as observações ficam recolhidas: o botão abre a caixa, com o foco nela e sem balão ⓘ (§21.6)", async () => {
+    const user = userEvent.setup();
+    const espiao = vi.fn();
+    render(<Harness inicial={inicial} espiao={espiao} />);
+    expect(screen.queryByLabelText("Observações para o relatório")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "+ Observações para o relatório" }));
+    const caixa = screen.getByLabelText("Observações para o relatório");
+    expect(document.activeElement).toBe(caixa);
+    expect(screen.queryByRole("button", { name: "+ Observações para o relatório" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Ajuda: Observações para o relatório" }),
+    ).toBeNull();
+    await user.type(caixa, "Conforme a sentença.");
+    expect(espiao.mock.lastCall?.[0].observacoes).toBe("Conforme a sentença.");
+  });
+
+  it("com observações, a caixa já vem aberta, sem tomar o foco (§21.6)", () => {
+    render(
+      <Harness inicial={{ ...inicial, observacoes: "Conforme o acordo." }} espiao={vi.fn()} />,
+    );
+    const caixa = screen.getByLabelText("Observações para o relatório") as HTMLTextAreaElement;
+    expect(caixa.value).toBe("Conforme o acordo.");
+    expect(document.activeElement).not.toBe(caixa);
+    expect(screen.queryByRole("button", { name: "+ Observações para o relatório" })).toBeNull();
+  });
+
+  it("no App: 'Novo cálculo' recolhe as observações, e abrir o cálculo que as tem mostra a caixa aberta (§21.6)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste({ armazenamento: armazenamentoEmMemoria() })} />);
+    await user.type(screen.getByLabelText("Nº do processo"), "08000004620268120001");
+    await user.click(screen.getByRole("button", { name: "+ Observações para o relatório" }));
+    await user.type(screen.getByLabelText("Observações para o relatório"), "Conforme o acordo.");
+    await user.click(screen.getByRole("button", { name: "Novo cálculo" }));
+    expect(screen.queryByLabelText("Observações para o relatório")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Abrir" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: /^Abrir 0800000-46/ }),
+    );
+    expect(
+      (screen.getByLabelText("Observações para o relatório") as HTMLTextAreaElement).value,
+    ).toBe("Conforme o acordo.");
   });
 
   it("no App: a opção escolhida vale para o cálculo, fica guardada, vem nos cálculos novos e é o que 'Restaurar' restaura", async () => {

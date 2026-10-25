@@ -49,6 +49,7 @@ describe("Relatório na tela (§18.1)", () => {
     document.title = "Apura · Sistema de Cálculos Judiciais";
     render(<App ambiente={ambiente} />);
     await abrir(user, calculoCompleto());
+    await user.click(screen.getByRole("button", { name: "+ Observações para o relatório" }));
     await user.type(screen.getByLabelText("Observações para o relatório"), "Conforme o acordo.");
     expect(botao().disabled).toBe(false);
     expect(botao().title).toBe("");
