@@ -49,6 +49,22 @@ describe("App (fundação da tela)", () => {
     expect(screen.queryByText(/Nenhuma prestação lançada|Nenhum pagamento lançado/)).toBeNull();
   });
 
+  it("a tela principal em valor fixo tem 8 balões ⓘ, na ordem da tela (§21.9)", () => {
+    render(<App ambiente={ambienteDeTeste()} />);
+    expect(
+      screen.getAllByRole("button", { name: /^Ajuda: / }).map((b) => b.getAttribute("aria-label")),
+    ).toEqual([
+      "Ajuda: Reajuste anual",
+      "Ajuda: Metodologia de encargos",
+      "Ajuda: IGP-M e juros de 1% ao mês em todo o período",
+      "Ajuda: Multa (art. 523, %)",
+      "Ajuda: Prestações em atraso",
+      "Ajuda: Pagamentos",
+      "Ajuda: Prestações",
+      "Ajuda: Amortizações (pagamentos)",
+    ]);
+  });
+
   it("a coluna da direita tem os indicadores no topo e, embaixo, uma área rolável com nome, que recebe foco pelo teclado, com as duas tabelas e os avisos (§20.3)", () => {
     // o cálculo em branco não tem aviso nenhum; a defasagem de um índice faz a caixa aparecer
     render(<App ambiente={ambienteDeTeste({ limites: { "433": "2026-07" } })} />);

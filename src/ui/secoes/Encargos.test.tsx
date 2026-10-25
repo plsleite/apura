@@ -10,6 +10,7 @@ import { dividirPeriodo } from "../estado/metodologia.ts";
 import App from "../App.tsx";
 import { CHAVE_PREFERENCIAS } from "../armazenamento.ts";
 import { ambienteDeTeste, armazenamentoEmMemoria } from "../testes/ambiente-de-teste.ts";
+import { textoDoBalao } from "../testes/texto-do-balao.ts";
 import { Encargos } from "./Encargos.tsx";
 
 afterEach(cleanup);
@@ -121,6 +122,17 @@ describe("5 · Encargos e data do cálculo (§9.2)", () => {
     expect(espiao.mock.lastCall?.[0].observacoes).toBe("Conforme a sentença.");
     await user.click(screen.getByRole("button", { name: "Ajustar" }));
     expect(espiao.mock.lastCall?.[0].observacoes).toBe("ajustar!");
+  });
+
+  it("só a multa tem balão ⓘ entre os campos; honorários e data de elaboração não têm (§21.9)", async () => {
+    const user = userEvent.setup();
+    render(<Harness inicial={inicial} espiao={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "Ajuda: Honorários (%)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ajuda: Data de elaboração" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Ajuda: Multa (art. 523, %)" }));
+    expect(textoDoBalao("Multa (art. 523, %)")).toBe(
+      "Art. 523, §1º, do CPC (rito da penhora): 10% de multa e 10% de honorários sobre o total devido, um sem incidir sobre o outro. No rito da prisão, ponha 0 nos dois.",
+    );
   });
 
   it("as observações ficam recolhidas: o botão abre a caixa, com o foco nela e sem balão ⓘ (§21.6)", async () => {

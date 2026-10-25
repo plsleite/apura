@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "../App.tsx";
@@ -68,6 +68,13 @@ describe("1 · Processo: número do processo no padrão do CNJ (decisão de 13/1
     expect(screen.queryByLabelText(/Guardar cálculos recentes/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Ajuda: Processo" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Ajuda: cálculos recentes" })).toBeNull();
+  });
+
+  it("a seção 1 não tem nenhum balão ⓘ, nem no Nº do processo (§21.9)", () => {
+    render(<App ambiente={ambienteDeTeste()} />);
+    const secao = within(screen.getByRole("region", { name: "1 · Processo" }));
+    expect(secao.getByLabelText("Nº do processo")).toBeDefined();
+    expect(secao.queryAllByRole("button", { name: /^Ajuda: / })).toEqual([]);
   });
 });
 

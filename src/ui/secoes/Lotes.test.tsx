@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import App from "../App.tsx";
 import { intervaloDoLote } from "./LotePrestacoes.tsx";
 import { ambienteDeTeste } from "../testes/ambiente-de-teste.ts";
+import { textoDoBalao } from "../testes/texto-do-balao.ts";
 
 afterEach(cleanup);
 
@@ -34,6 +35,19 @@ describe("intervalo de vencimentos (decisão de 13/10/2026)", () => {
 });
 
 describe("4 · Prestações em atraso e 5 · Pagamentos: lotes cumulativos (§6.1, §6.2)", () => {
+  it("os balões ⓘ das seções 4 e 5 trazem os textos curtos (§21.9)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await user.click(screen.getByRole("button", { name: "Ajuda: Prestações em atraso" }));
+    expect(textoDoBalao("Prestações em atraso")).toBe(
+      'Cada lançamento se soma aos anteriores, e um mês já lançado não se repete. No intervalo, as prestações vencem todo mês no dia do primeiro vencimento (no último dia, nos meses mais curtos). "Meses em atraso" conta para trás a partir da data de elaboração: dia 5 e 3 meses, em 10/10/2026, lança ago, set e out/2026. 13º e férias: "+ Prestação", na tabela.',
+    );
+    await user.click(screen.getByRole("button", { name: "Ajuda: Pagamentos" }));
+    expect(textoDoBalao("Pagamentos")).toBe(
+      'Lança um pagamento por mês, do primeiro ao último pagamento, no dia do primeiro (no último dia do mês, quando ele é mais curto). Mês que já tem pagamento não é repetido: um segundo pagamento no mesmo mês entra pelo "+ Pagamento", na tabela ao lado.',
+    );
+  });
+
   it("lança por 'meses em atraso', acumula sem repetir e mostra os avisos do lote embaixo do formulário", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);

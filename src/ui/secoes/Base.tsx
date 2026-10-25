@@ -31,8 +31,9 @@ import type { CampoDaBase, FaltaDaBase } from "../estado/faltas.ts";
  * continua aberto (quem usa o teclado não se perde). O mês do reajuste some quando o reajuste é
  * pelo salário mínimo ou "nenhum"; em "% dos rendimentos" o rendimento padrão é exigido. Cada
  * período guarda um rascunho por forma, para que trocar de forma e voltar não perca o que foi
- * digitado. Explicações nos balões ⓘ dos campos. Com prestação lançada pela base, o campo que
- * falta fica em vermelho no bloco do período ("Informe o percentual."; decisões de 13/10/2026).
+ * digitado. Balões ⓘ só nos campos que precisam de explicação (no valor fixo, só o "Reajuste
+ * anual", §21.9). Com prestação lançada pela base, o campo que falta fica em vermelho no bloco do
+ * período ("Informe o percentual."; decisões de 13/10/2026).
  */
 
 /** Erro do campo: o da leitura (texto inválido) ou, com o campo em branco, o de campo que falta. */
@@ -336,7 +337,6 @@ function ValorFixo({
         <CampoTexto
           id={`${prefixo}-fixacao`}
           rotulo="Fixado em"
-          ajuda="Data da sentença ou do acordo que fixou o valor. O mês do reajuste acompanha esta data, salvo se você escolher outro."
           tipo="date"
           valor={data.texto}
           aoMudar={data.aoMudar}
@@ -350,7 +350,7 @@ function ValorFixo({
           rotulo="Reajuste anual"
           ajuda={
             base.indiceReajuste === "nenhum"
-              ? "Sem reajuste, o valor fixado vale igual para todas as prestações. Se a sentença previu reajuste, escolha o índice."
+              ? "Com índice (IPCA, INPC ou IGP-M), o valor é reajustado a cada 12 meses pelo acumulado dos 12 meses anteriores ao mês do reajuste, que por padrão é o da fixação. Com salário mínimo, acompanha a proporção entre o salário mínimo do mês do vencimento e o do mês da fixação."
               : base.indiceReajuste === "SM"
                 ? "O valor acompanha o salário mínimo: valor fixado × salário mínimo do mês do vencimento ÷ salário mínimo do mês da fixação."
                 : "O valor é reajustado a cada 12 meses pelo índice acumulado dos 12 meses anteriores ao mês do reajuste. Padrão: o mês da fixação; mude se a sentença disser outro mês."

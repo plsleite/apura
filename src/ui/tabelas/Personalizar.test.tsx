@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "../App.tsx";
 import { ambienteDeTeste } from "../testes/ambiente-de-teste.ts";
+import { textoDoBalao } from "../testes/texto-do-balao.ts";
 
 afterEach(cleanup);
 
@@ -73,6 +74,20 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
     ).toBe("R$ 1.000,00");
   });
 
+  it("no painel da prestação, o valor informado à mão e a descrição têm balão ⓘ, com o texto curto da descrição (§21.9)", async () => {
+    const user = userEvent.setup();
+    await montarCaso(user);
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
+    const painel = within(screen.getByRole("dialog", { name: "Personalizar prestação" }));
+    expect(
+      painel.getByRole("button", { name: "Ajuda: Valor informado à mão (opcional)" }),
+    ).toBeDefined();
+    await user.click(painel.getByRole("button", { name: "Ajuda: Descrição (opcional)" }));
+    expect(textoDoBalao("Descrição (opcional)")).toBe(
+      '13º e férias: lance por "+ Prestação" e descreva aqui.',
+    );
+  });
+
   it("termo final posterior à data de elaboração e termo inicial depois do final são recusados no painel", async () => {
     const user = userEvent.setup();
     await montarCaso(user);
@@ -119,6 +134,9 @@ describe("Personalizar, o lápis da linha (§9.3)", () => {
       "2026-10-11",
     );
     expect((painel.getByLabelText("Valor pago") as HTMLInputElement).value).toBe("150,00");
+    // no pagamento, o valor e a descrição não têm balão ⓘ (§21.9)
+    expect(painel.queryByRole("button", { name: "Ajuda: Valor pago" })).toBeNull();
+    expect(painel.queryByRole("button", { name: "Ajuda: Descrição (opcional)" })).toBeNull();
     await user.clear(painel.getByLabelText("Valor pago"));
     await user.click(painel.getByRole("button", { name: "Aplicar" }));
     expect(painel.getByRole("alert").textContent).toBe("Informe um número.");

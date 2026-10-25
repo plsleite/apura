@@ -8,6 +8,7 @@ import { baseUnica } from "../../motor/base.ts";
 import type { FaltaDaBase } from "../estado/faltas.ts";
 import App from "../App.tsx";
 import { ambienteDeTeste } from "../testes/ambiente-de-teste.ts";
+import { textoDoBalao } from "../testes/texto-do-balao.ts";
 import { BaseDosAlimentos } from "./Base.tsx";
 
 afterEach(cleanup);
@@ -59,7 +60,9 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     expect((screen.getByLabelText("Valor fixo em reais") as HTMLInputElement).checked).toBe(true);
     expect(screen.queryByLabelText("Mês do reajuste")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Ajuda: Reajuste anual" }));
-    expect(screen.getByText(/Sem reajuste, o valor fixado vale igual/)).toBeDefined();
+    expect(textoDoBalao("Reajuste anual")).toBe(
+      "Com índice (IPCA, INPC ou IGP-M), o valor é reajustado a cada 12 meses pelo acumulado dos 12 meses anteriores ao mês do reajuste, que por padrão é o da fixação. Com salário mínimo, acompanha a proporção entre o salário mínimo do mês do vencimento e o do mês da fixação.",
+    );
     await user.selectOptions(screen.getByLabelText("Reajuste anual"), "IPCA");
     expect(ultimaForma(espiao)).toEqual({ ...fixa, indiceReajuste: "IPCA" });
     expect((screen.getByLabelText("Mês do reajuste") as HTMLSelectElement).value).toBe("10");
@@ -71,6 +74,14 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     expect(screen.queryByLabelText("Mês do reajuste")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Ajuda: Reajuste anual" }));
     expect(screen.getByText(/O valor acompanha o salário mínimo/)).toBeDefined();
+  });
+
+  it("valor fixo: só o 'Reajuste anual' tem balão ⓘ; 'Valor fixado' e 'Fixado em' não têm (§21.9)", () => {
+    render(<Harness inicial={fixa} espiao={vi.fn()} />);
+    expect(
+      screen.getAllByRole("button", { name: /^Ajuda: / }).map((b) => b.getAttribute("aria-label")),
+    ).toEqual(["Ajuda: Reajuste anual"]);
+    expect(screen.queryByRole("button", { name: "Ajuda: Fixado em" })).toBeNull();
   });
 
   it("valor fixo: o valor aceita vírgula e só o válido chega; a data de fixação muda o mês do reajuste", async () => {

@@ -5,8 +5,8 @@ import { formatarNumeroProcesso, lerNumeroProcesso } from "../entrada.ts";
 /**
  * Seção "1 · Processo" (§9.2): defensor(a) e órgão sempre lembrados no navegador (§21.4), nº do
  * processo no padrão do CNJ (máscara e dígitos verificadores) e as partes. Campos em duas colunas,
- * ocupando a largura da seção (empilham no celular); a explicação do número fica no balão ⓘ do
- * campo (decisões de 13/10/2026). Partes e processo não são gravados em servidor algum (§14).
+ * ocupando a largura da seção (empilham no celular); a seção não tem balão ⓘ (§21.9). Partes e
+ * processo não são gravados em servidor algum (§14).
  */
 export function Processo({
   cabecalho,
@@ -61,7 +61,6 @@ export function Processo({
         classe="processo"
         inputMode="numeric"
         autoComplete="off"
-        ajuda="Padrão do CNJ: digite só os números, e o hífen e os pontos entram sozinhos. Pode ficar em branco se o processo ainda não existe."
       />
       <div className="grade-2">
         <CampoTexto
