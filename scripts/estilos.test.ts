@@ -226,25 +226,46 @@ describe("tipografia da tela (§21.3)", () => {
     expect([...tamanhos].sort()).toEqual(["12px", "13px", "15px", "17px", "22px"]);
   });
 
-  it("nenhum texto da tela em maiúsculas forçadas, nem em maiúsculas miúdas (font-variant ou o atalho font:)", () => {
-    expect(tela).not.toMatch(
-      /text-transform:\s*uppercase|font-variant[^;]*caps|(?<![\w-])font:[^;]*caps/,
-    );
+  it("só os sete títulos (das cinco seções e das duas tabelas) em maiúsculas espaçadas, como a marca; nenhum outro texto da tela em maiúsculas, nem em maiúsculas miúdas (font-variant ou o atalho font:)", () => {
+    // os cabeçalhos das regras da tela, também as de dentro dos @media (o de impressão fica de fora)
+    const cabecalhos = (texto: string): string[] =>
+      regras(texto).flatMap((r) =>
+        r.cabecalho.startsWith("@")
+          ? r.cabecalho === "@media print"
+            ? []
+            : cabecalhos(r.corpo)
+          : /text-transform:\s*uppercase/.test(r.corpo)
+            ? [r.cabecalho]
+            : [],
+      );
+    expect(cabecalhos(css).sort()).toEqual([
+      ".secao > h2, .secao > .titulo-secao > h2",
+      ".tabela-rolagem > .titulo-secao > h2",
+    ]);
+    expect(tela).not.toMatch(/font-variant[^;]*caps|(?<![\w-])font:[^;]*caps/);
   });
 
-  it("rótulos e legendas em 13 px; títulos das seções e das tabelas em 17 px; cabeçalhos das tabelas e rótulos dos indicadores em 13 px", () => {
-    expect(declaracoes(bloco(css, ".rotulo-do-campo, .grupo > legend")).get("font-size")).toBe(
-      "13px",
-    );
-    expect(declaracoes(bloco(css, ".rotulo-estatico")).get("font-size")).toBe("13px");
-    const titulo = declaracoes(bloco(css, ".secao > h2, .secao > .titulo-secao > h2"));
-    expect(titulo.get("font-size")).toBe("17px");
-    expect(titulo.get("color")).toBe("var(--verde)");
-    expect(declaracoes(bloco(css, ".tabela-rolagem > .titulo-secao > h2")).get("font-size")).toBe(
-      "17px",
-    );
-    expect(declaracoes(bloco(css, "th")).get("font-size")).toBe("13px");
-    expect(declaracoes(bloco(css, ".indicador dt")).get("font-size")).toBe("13px");
+  it("rótulos e legendas, cabeçalhos das tabelas e rótulos dos indicadores em 13 px e em caixa normal; os sete títulos também em 13 px, mas em maiúsculas espaçadas e verdes", () => {
+    for (const seletor of [
+      ".rotulo-do-campo, .grupo > legend",
+      ".rotulo-estatico",
+      "th",
+      ".indicador dt",
+    ]) {
+      const regra = declaracoes(bloco(css, seletor));
+      expect(regra.get("font-size"), seletor).toBe("13px");
+      expect(regra.has("text-transform"), seletor).toBe(false);
+    }
+    for (const seletor of [
+      ".secao > h2, .secao > .titulo-secao > h2",
+      ".tabela-rolagem > .titulo-secao > h2",
+    ]) {
+      const titulo = declaracoes(bloco(css, seletor));
+      expect(titulo.get("font-size"), seletor).toBe("13px");
+      expect(titulo.get("text-transform"), seletor).toBe("uppercase");
+      expect(titulo.get("letter-spacing"), seletor).toBe("0.08em");
+      expect(titulo.get("color"), seletor).toBe("var(--verde)");
+    }
   });
 
   it("o rótulo dos indicadores tem altura de linha 1,2: a altura mínima de 2,4em vale exatamente duas linhas, e os valores dos cartões ficam alinhados", () => {
@@ -253,12 +274,12 @@ describe("tipografia da tela (§21.3)", () => {
     expect(rotulo.get("min-height")).toBe("2.4em");
   });
 
-  it("o título da tabela continua em 35 px, e a reserva dos cabeçalhos presos acompanha a linha de títulos maior (§20.3)", () => {
+  it("o título da tabela continua em 35 px, com o espaço interno de antes da fase, e a reserva dos cabeçalhos presos segue em 66 px (§20.3)", () => {
     const raiz = declaracoes(bloco(css, ":root"));
     expect(raiz.get("--titulo-da-tabela")).toBe("35px");
     expect(raiz.get("--cabecalhos-da-tabela")).toBe("66px");
     expect(declaracoes(bloco(css, ".tabela-rolagem > .titulo-secao")).get("padding")).toBe(
-      "8px 12px 2px",
+      "10px 12px 4px",
     );
   });
 

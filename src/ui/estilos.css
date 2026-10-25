@@ -84,8 +84,8 @@
   box-sizing: border-box;
 }
 
-/* a tela usa só cinco tamanhos de letra (§21.3): 12, 13, 15, 17 e 22 px, e nenhum texto em
-   maiúsculas forçadas; scripts/estilos.test.ts prende as duas regras */
+/* a tela usa só cinco tamanhos de letra (§21.3): 12, 13, 15, 17 e 22 px, e maiúsculas forçadas só
+   nos sete títulos (das seções e das tabelas); scripts/estilos.test.ts prende as duas regras */
 html,
 body {
   margin: 0;
@@ -299,9 +299,14 @@ textarea {
   padding: 12px 14px;
 }
 
+/* os sete títulos da tela (estes e os das duas tabelas) seguem a marca: maiúsculas espaçadas em
+   Ubuntu negrito verde, como o nome da Defensoria no manual de identidade (§21.3, revisto em
+   25/10/2026). Nenhum outro texto da tela é forçado a maiúsculas */
 .secao > h2,
 .secao > .titulo-secao > h2 {
-  font-size: 17px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--verde);
   margin: 0 0 8px;
 }
@@ -610,12 +615,15 @@ textarea {
 }
 
 .tabela-rolagem > .titulo-secao {
-  padding: 8px 12px 2px;
+  padding: 10px 12px 4px;
   margin: 0;
 }
 
+/* o mesmo estilo dos títulos das seções (§21.3); a altura de 35 px do título preso é fixa */
 .tabela-rolagem > .titulo-secao > h2 {
-  font-size: 17px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--verde);
 }
 
