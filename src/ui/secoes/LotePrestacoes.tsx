@@ -87,13 +87,10 @@ export function LotePrestacoesSecao({
       <div className="titulo-secao">
         <h2 id="titulo-prestacoes">4 · Prestações em atraso</h2>
         <Ajuda assunto="Prestações em atraso">
-          Cada "Lançar em lote" acrescenta as prestações do período à tabela ao lado, sem apagar as
-          anteriores (ex.: jan a mar; depois jul a set); um mês de vencimento já lançado não é
-          repetido. No intervalo, informe o primeiro e o último vencimento: as prestações vencem
-          todo mês no dia do primeiro (no último dia do mês, quando ele é mais curto). "Meses em
-          atraso" lança os últimos vencimentos já ocorridos até a data de elaboração, do mais
-          recente para trás (dia 5 e 3 meses, com elaboração em 10/10/2026: ago, set e out/2026).
-          Edição, exclusão e inclusão avulsa (13º, férias) ficam na tabela.
+          Cada lançamento se soma aos anteriores, e um mês já lançado não se repete. No intervalo,
+          as prestações vencem todo mês no dia do primeiro vencimento (no último dia, nos meses mais
+          curtos). "Meses em atraso" conta para trás a partir da data de elaboração: dia 5 e 3
+          meses, em 10/10/2026, lança ago, set e out/2026. 13º e férias: "+ Prestação", na tabela.
         </Ajuda>
       </div>
       <form onSubmit={lancar} noValidate>
@@ -125,7 +122,6 @@ export function LotePrestacoesSecao({
                 erro={erros.dia}
                 inputMode="numeric"
                 classe="curto"
-                placeholder="ex.: 5"
               />
               <CampoTexto
                 id="lote-meses"
@@ -135,7 +131,6 @@ export function LotePrestacoesSecao({
                 erro={erros.meses}
                 inputMode="numeric"
                 classe="curto"
-                placeholder="ex.: 3"
               />
             </>
           ) : (

@@ -174,11 +174,11 @@ export function Personalizar({
           erro={erros.valor}
           inputMode="decimal"
           classe="medio"
-          placeholder={prestacao ? "apurado pela base" : "ex.: 400,00"}
+          placeholder={prestacao ? "apurado pela base" : undefined}
           ajuda={
             prestacao
               ? "Deixe em branco para o Apura apurar o valor pela base dos alimentos; informe-o só quando a prestação tiver valor diverso. O relatório marca os valores informados à mão."
-              : "Valor positivo. Cada pagamento é atualizado da sua data até a data do cálculo e abatido do total."
+              : undefined
           }
         />
         <CampoTexto
@@ -187,12 +187,7 @@ export function Personalizar({
           valor={descricao}
           aoMudar={setDescricao}
           classe="medio"
-          placeholder={prestacao ? "ex.: 13º salário 2025" : "ex.: pagamento em espécie"}
-          ajuda={
-            prestacao
-              ? "Aparece ao lado do vencimento e no relatório. 13º salário e férias entram como prestação avulsa (+ Prestação) com descrição."
-              : "Aparece ao lado da data e no relatório."
-          }
+          ajuda={prestacao ? '13º e férias: lance por "+ Prestação" e descreva aqui.' : undefined}
         />
       </div>
       {comRendimento ? (

@@ -4,14 +4,14 @@ import { Ajuda } from "./componentes/Ajuda.tsx";
 import type { Recente } from "./recentes.ts";
 
 /**
- * Conteúdo do painel "Abrir" (§5.5, §9.1): os cálculos recentes deste navegador, por data,
- * processo e partes, com "Abrir" e "Remover" em cada um e "Limpar recentes" (e um aviso quando o
- * cálculo atual não pôde ser guardado neles, ou quando o navegador não permite guardar nada); e a
- * escolha de um arquivo salvo. O arquivo é lido aqui (texto) e entregue a quem valida e recalcula.
+ * Conteúdo do painel "Abrir" (§5.5, §9.1): os cálculos recentes deste navegador, sempre guardados
+ * (§21.4), por data, processo e partes, com "Abrir" e "Remover" em cada um e "Limpar recentes" (e
+ * um aviso quando o cálculo atual não pôde ser guardado neles, ou quando o navegador não permite
+ * guardar nada); e a escolha de um arquivo salvo. O arquivo é lido aqui (texto) e entregue a quem
+ * valida e recalcula.
  */
 export function Abrir({
   recentes,
-  recentesLigados,
   armazenamentoDisponivel,
   erro,
   naoGuardado,
@@ -22,7 +22,6 @@ export function Abrir({
   aoFalharLeitura,
 }: {
   recentes: Recente[];
-  recentesLigados: boolean;
   /** o navegador permite guardar dados (falso: janela anônima com bloqueio, política do navegador) */
   armazenamentoDisponivel: boolean;
   /** frase de erro da última tentativa (arquivo inválido), ou nulo */
@@ -52,6 +51,12 @@ export function Abrir({
   return (
     <div>
       <h3>Cálculos recentes neste navegador</h3>
+      {armazenamentoDisponivel ? (
+        <p className="nota">
+          Os cinco últimos cálculos ficam guardados só neste navegador (nada vai para servidor
+          algum). Em computador compartilhado, limpe ao terminar.
+        </p>
+      ) : null}
       {naoGuardado ? (
         <p className="erro">
           O cálculo atual não pôde ser guardado nos recentes deste navegador (o armazenamento está
@@ -63,13 +68,8 @@ export function Abrir({
           Este navegador não permite guardar dados (por exemplo, numa janela anônima com bloqueio):
           os cálculos recentes não ficam guardados aqui. Salve o arquivo para não perder o cálculo.
         </p>
-      ) : !recentesLigados ? (
-        <p className="nota">
-          A opção "Guardar cálculos recentes neste navegador" está desligada na seção 1 · Processo.
-          Ligue-a para os cinco últimos cálculos aparecerem aqui.
-        </p>
       ) : recentes.length === 0 ? (
-        <p className="nota">Nenhum cálculo recente ainda. Os cinco últimos aparecem aqui.</p>
+        <p className="nota">Nenhum cálculo recente ainda.</p>
       ) : (
         <ul className="lista-simples" aria-label="Cálculos recentes">
           {recentes.map((recente) => {

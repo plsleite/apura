@@ -250,13 +250,12 @@ describe("calcular", () => {
     expect(r.avisos).not.toContainEqual(expect.stringContaining("informado à mão"));
   });
 
-  it("avisa quando as amortizações igualam ou superam as prestações e quando não há lançamentos", () => {
+  it("avisa quando as amortizações igualam ou superam as prestações", () => {
     const r = calcular(calculoCom([amortizacao]), tabelaIgpm());
     expect(r.totais.totalDevido).toBe("-519.35");
     expect(r.avisos).toContain(
       "As amortizações atualizadas (R$ 519,35) igualam ou superam as prestações atualizadas (R$ 0,00): não há valor devido na data do cálculo.",
     );
-    expect(calcular(calculoCom([]), tabelaIgpm()).avisos).toEqual(["Nenhum lançamento."]);
     // sem pagamento lançado, o total zerado vem de prestações sem valor: nada de "igualam ou
     // superam" nem de multa não aplicada (decisão de 13/10/2026)
     const semValor: Lancamento = {
@@ -282,6 +281,10 @@ describe("calcular", () => {
     expect(soPrestacaoSemValor.avisos).not.toContainEqual(
       expect.stringContaining("Multa e honorários não foram aplicados"),
     );
+  });
+
+  it("cálculo sem lançamentos não tem aviso: a tela vazia já mostra isso (§21.2)", () => {
+    expect(calcular(calculoCom([]), tabelaIgpm()).avisos).toEqual([]);
   });
 });
 

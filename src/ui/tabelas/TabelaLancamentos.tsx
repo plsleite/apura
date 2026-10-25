@@ -50,6 +50,7 @@ import { etiquetasDaLinha, nomeDaSituacao } from "./etiquetas.ts";
  * "+ Prestação" / "+ Pagamento" abre uma linha nova no fim da tabela, já preenchida com a
  * sugestão (`estado/novaLinha.ts`); Enter ou ✓ inclui, Esc ou ✕ descarta.
  * Etiquetas na linha: vincenda, não computada, valor informado à mão, ajustada.
+ * Tabela vazia: só o título, o ⓘ e o botão (§21.2).
  */
 
 export interface LinhaDaTabela {
@@ -298,30 +299,23 @@ export function TabelaLancamentos({
             linhas.some((l) => l.lancamento.descricao?.trim()) ? "com-descricao" : undefined
           }
         >
-          <thead>
-            <tr>
-              <th scope="col">{prestacoes ? "Vencimento" : "Data"}</th>
-              <th scope="col">Valor</th>
-              <th scope="col">Fator</th>
-              <th scope="col">Corrigido</th>
-              <th scope="col">Juros %</th>
-              <th scope="col">Juros R$</th>
-              <th scope="col">Atualizado</th>
-              <th scope="col">
-                <span className="oculto-acessivel">Ações</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.length === 0 && rascunho === null ? (
+          {linhas.length > 0 || rascunho !== null ? (
+            <thead>
               <tr>
-                <td colSpan={8} className="texto">
-                  {prestacoes
-                    ? 'Nenhuma prestação lançada: use "Lançar em lote" na seção 4 ou "+ Prestação".'
-                    : 'Nenhum pagamento lançado: use "Lançar em lote" na seção 5 ou "+ Pagamento".'}
-                </td>
+                <th scope="col">{prestacoes ? "Vencimento" : "Data"}</th>
+                <th scope="col">Valor</th>
+                <th scope="col">Fator</th>
+                <th scope="col">Corrigido</th>
+                <th scope="col">Juros %</th>
+                <th scope="col">Juros R$</th>
+                <th scope="col">Atualizado</th>
+                <th scope="col">
+                  <span className="oculto-acessivel">Ações</span>
+                </th>
               </tr>
-            ) : null}
+            </thead>
+          ) : null}
+          <tbody>
             {linhas.map((linha) => (
               <Fragment key={linha.lancamento.id}>
                 <Linha
@@ -354,6 +348,9 @@ export function TabelaLancamentos({
                       min={DATA_MINIMA}
                       max={DATA_MAXIMA}
                       value={rascunho.data}
+                      // em branco, o formato do navegador fica claro, como nos outros campos de
+                      // data (§21.1)
+                      data-vazio={rascunho.data === "" ? "" : undefined}
                       onChange={(e) => mudarDataNova(e.target.value)}
                       aria-label={
                         prestacoes ? "Vencimento da nova prestação" : "Data do novo pagamento"
@@ -386,7 +383,7 @@ export function TabelaLancamentos({
                       }
                       aria-invalid={rascunho.erros.valor !== undefined}
                       aria-describedby={rascunho.erros.valor ? `${idDosErros}-valor` : undefined}
-                      placeholder={prestacoes ? "pela base" : "0,00"}
+                      placeholder={prestacoes ? "pela base" : undefined}
                     />
                     {rascunho.erros.valor ? (
                       <span className="erro" id={`${idDosErros}-valor`} role="alert">
@@ -572,7 +569,6 @@ function Linha({
             exibido={formatarData(lancamento.data)}
             textoInicial={formatarDataParaCampo(lancamento.data)}
             inputMode="numeric"
-            placeholder="dd/mm/aaaa"
             mascara={mascaraData}
             aoGravar={(texto) => {
               const data = lerDataTexto(texto);

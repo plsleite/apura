@@ -57,10 +57,10 @@
       {"id": "p-2026-08", "tipo": "prestacao", "data": "2026-08-01", "competencia": "2026-08", "origem": "lote", "editado": false},
       {"id": "p-2026-09", "tipo": "prestacao", "data": "2026-09-01", "competencia": "2026-09", "origem": "lote", "editado": false},
       {"id": "p-2026-10", "tipo": "prestacao", "data": "2026-10-01", "competencia": "2026-10", "origem": "lote", "editado": false},
-      {"id": "a-2026-01", "tipo": "amortizacao", "data": "2026-01-10", "descricao": "Pagamento parcial", "valorInformado": "300.00", "origem": "lote", "editado": false},
-      {"id": "a-2026-02", "tipo": "amortizacao", "data": "2026-02-10", "descricao": "Pagamento parcial", "valorInformado": "300.00", "origem": "lote", "editado": false},
-      {"id": "a-2026-03", "tipo": "amortizacao", "data": "2026-03-10", "descricao": "Pagamento parcial", "valorInformado": "300.00", "origem": "lote", "editado": false},
-      {"id": "a-2026-04", "tipo": "amortizacao", "data": "2026-04-10", "descricao": "Pagamento parcial", "valorInformado": "300.00", "origem": "lote", "editado": false}
+      {"id": "a-2026-01", "tipo": "amortizacao", "data": "2026-01-10", "valorInformado": "300.00", "origem": "lote", "editado": false},
+      {"id": "a-2026-02", "tipo": "amortizacao", "data": "2026-02-10", "valorInformado": "300.00", "origem": "lote", "editado": false},
+      {"id": "a-2026-03", "tipo": "amortizacao", "data": "2026-03-10", "valorInformado": "300.00", "origem": "lote", "editado": false},
+      {"id": "a-2026-04", "tipo": "amortizacao", "data": "2026-04-10", "valorInformado": "300.00", "origem": "lote", "editado": false}
     ],
     "metodologia": {
       "id": "lei-14905-2024",

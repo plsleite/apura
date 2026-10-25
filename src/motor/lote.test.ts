@@ -223,7 +223,7 @@ describe("lote de prestações: limite inferior das datas", () => {
 });
 
 describe("lote de pagamentos (§6.2)", () => {
-  it("gera um pagamento por mês, com valor, dia e descrição, pulando meses que já têm pagamento", () => {
+  it("gera um pagamento por mês, com valor e dia, sem descrição, pulando meses que já têm pagamento", () => {
     const existente: Lancamento = {
       id: "a-2026-02",
       tipo: "amortizacao",
@@ -242,7 +242,6 @@ describe("lote de pagamentos (§6.2)", () => {
         id: "a-2026-01",
         tipo: "amortizacao",
         data: "2026-01-31",
-        descricao: "Pagamento parcial",
         valorInformado: "300.00",
         origem: "lote",
         editado: false,
@@ -251,7 +250,6 @@ describe("lote de pagamentos (§6.2)", () => {
         id: "a-2026-03",
         tipo: "amortizacao",
         data: "2026-03-31",
-        descricao: "Pagamento parcial",
         valorInformado: "300.00",
         origem: "lote",
         editado: false,
@@ -260,12 +258,13 @@ describe("lote de pagamentos (§6.2)", () => {
         id: "a-2026-04",
         tipo: "amortizacao",
         data: "2026-04-30",
-        descricao: "Pagamento parcial",
         valorInformado: "300.00",
         origem: "lote",
         editado: false,
       },
     ]);
+    // sem descrição (§21.8): a tabela e o relatório mostram só a data
+    expect(r.lancamentos.some((l) => Object.hasOwn(l, "descricao"))).toBe(false);
     expect(r.pulados).toEqual(["2026-02"]);
     expect(r.avisos).toEqual(["Meses com pagamento já lançado, não repetidos: fev/2026."]);
   });

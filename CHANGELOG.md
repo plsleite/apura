@@ -4,6 +4,34 @@ O que muda no Apura para quem o usa, versão por versão, da mais nova para a ma
 numeração segue o versionamento semântico (0.1.0, 0.1.1, 0.2.0…): o último número sobe nas
 correções, e o do meio, nas novidades.
 
+## [0.1.3] · 2026-10-25
+
+Limpeza da tela (§21 do design). Os números não mudam.
+
+- Os campos vêm vazios, sem exemplos dentro (como "ex.: 1.000,00"); ficam só os textos que dizem
+  o que acontece com o campo em branco, como "pela base". A data em branco aparece mais clara, em
+  itálico.
+- As tabelas vazias mostram só o título, o ⓘ e o botão ("+ Prestação", "+ Pagamento"), sem frase
+  e sem a linha de títulos das colunas. O cálculo em branco não traz mais o aviso "Nenhum
+  lançamento.", e a caixa de avisos só aparece quando há o que avisar (por exemplo, um índice que
+  ainda não chegou ao Apura).
+- Letras maiores e sem maiúsculas miúdas: rótulos, cabeçalhos das tabelas e nomes dos indicadores
+  em letras maiores e em caixa normal, com menos tamanhos diferentes na tela. Os títulos das seções
+  e das tabelas ficam em maiúsculas espaçadas, como a marca da Defensoria. O relatório e a
+  impressão não mudam.
+- Defensor(a), órgão e os cinco últimos cálculos ficam sempre guardados neste navegador: saem
+  "Lembrar neste navegador", "Esquecer" e "Guardar cálculos recentes neste navegador". O "Abrir"
+  lembra que, em computador compartilhado, convém limpar os recentes ao terminar ("Remover" e
+  "Limpar recentes" continuam lá).
+- A divisão da base em períodos e as observações para o relatório ficam atrás de um botão
+  discreto ("Dividir a base em períodos" e "+ Observações para o relatório"), que abre o campo já
+  com o cursor nele; o cálculo que já tem observações mostra a caixa aberta.
+- O botão de tema vira um ícone: ☀ (claro), ☾ (escuro) e ◐ (igual ao computador, o antigo "do
+  sistema"); o nome e a dica dizem o tema de agora e o próximo.
+- Os pagamentos lançados em lote não levam mais a descrição "Pagamento parcial"; arquivos e
+  recentes já guardados ficam com a que têm.
+- Menos balões ⓘ, e mais curtos: na tela principal, de 16 para 8.
+
 ## [0.1.2] · 2026-10-15
 
 Ajuste da tela (§20.5 do design). Os números não mudam.

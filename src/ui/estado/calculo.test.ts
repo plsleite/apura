@@ -164,8 +164,8 @@ describe("reduzir: lotes cumulativos e lançamentos", () => {
       em: DEPOIS,
     });
     expect(estado.calculo.lancamentos.map((l) => [l.id, l.valorInformado, l.descricao])).toEqual([
-      ["a-2026-08", "400.00", "Pagamento parcial"],
-      ["a-2026-09", "400.00", "Pagamento parcial"],
+      ["a-2026-08", "400.00", undefined],
+      ["a-2026-09", "400.00", undefined],
     ]);
     expect(estado.calculo.lotes.ultimoLoteAmortizacoes?.valorMensal).toBe("400.00");
     expect(estado.avisosDoLote).toEqual([]);

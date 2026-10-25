@@ -109,10 +109,31 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
       moeda(r.totais.totalGeral),
     ]);
     expect(
-      within(screen.getByRole("region", { name: "Amortizações (pagamentos)" })).getByText(
-        /Nenhum pagamento lançado/,
+      within(screen.getByRole("region", { name: "Amortizações (pagamentos)" })).queryAllByRole(
+        "columnheader",
       ),
-    ).toBeDefined();
+    ).toHaveLength(0);
+  });
+
+  it("tabela vazia: só o título, o ⓘ e o botão, sem a linha de títulos e sem frase (§21.2)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    for (const [nome, botao] of [
+      ["Prestações", "+ Prestação"],
+      ["Amortizações (pagamentos)", "+ Pagamento"],
+    ] as const) {
+      const tabela = within(screen.getByRole("region", { name: nome }));
+      expect(tabela.queryAllByRole("columnheader")).toHaveLength(0);
+      expect(tabela.queryByText(/Nenhuma prestação|Nenhum pagamento/)).toBeNull();
+      expect(tabela.getByRole("button", { name: `Ajuda: ${nome}` })).toBeDefined();
+      expect(tabela.getByRole("button", { name: botao })).toBeDefined();
+    }
+    // a linha nova traz a linha de títulos; descartada, ela some de novo
+    const prestacoes = within(screen.getByRole("region", { name: "Prestações" }));
+    await user.click(prestacoes.getByRole("button", { name: "+ Prestação" }));
+    expect(prestacoes.getAllByRole("columnheader")).toHaveLength(8);
+    await user.keyboard("{Escape}");
+    expect(prestacoes.queryAllByRole("columnheader")).toHaveLength(0);
   });
 
   it("o balão ⓘ do título da tabela flutua em posição fixa, para não ficar cortado pela rolagem da coluna (§20.3)", async () => {
@@ -347,7 +368,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
       .getAllByRole("cell")
       .map((c) => c.textContent);
     const pagamento = r.lancamentos.find((l) => l.tipo === "amortizacao")!;
-    expect(celulas.slice(0, 2)).toEqual(["▸05/09/2026Pagamento parcial", "R$ 400,00"]);
+    expect(celulas.slice(0, 2)).toEqual(["▸05/09/2026", "R$ 400,00"]);
     expect(celulas[6]).toBe(moeda(pagamento.atualizado));
     const resumo = within(screen.getByLabelText("Resumo do cálculo"));
     expect(resumo.getAllByRole("definition").map((d) => d.textContent)).toEqual([
@@ -366,11 +387,12 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     await user.click(xisDoPagamento());
     expect(xisDaPrestacao().getAttribute("aria-label")).toBe("Excluir prestação de 05/09/2026");
     expect(xisDoPagamento().getAttribute("aria-label")).toBe(
-      "Clique de novo para excluir o pagamento de 05/09/2026 (Pagamento parcial)",
+      "Clique de novo para excluir o pagamento de 05/09/2026",
     );
     await user.click(xisDoPagamento());
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "+ Pagamento" }));
-    expect(amortizacoes.getByText(/Nenhum pagamento lançado/)).toBeDefined();
+    // a tabela esvaziou: só o título, o ⓘ e o botão (§21.2)
+    expect(amortizacoes.queryAllByRole("columnheader")).toHaveLength(0);
     expect(resumo.getAllByRole("definition")[1]?.textContent).toBe("R$ 0,00");
     await user.click(xisDaPrestacao());
     await user.click(xisDaPrestacao());
@@ -566,10 +588,10 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
     await user.click(
       screen.getByRole("button", {
-        name: "Editar valor do pagamento de 05/09/2026 (Pagamento parcial) (R$ 400,00)",
+        name: "Editar valor do pagamento de 05/09/2026 (R$ 400,00)",
       }),
     );
-    await user.clear(screen.getByLabelText("Valor do pagamento de 05/09/2026 (Pagamento parcial)"));
+    await user.clear(screen.getByLabelText("Valor do pagamento de 05/09/2026"));
     await user.keyboard("{Enter}");
     expect(screen.getByRole("alert").textContent).toBe("Informe um valor maior que zero.");
   });
@@ -639,6 +661,24 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     await user.click(screen.getByRole("button", { name: "+ Prestação" }));
     await user.click(screen.getByRole("button", { name: "Novo cálculo" }));
     expect(screen.queryByLabelText("Vencimento da nova prestação")).toBeNull();
+  });
+
+  it("a data da linha nova apagada fica marcada (data-vazio), clara como as outras datas em branco (§21.1)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    for (const [botao, rotulo] of [
+      ["+ Prestação", "Vencimento da nova prestação"],
+      ["+ Pagamento", "Data do novo pagamento"],
+    ] as const) {
+      await user.click(screen.getByRole("button", { name: botao }));
+      const data = screen.getByLabelText(rotulo) as HTMLInputElement;
+      expect(data.value, rotulo).not.toBe("");
+      expect(data.hasAttribute("data-vazio"), rotulo).toBe(false);
+      fireEvent.change(data, { target: { value: "" } });
+      expect(data.hasAttribute("data-vazio"), rotulo).toBe(true);
+      fireEvent.change(data, { target: { value: "2026-09-05" } });
+      expect(data.hasAttribute("data-vazio"), rotulo).toBe(false);
+    }
   });
 
   describe("Enter segurado (tecla repetida) não acrescenta linhas", () => {

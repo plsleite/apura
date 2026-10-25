@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Calculo } from "../../compartilhado/tipos.ts";
 import type { OpcaoDeMetodologia } from "../../metodologias/padrao.ts";
 import { Ajuda } from "../componentes/Ajuda.tsx";
@@ -12,11 +13,14 @@ import {
 import { opcaoDaMetodologia, resumirMetodologia } from "../estado/metodologia.ts";
 
 /**
- * Seção "3 · Encargos e data do cálculo" (§9.2, na ordem da §20; explicações nos balões ⓘ): metodologia escolhida
- * entre as duas opções pré-carregadas (§17.3; ajustada, nenhuma fica marcada e o resumo em uma
- * frase aparece) e "Ajustar" (abre o editor de períodos), multa e honorários do art. 523,
- * §1º, do CPC (10% cada por padrão, decisão de 13/10/2026), data de elaboração e observações para
- * o relatório.
+ * Seção "3 · Encargos e data do cálculo" (§9.2, na ordem da §20; balões ⓘ só na metodologia e na
+ * multa, que explica também os honorários, §21.9): metodologia escolhida entre as duas opções
+ * pré-carregadas (§17.3; ajustada, nenhuma fica marcada e o resumo em uma frase aparece) e
+ * "Ajustar" (abre o editor de períodos), multa e honorários do art. 523, §1º, do CPC (10% cada por
+ * padrão, decisão de 13/10/2026), data de elaboração e observações para o relatório (§21.6):
+ * recolhidas num botão discreto, "+ Observações para o relatório", que abre a caixa com o foco
+ * nela; com texto (cálculo aberto de um arquivo ou dos recentes), a caixa já vem aberta, sem tomar
+ * o foco. A seção é remontada a cada "Novo cálculo" e "Abrir", e o estado recomeça dali.
  */
 export function Encargos({
   calculo,
@@ -53,6 +57,9 @@ export function Encargos({
     aoValidar: aoMudarDataElaboracao,
   });
   const opcao = opcaoDaMetodologia(calculo.metodologia);
+  const [observacoes, setObservacoes] = useState<"recolhidas" | "abertas" | "abertas pelo botão">(
+    calculo.observacoes === "" ? "recolhidas" : "abertas",
+  );
   return (
     <section className="secao" aria-labelledby="titulo-encargos">
       <div className="titulo-secao">
@@ -108,7 +115,7 @@ export function Encargos({
         <CampoTexto
           id="multa"
           rotulo="Multa (art. 523, %)"
-          ajuda="Multa do art. 523, §1º, do CPC (rito da penhora), sobre o total devido; os honorários não incidem sobre ela, nem ela sobre eles. Vem com 10%, o percentual da lei; no rito da prisão, ponha 0."
+          ajuda="Art. 523, §1º, do CPC (rito da penhora): 10% de multa e 10% de honorários sobre o total devido, um sem incidir sobre o outro. No rito da prisão, ponha 0 nos dois."
           valor={multa.texto}
           aoMudar={multa.aoMudar}
           aoSair={multa.aoSair}
@@ -119,7 +126,6 @@ export function Encargos({
         <CampoTexto
           id="honorarios"
           rotulo="Honorários (%)"
-          ajuda="Honorários do art. 523, §1º, do CPC (rito da penhora), sobre o total devido, sem incidir sobre a multa. Vêm com 10%, o percentual da lei; no rito da prisão, ponha 0."
           valor={honorarios.texto}
           aoMudar={honorarios.aoMudar}
           aoSair={honorarios.aoSair}
@@ -130,7 +136,6 @@ export function Encargos({
         <CampoTexto
           id="data-elaboracao"
           rotulo="Data de elaboração"
-          ajuda="Data até a qual tudo é atualizado. O padrão é hoje."
           tipo="date"
           valor={data.texto}
           aoMudar={data.aoMudar}
@@ -140,14 +145,26 @@ export function Encargos({
           max={DATA_MAXIMA}
         />
       </div>
-      <CampoArea
-        id="observacoes"
-        rotulo="Observações para o relatório"
-        valor={calculo.observacoes}
-        aoMudar={aoMudarObservacoes}
-        classe="largo"
-        ajuda='Texto livre que sai no bloco "Metodologia e fundamentos" do relatório (ex.: "Conforme sentença de fls. 45").'
-      />
+      {observacoes === "recolhidas" ? (
+        <div className="linha">
+          <button
+            type="button"
+            className="botao discreto"
+            onClick={() => setObservacoes("abertas pelo botão")}
+          >
+            + Observações para o relatório
+          </button>
+        </div>
+      ) : (
+        <CampoArea
+          id="observacoes"
+          rotulo="Observações para o relatório"
+          valor={calculo.observacoes}
+          aoMudar={aoMudarObservacoes}
+          classe="largo"
+          autoFocus={observacoes === "abertas pelo botão"}
+        />
+      )}
     </section>
   );
 }

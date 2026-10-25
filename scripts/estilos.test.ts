@@ -187,3 +187,132 @@ describe("destaque das linhas do último lote (§20.5)", () => {
     ).toBe("step-end");
   });
 });
+
+describe("botão de tema como ícone (§21.7)", () => {
+  it("o botão de tema não tem borda nem a largura mínima do texto de antes", () => {
+    const tema = declaracoes(bloco(css, ".botao-tema"));
+    expect(tema.get("border-color")).toBe("transparent");
+    expect(tema.has("min-width")).toBe(false);
+  });
+});
+
+describe("sem exemplos dentro dos campos (§21.1)", () => {
+  it("o campo de data em branco, também o da linha nova das tabelas, tem a cor discreta e o itálico dos textos dentro dos campos", () => {
+    const vazio = declaracoes(
+      bloco(
+        css,
+        '.campo input[type="date"][data-vazio], .campo-linha-nova input[type="date"][data-vazio]',
+      ),
+    );
+    expect(vazio.get("color")).toBe("var(--discreto)");
+    expect(vazio.get("font-style")).toBe("italic");
+  });
+});
+
+describe("tipografia da tela (§21.3)", () => {
+  // o @media print fica de fora: é a impressão, que não muda
+  const tela = regras(css)
+    .filter((r) => r.cabecalho !== "@media print")
+    .map((r) => `${r.cabecalho} { ${r.corpo} }`)
+    .join(" ");
+
+  it("a tela usa só cinco tamanhos de letra: 12, 13, 15, 17 e 22 px", () => {
+    const tamanhos = new Set([...tela.matchAll(/font-size:\s*([^;}]+)/g)].map((m) => m[1]?.trim()));
+    // o atalho `font:` com tamanho em px também conta (`font: inherit` não declara tamanho)
+    for (const [, valor = ""] of tela.matchAll(/(?<![\w-])font:\s*([^;}]+)/g)) {
+      const tamanho = /(?:^|\s)(\d*\.?\d+px)(?=\/|\s|$)/.exec(valor.trim())?.[1];
+      if (tamanho !== undefined) tamanhos.add(tamanho);
+    }
+    expect([...tamanhos].sort()).toEqual(["12px", "13px", "15px", "17px", "22px"]);
+  });
+
+  it("só os sete títulos (das cinco seções e das duas tabelas) em maiúsculas espaçadas, como a marca; nenhum outro texto da tela em maiúsculas, nem em maiúsculas miúdas (font-variant ou o atalho font:)", () => {
+    // os cabeçalhos das regras da tela, também as de dentro dos @media (o de impressão fica de fora)
+    const cabecalhos = (texto: string): string[] =>
+      regras(texto).flatMap((r) =>
+        r.cabecalho.startsWith("@")
+          ? r.cabecalho === "@media print"
+            ? []
+            : cabecalhos(r.corpo)
+          : /text-transform:\s*uppercase/.test(r.corpo)
+            ? [r.cabecalho]
+            : [],
+      );
+    expect(cabecalhos(css).sort()).toEqual([
+      ".secao > h2, .secao > .titulo-secao > h2",
+      ".tabela-rolagem > .titulo-secao > h2",
+    ]);
+    expect(tela).not.toMatch(/font-variant[^;]*caps|(?<![\w-])font:[^;]*caps/);
+  });
+
+  it("rótulos e legendas, cabeçalhos das tabelas e rótulos dos indicadores em 13 px e em caixa normal; os sete títulos também em 13 px, mas em maiúsculas espaçadas e verdes", () => {
+    for (const seletor of [
+      ".rotulo-do-campo, .grupo > legend",
+      ".rotulo-estatico",
+      "th",
+      ".indicador dt",
+    ]) {
+      const regra = declaracoes(bloco(css, seletor));
+      expect(regra.get("font-size"), seletor).toBe("13px");
+      expect(regra.has("text-transform"), seletor).toBe(false);
+    }
+    for (const seletor of [
+      ".secao > h2, .secao > .titulo-secao > h2",
+      ".tabela-rolagem > .titulo-secao > h2",
+    ]) {
+      const titulo = declaracoes(bloco(css, seletor));
+      expect(titulo.get("font-size"), seletor).toBe("13px");
+      expect(titulo.get("text-transform"), seletor).toBe("uppercase");
+      expect(titulo.get("letter-spacing"), seletor).toBe("0.08em");
+      expect(titulo.get("color"), seletor).toBe("var(--verde)");
+    }
+  });
+
+  it("o rótulo dos indicadores tem altura de linha 1,2: a altura mínima de 2,4em vale exatamente duas linhas, e os valores dos cartões ficam alinhados", () => {
+    const rotulo = declaracoes(bloco(css, ".indicador dt"));
+    expect(rotulo.get("line-height")).toBe("1.2");
+    expect(rotulo.get("min-height")).toBe("2.4em");
+  });
+
+  it("o título da tabela continua em 35 px, com o espaço interno de antes da fase, e a reserva dos cabeçalhos presos segue em 66 px (§20.3)", () => {
+    const raiz = declaracoes(bloco(css, ":root"));
+    expect(raiz.get("--titulo-da-tabela")).toBe("35px");
+    expect(raiz.get("--cabecalhos-da-tabela")).toBe("66px");
+    expect(declaracoes(bloco(css, ".tabela-rolagem > .titulo-secao")).get("padding")).toBe(
+      "10px 12px 4px",
+    );
+  });
+
+  it("subtítulos e o título dos avisos em 15 px (este em negrito); título do diálogo e valores dos indicadores em 17 px", () => {
+    expect(declaracoes(bloco(css, ".dialogo h3")).get("font-size")).toBe("15px");
+    expect(declaracoes(bloco(css, ".periodo > h3, .titulo-do-periodo > h3")).get("font-size")).toBe(
+      "15px",
+    );
+    const avisos = declaracoes(bloco(css, ".avisos h2"));
+    expect(avisos.get("font-size")).toBe("15px");
+    expect(avisos.get("font-weight")).toBe("700");
+    expect(declaracoes(bloco(css, ".dialogo > h2")).get("font-size")).toBe("17px");
+    expect(declaracoes(bloco(css, ".indicador dd")).get("font-size")).toBe("17px");
+  });
+
+  it('dicas, erros das células, rodapé e a data de cada recente no "Abrir" em 13 px; etiquetas e subtítulo da marca em 12 px', () => {
+    for (const seletor of [
+      "td.dica",
+      ".celula-em-edicao .erro",
+      ".campo-linha-nova .erro",
+      ".rodape",
+      // o <small> da data de cada recente, que sem regra teria o tamanho do navegador (cerca de 12,5 px)
+      ".lista-simples small",
+    ]) {
+      expect(declaracoes(bloco(css, seletor)).get("font-size"), seletor).toBe("13px");
+    }
+    expect(declaracoes(bloco(css, ".etiqueta")).get("font-size")).toBe("12px");
+    expect(declaracoes(bloco(css, ".marca small")).get("font-size")).toBe("12px");
+  });
+
+  it("a marca e o título da tela de erro em 22 px; em telas estreitas a marca não tem tamanho próprio (fica em 22 px)", () => {
+    expect(declaracoes(bloco(css, ".marca")).get("font-size")).toBe("22px");
+    expect(declaracoes(bloco(estreita, ".marca")).has("font-size")).toBe(false);
+    expect(declaracoes(bloco(css, ".tela-de-erro h1")).get("font-size")).toBe("22px");
+  });
+});

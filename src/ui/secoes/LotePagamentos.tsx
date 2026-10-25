@@ -75,8 +75,7 @@ export function LotePagamentosSecao({
         <h2 id="titulo-pagamentos">5 · Pagamentos</h2>
         <Ajuda assunto="Pagamentos">
           Lança um pagamento por mês, do primeiro ao último pagamento, no dia do primeiro (no último
-          dia do mês, quando ele é mais curto). Cada pagamento é atualizado da sua data até a data
-          do cálculo e abatido do total. Mês que já tem pagamento não é repetido: um segundo
+          dia do mês, quando ele é mais curto). Mês que já tem pagamento não é repetido: um segundo
           pagamento no mesmo mês entra pelo "+ Pagamento", na tabela ao lado.
         </Ajuda>
       </div>
@@ -90,7 +89,6 @@ export function LotePagamentosSecao({
             erro={erros.valor}
             inputMode="decimal"
             classe="medio"
-            placeholder="ex.: 400,00"
           />
           <CampoTexto
             id="pagamento-primeiro"

@@ -1,50 +1,57 @@
 import { describe, expect, it } from "vitest";
-import { CHAVE_PREFERENCIAS, CHAVE_RECENTES } from "./armazenamento.ts";
+import { CHAVE_PREFERENCIAS } from "./armazenamento.ts";
 import {
-  esquecer,
   gravarPreferencias,
   lerPreferencias,
   PREFERENCIAS_PADRAO,
+  type Preferencias,
 } from "./preferencias.ts";
 import { armazenamentoEmMemoria, armazenamentoQueFalha } from "./testes/ambiente-de-teste.ts";
 
-describe("preferências no navegador (§5.5)", () => {
-  it("sem nada gravado, valem os padrões: lembrar e guardar recentes ligados, nomes vazios, tema do sistema", () => {
-    expect(lerPreferencias(armazenamentoEmMemoria())).toEqual(PREFERENCIAS_PADRAO);
+describe("preferências no navegador (§5.5, §21.4)", () => {
+  it("sem nada gravado, valem os padrões: nomes vazios, tema igual ao computador, metodologia da Lei 14.905/2024", () => {
+    expect(lerPreferencias(armazenamentoEmMemoria())).toEqual({
+      defensor: "",
+      orgao: "",
+      tema: "sistema",
+      metodologia: "lei14905",
+    });
     expect(lerPreferencias(null)).toEqual(PREFERENCIAS_PADRAO);
-    expect(PREFERENCIAS_PADRAO.tema).toBe("sistema");
-    expect(PREFERENCIAS_PADRAO.metodologia).toBe("lei14905");
   });
 
-  it("grava e lê de volta; com 'lembrar' desligado, grava os nomes vazios mas mantém as opções e o tema", () => {
+  it("grava e lê de volta os quatro campos", () => {
     const armazenamento = armazenamentoEmMemoria();
-    const p = {
+    const p: Preferencias = {
       defensor: "Defensor(a) de teste",
       orgao: "Órgão de teste",
-      lembrar: true,
-      guardarRecentes: false,
-      tema: "escuro" as const,
-      metodologia: "igpmJuros1" as const,
+      tema: "escuro",
+      metodologia: "igpmJuros1",
     };
     expect(gravarPreferencias(armazenamento, p)).toBe(true);
     expect(lerPreferencias(armazenamento)).toEqual(p);
-    expect(gravarPreferencias(armazenamento, { ...p, lembrar: false })).toBe(true);
-    expect(JSON.parse(armazenamento.getItem(CHAVE_PREFERENCIAS) ?? "")).toEqual({
-      defensor: "",
-      orgao: "",
-      lembrar: false,
-      guardarRecentes: false,
-      tema: "escuro",
-      metodologia: "igpmJuros1",
+  });
+
+  it("as opções antigas ('Lembrar', 'Guardar recentes') são ignoradas, e a gravação seguinte as apaga (§21.4)", () => {
+    const armazenamento = armazenamentoEmMemoria({
+      [CHAVE_PREFERENCIAS]: JSON.stringify({
+        defensor: "Nome antigo",
+        orgao: "Órgão antigo",
+        lembrar: false,
+        guardarRecentes: false,
+        tema: "claro",
+      }),
     });
-    expect(lerPreferencias(armazenamento)).toEqual({
-      defensor: "",
-      orgao: "",
-      lembrar: false,
-      guardarRecentes: false,
-      tema: "escuro",
-      metodologia: "igpmJuros1",
+    const lidas = lerPreferencias(armazenamento);
+    expect(lidas).toEqual({
+      defensor: "Nome antigo",
+      orgao: "Órgão antigo",
+      tema: "claro",
+      metodologia: "lei14905",
     });
+    gravarPreferencias(armazenamento, lidas);
+    expect(
+      Object.keys(JSON.parse(armazenamento.getItem(CHAVE_PREFERENCIAS) ?? "{}")).sort(),
+    ).toEqual(["defensor", "metodologia", "orgao", "tema"]);
   });
 
   it("conteúdo corrompido ou de outro formato volta aos padrões campo a campo (tema desconhecido vira 'sistema'; metodologia desconhecida, a da Lei 14.905/2024)", () => {
@@ -58,7 +65,6 @@ describe("preferências no navegador (§5.5)", () => {
       [CHAVE_PREFERENCIAS]: JSON.stringify({
         defensor: 7,
         orgao: "Órgão",
-        guardarRecentes: "sim",
         tema: "roxo",
         metodologia: "tjms-saj",
       }),
@@ -66,8 +72,6 @@ describe("preferências no navegador (§5.5)", () => {
     expect(lerPreferencias(parcial)).toEqual({
       defensor: "",
       orgao: "Órgão",
-      lembrar: true,
-      guardarRecentes: true,
       tema: "sistema",
       metodologia: "lei14905",
     });
@@ -81,23 +85,10 @@ describe("preferências no navegador (§5.5)", () => {
     ).toBe("igpmJuros1");
   });
 
-  it("armazenamento bloqueado: ler devolve os padrões, gravar devolve false, esquecer não lança", () => {
+  it("armazenamento bloqueado: ler devolve os padrões e gravar devolve false", () => {
     const bloqueado = armazenamentoQueFalha();
     expect(lerPreferencias(bloqueado)).toEqual(PREFERENCIAS_PADRAO);
     expect(gravarPreferencias(bloqueado, PREFERENCIAS_PADRAO)).toBe(false);
-    expect(() => esquecer(bloqueado)).not.toThrow();
     expect(gravarPreferencias(null, PREFERENCIAS_PADRAO)).toBe(false);
-  });
-
-  it("esquecer apaga preferências e recentes e deixa o resto do armazenamento em paz", () => {
-    const armazenamento = armazenamentoEmMemoria({
-      [CHAVE_PREFERENCIAS]: "{}",
-      [CHAVE_RECENTES]: "[]",
-      "outra.chave": "fica",
-    });
-    esquecer(armazenamento);
-    expect(armazenamento.getItem(CHAVE_PREFERENCIAS)).toBeNull();
-    expect(armazenamento.getItem(CHAVE_RECENTES)).toBeNull();
-    expect(armazenamento.getItem("outra.chave")).toBe("fica");
   });
 });

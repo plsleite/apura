@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "./App.tsx";
@@ -29,9 +29,7 @@ describe("App (fundação da tela)", () => {
     );
     expect(rodape).toMatch(/Apura v\d+\.\d+\.\d+ · Defensoria Pública de Mato Grosso do Sul/);
     // com a tabela em dia, não há aviso do calendário
-    expect(screen.getByRole("region", { name: "Avisos" }).textContent).not.toContain(
-      "ainda não chegou ao Apura",
-    );
+    expect(screen.queryByText(/ainda não chegou ao Apura/)).toBeNull();
   });
 
   it("as cinco seções da esquerda vêm na ordem da §20: processo, base, encargos, prestações, pagamentos (decisão de 15/10/2026)", () => {
@@ -47,17 +45,29 @@ describe("App (fundação da tela)", () => {
       "4 · Prestações em atraso",
       "5 · Pagamentos",
     ]);
-    // a tabela vazia aponta para a seção certa
-    expect(screen.getByText(/Nenhuma prestação lançada/).textContent).toBe(
-      'Nenhuma prestação lançada: use "Lançar em lote" na seção 4 ou "+ Prestação".',
-    );
-    expect(screen.getByText(/Nenhum pagamento lançado/).textContent).toBe(
-      'Nenhum pagamento lançado: use "Lançar em lote" na seção 5 ou "+ Pagamento".',
-    );
+    // a tabela vazia não traz frase (§21.2)
+    expect(screen.queryByText(/Nenhuma prestação lançada|Nenhum pagamento lançado/)).toBeNull();
+  });
+
+  it("a tela principal em valor fixo tem 8 balões ⓘ, na ordem da tela (§21.9)", () => {
+    render(<App ambiente={ambienteDeTeste()} />);
+    expect(
+      screen.getAllByRole("button", { name: /^Ajuda: / }).map((b) => b.getAttribute("aria-label")),
+    ).toEqual([
+      "Ajuda: Reajuste anual",
+      "Ajuda: Metodologia de encargos",
+      "Ajuda: IGP-M e juros de 1% ao mês em todo o período",
+      "Ajuda: Multa (art. 523, %)",
+      "Ajuda: Prestações em atraso",
+      "Ajuda: Pagamentos",
+      "Ajuda: Prestações",
+      "Ajuda: Amortizações (pagamentos)",
+    ]);
   });
 
   it("a coluna da direita tem os indicadores no topo e, embaixo, uma área rolável com nome, que recebe foco pelo teclado, com as duas tabelas e os avisos (§20.3)", () => {
-    render(<App ambiente={ambienteDeTeste()} />);
+    // o cálculo em branco não tem aviso nenhum; a defasagem de um índice faz a caixa aparecer
+    render(<App ambiente={ambienteDeTeste({ limites: { "433": "2026-07" } })} />);
     const direita = document.querySelector(".coluna-direita") as HTMLElement;
     const area = within(direita).getByRole("region", { name: "Tabelas e avisos" });
     expect(area.className).toBe("coluna-rolavel");
@@ -80,13 +90,11 @@ describe("App (fundação da tela)", () => {
     );
   });
 
-  it("congela a tabela ao abrir e de novo em 'Novo cálculo'; o cálculo em branco mostra 'Nenhum lançamento.'", async () => {
+  it("congela a tabela ao abrir e de novo em 'Novo cálculo'; o cálculo em branco não mostra 'Nenhum lançamento.' (§21.2)", async () => {
     const ambiente = ambienteDeTeste();
     render(<App ambiente={ambiente} />);
     expect(ambiente.congelamentos()).toBe(1);
-    expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(
-      "Nenhum lançamento.",
-    );
+    expect(screen.queryByText("Nenhum lançamento.")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Novo cálculo" }));
     expect(ambiente.congelamentos()).toBe(2);
   });
@@ -150,5 +158,108 @@ describe("App (fundação da tela)", () => {
   it("abre com a cópia publicada quando nenhum ambiente é injetado (sem rede)", () => {
     render(<App />);
     expect(screen.getByRole("contentinfo").textContent).toContain("Índices oficiais BCB/SGS");
+  });
+});
+
+/** Os textos de exemplo (`placeholder`) dos campos que há dentro de `raiz`, na ordem da tela. */
+const exemplos = (raiz: ParentNode = document) =>
+  [...raiz.querySelectorAll("[placeholder]")].map((c) => c.getAttribute("placeholder"));
+
+/** Valor fixado de R$ 1.000,00, prestações de 05/08/2026 a 05/09/2026 e um pagamento de R$ 400,00 em 05/09/2026. */
+async function lancarPrestacoesEPagamento(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
+  const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+  fireEvent.change(prestacoes.getByLabelText("Primeiro vencimento"), {
+    target: { value: "2026-08-05" },
+  });
+  fireEvent.change(prestacoes.getByLabelText("Último vencimento"), {
+    target: { value: "2026-09-05" },
+  });
+  await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+  const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
+  await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
+  fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
+    target: { value: "2026-09-05" },
+  });
+  fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
+    target: { value: "2026-09-05" },
+  });
+  await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+}
+
+describe("sem exemplos dentro dos campos (§21.1)", () => {
+  it("na tela, nenhum campo traz exemplo, em qualquer forma da base e nos dois modos do lote", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    expect(exemplos()).toEqual([]);
+    await user.click(screen.getByLabelText("% do salário mínimo"));
+    expect(exemplos()).toEqual([]);
+    await user.click(screen.getByLabelText("% dos rendimentos"));
+    expect(exemplos()).toEqual([]);
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+    await user.click(prestacoes.getByLabelText("Meses em atraso"));
+    expect(exemplos()).toEqual([]);
+  });
+
+  it("nas tabelas ficam só os textos que dizem o que acontece com o campo vazio", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await lancarPrestacoesEPagamento(user);
+
+    // linha nova: o pagamento não traz exemplo; a prestação diz que o vazio é "pela base"
+    await user.click(screen.getByRole("button", { name: "+ Pagamento" }));
+    expect(screen.getByLabelText("Valor do novo pagamento")).toBeDefined();
+    expect(exemplos()).toEqual([]);
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "+ Prestação" }));
+    expect(screen.getByLabelText("Valor da nova prestação")).toBeDefined();
+    expect(exemplos()).toEqual(["pela base"]);
+    await user.keyboard("{Escape}");
+
+    // células editáveis: o vencimento e o valor do pagamento ficam sem texto; o valor da prestação, "pela base"
+    await user.click(
+      screen.getByRole("button", {
+        name: "Editar vencimento da prestação de 05/09/2026 (05/09/2026)",
+      }),
+    );
+    expect(screen.getByLabelText("Vencimento da prestação de 05/09/2026")).toBeDefined();
+    expect(exemplos()).toEqual([]);
+    await user.keyboard("{Escape}");
+    await user.click(
+      screen.getByRole("button", { name: "Editar valor da prestação de 05/09/2026 (R$ 1.000,00)" }),
+    );
+    expect(screen.getByLabelText("Valor da prestação de 05/09/2026")).toBeDefined();
+    expect(exemplos()).toEqual(["pela base"]);
+    await user.keyboard("{Escape}");
+    await user.click(
+      screen.getByRole("button", { name: "Editar valor do pagamento de 05/09/2026 (R$ 400,00)" }),
+    );
+    expect(screen.getByLabelText("Valor do pagamento de 05/09/2026")).toBeDefined();
+    expect(exemplos()).toEqual([]);
+    await user.keyboard("{Escape}");
+  });
+
+  it("no Personalizar, só 'apurado pela base' e 'usa o rendimento padrão'", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await lancarPrestacoesEPagamento(user);
+
+    await user.click(screen.getByRole("button", { name: "Personalizar pagamento de 05/09/2026" }));
+    let painel = screen.getByRole("dialog", { name: "Personalizar pagamento" });
+    expect(exemplos(painel)).toEqual([]);
+    await user.click(within(painel).getByRole("button", { name: "Cancelar" }));
+
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
+    painel = screen.getByRole("dialog", { name: "Personalizar prestação" });
+    expect(exemplos(painel)).toEqual(["apurado pela base"]);
+    await user.click(within(painel).getByRole("button", { name: "Cancelar" }));
+
+    // com a base em % dos rendimentos, o painel traz também o rendimento do mês
+    await user.click(screen.getByLabelText("% dos rendimentos"));
+    await user.type(screen.getByLabelText("Percentual dos rendimentos"), "30");
+    await user.type(screen.getByLabelText("Rendimento mensal padrão (obrigatório)"), "2.000,00");
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
+    painel = screen.getByRole("dialog", { name: "Personalizar prestação" });
+    expect(exemplos(painel)).toEqual(["apurado pela base", "usa o rendimento padrão"]);
   });
 });

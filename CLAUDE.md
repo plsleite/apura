@@ -40,7 +40,7 @@ abertura de arquivo e motor); explicações em balões ⓘ (`componentes/Ajuda.t
 sistemas; o vencimento é a referência de cada linha (a competência não aparece na tela);
 "Salvar" e "Abrir" (`arquivo.ts` valida tudo o que vem do arquivo; recálculo com os índices de
 hoje e `compararIndicesUsados`); cinco cálculos recentes e preferências só no `localStorage`
-(`recentes.ts`, `preferencias.ts`, com "Esquecer"); tema do sistema, claro ou escuro pelo botão da
+(`recentes.ts`, `preferencias.ts`); tema igual ao computador, claro ou escuro pelo botão da
 barra, guardado nas preferências; identidade visual da DPE-MS (logo em `public/logos/`, fontes Ubuntu
 e Source Sans 3 pelos pacotes `@fontsource`, importadas no `main.tsx`); tudo o
 que vem do navegador entra pelo `Ambiente` (`ambiente.ts`), trocado nos testes de componente
@@ -59,7 +59,7 @@ editada na seção 2 com "Dividir em" e "Remover divisão" (`estado/base.ts`), e
 rendimento daqui em diante" divide a base; sem retrocompatibilidade de arquivos (a base antiga é
 recusada na abertura); a metodologia de encargos se escolhe entre "Lei 14.905/2024"
 (`lei-14905-2024.v1.json`, a padrão) e "IGP-M e juros de 1% ao mês" (`igpm-juros-1.v1.json`),
-reconhecidas pelo conteúdo, e a escolha fica nas preferências (sobrevive a "Esquecer"; "Restaurar"
+reconhecidas pelo conteúdo, e a escolha fica nas preferências ("Restaurar"
 volta a ela); as linhas das tabelas ficam numa linha só, com a etiqueta mais importante e "+N", e a
 descrição, que encolhe até caber, abre com a etiqueta um balão flutuante (`tabelas/etiquetas.ts`)
 (861 testes passando e 10 pulados). Fase 6 (relatório e PDF, §18 do design) concluída em
@@ -111,7 +111,25 @@ linhas novas (`idsDoLote`) ganham a classe `recem-lancada`, com fundo `--destaqu
 (`animation-fill-mode: both`; a célula presa do lápis e do ✕ termina na cor da superfície; com `prefers-reduced-motion`,
 `step-end`); a `TabelaLancamentos` tira a classe no `animationend` da própria linha, para nada
 refazer o destaque, e a esquece quando a linha sai da tabela (1022 testes passando e 10
-pulados). Próxima: a definir com os
+pulados).
+Fase 7c (limpeza da tela, §21 do design) concluída em 2026-10-25, depois de uma avaliação de design:
+os campos vêm sem exemplos dentro (ficam "pela base", "apurado pela base" e "usa o rendimento
+padrão"), e a data em branco ganha `data-vazio`, que o CSS pinta claro e em itálico; a tabela vazia
+mostra só o título, o ⓘ e o botão (sem `<thead>`; a `<table>` fica, para o `ResizeObserver`), e o
+motor não avisa mais "Nenhum lançamento."; a tela usa só cinco tamanhos de letra (12, 13, 15, 17 e
+22 px) e maiúsculas forçadas só nos sete títulos (das cinco seções e das duas tabelas: 13 px,
+maiúsculas espaçadas, Ubuntu negrito verde, como a marca; revisto pelo responsável em 25/10/2026,
+depois de ver a tela), com `--cabecalhos-da-tabela` em 66 px (o relatório e a impressão não
+mudam); defensor(a), órgão e os cinco recentes são sempre guardados (`Preferencias`
+sem `lembrar` e `guardarRecentes`, que a leitura ignora e a gravação seguinte apaga; sem
+`esquecer`), e o "Abrir" diz que os recentes ficam só neste navegador; "Dividir a base em períodos"
+e "+ Observações para o relatório" abrem o campo com o foco nele (`autoFocus` em `CampoTexto` e
+`CampoArea`); o botão de tema é um ícone em SVG (`IconeDoTema`, com `data-icone` `sol`, `lua` e
+`meio`), e "do sistema" virou "igual ao computador" (os valores guardados continuam `sistema`,
+`claro` e `escuro`); o lote de pagamentos não põe mais a descrição "Pagamento parcial" (o caso de
+referência dos lotes perdeu a dos pagamentos de lote; nenhum número mudou); a tela principal em
+valor fixo tem 8 balões ⓘ (eram 16), com os textos novos conferidos inteiros
+(`testes/texto-do-balao.ts`). Versão 0.1.3 (1048 testes passando e 10 pulados). Próxima: a definir com os
 testadores (ver a §6 da visão do produto). A tabela de fases do roteiro é a referência; atualize-a e esta seção ao
 concluir cada fase.
 
@@ -156,7 +174,7 @@ src/motor/testes/         dados de teste: IGP-M e salário mínimo de 2017–201
 src/indices/              series.ts · cliente-bcb.ts · arquivo-serie.ts · embutidos.ts · calendario.ts · relogio.ts · congelar.ts · atualizacao.ts · relatorio.ts · publicacao.ts
 src/indices/testes/       respostas reais do SGS gravadas em 10 e 11/10/2026 e execuções sintéticas da rotina
 src/metodologias/         lei-14905-2024.v1.json · igpm-juros-1.v1.json · padrao.ts
-src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · TelaDeErro.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ (calculo.ts · base.ts · faltas.ts · metodologia.ts · novaLinha.ts) · secoes/ · tabelas/ · componentes/ · testes/ (ambiente de teste)
+src/ui/                   App.tsx · BarraSuperior.tsx · Rodape.tsx · Abrir.tsx · TelaDeErro.tsx · ambiente.ts · entrada.ts · arquivo.ts · recentes.ts · preferencias.ts · armazenamento.ts · versao.ts · estilos.css · estado/ (calculo.ts · base.ts · faltas.ts · metodologia.ts · novaLinha.ts) · secoes/ · tabelas/ · componentes/ · testes/ (ambiente de teste · texto-do-balao.ts)
 src/relatorio/            texto.ts · metodologia.ts · tabelas.ts · matriz.ts · bloqueio.ts · Relatorio.tsx · relatorio.css · testes/ (cálculos de exemplo)
 ```
 

@@ -1,9 +1,10 @@
 /* Apura · estilos da tela (fase 5). Cores do manual de identidade da DPE-MS (§10.2 do design):
    verde #1D6B34, amarelo-ouro #D8BB73, preto #373636, cinza #868686, vermelho #ED1C24; fundo claro
-   #F3F4F1 e tema escuro como no relatório de exemplo. Tema do sistema, claro ou escuro, pelo
-   botão da barra (decisões de 12 e 13/10/2026; o padrão é o do sistema). Fontes Ubuntu
-   (títulos e números) e Source Sans 3 (texto), embutidas pelo main.tsx. Barra no estilo da
-   faixa do relatório: verde, logo horizontal branco da DPE-MS e linha dourada embaixo. */
+   #F3F4F1 e tema escuro como no relatório de exemplo. Tema igual ao computador, claro ou
+   escuro, pelo botão da barra (decisões de 12 e 13/10/2026 e §21.7; o padrão é igual ao
+   computador, guardado como "sistema"). Fontes Ubuntu (títulos e números) e Source Sans 3
+   (texto), embutidas pelo main.tsx. Barra no estilo da faixa do relatório: verde, logo
+   horizontal branco da DPE-MS e linha dourada embaixo. */
 
 :root {
   --verde: #1d6b34;
@@ -29,9 +30,11 @@
      dourada de 4 px; a página e a coluna da direita a usam para não esconder nada sob ela */
   --barra-altura: 64px;
   /* alturas do título de cada tabela e dele mais a linha de títulos das colunas, presos no topo
-     da área rolável (§20.3); a área as reserva ao rolar até um controle que recebe o foco */
+     da área rolável (§20.3); a área as reserva ao rolar até um controle que recebe o foco. Os
+     66 px são os 35 px do título mais a linha de títulos de 29,34 px, medidos no navegador
+     (13 px), com 1 px de folga (§21.3) */
   --titulo-da-tabela: 35px;
-  --cabecalhos-da-tabela: 62px;
+  --cabecalhos-da-tabela: 66px;
   color-scheme: light;
 }
 
@@ -81,6 +84,8 @@
   box-sizing: border-box;
 }
 
+/* a tela usa só cinco tamanhos de letra (§21.3): 12, 13, 15, 17 e 22 px, e maiúsculas forçadas só
+   nos sete títulos (das seções e das tabelas); scripts/estilos.test.ts prende as duas regras */
 html,
 body {
   margin: 0;
@@ -187,7 +192,7 @@ textarea {
 .marca small {
   font-family: var(--corpo);
   font-weight: 400;
-  font-size: 12.5px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   opacity: 0.9;
 }
@@ -237,8 +242,13 @@ textarea {
   font-weight: 400;
 }
 
+/* botão de tema só com o ícone de 20 px (§21.7): sem contorno à mostra (a borda fica transparente,
+   para o botão ocupar o mesmo espaço), sem a altura de linha do texto; o fundo ao passar o mouse
+   vem de .botao-barra, e o anel de foco, de .barra :focus-visible */
 .botao-tema {
-  min-width: 10.5em;
+  border-color: transparent;
+  padding: 6px;
+  line-height: 0;
 }
 
 .principal {
@@ -275,7 +285,7 @@ textarea {
   justify-content: space-between;
   gap: 6px 16px;
   padding: 8px 16px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--discreto);
   border-top: 1px solid var(--linha);
 }
@@ -289,9 +299,12 @@ textarea {
   padding: 12px 14px;
 }
 
+/* os sete títulos da tela (estes e os das duas tabelas) seguem a marca: maiúsculas espaçadas em
+   Ubuntu negrito verde, como o nome da Defensoria no manual de identidade (§21.3, revisto em
+   25/10/2026). Nenhum outro texto da tela é forçado a maiúsculas */
 .secao > h2,
 .secao > .titulo-secao > h2 {
-  font-size: 12px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--verde);
@@ -339,9 +352,7 @@ textarea {
 
 .rotulo-do-campo,
 .grupo > legend {
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 13px;
   color: var(--discreto);
 }
 
@@ -355,10 +366,18 @@ textarea {
   min-width: 0;
 }
 
-/* exemplos dentro dos campos: mais claros e em itálico, para não parecerem um valor digitado */
+/* o que acontece com o campo vazio ("pela base"): mais claro e em itálico, para não parecer um valor digitado */
 ::placeholder {
   color: var(--discreto);
   opacity: 0.75;
+  font-style: italic;
+}
+
+/* o formato do navegador ("dd/mm/aaaa") fica claro enquanto a data está em branco ou pela metade,
+   também na linha nova das tabelas (§21.1) */
+.campo input[type="date"][data-vazio],
+.campo-linha-nova input[type="date"][data-vazio] {
+  color: var(--discreto);
   font-style: italic;
 }
 
@@ -559,11 +578,12 @@ textarea {
   color: var(--verde);
 }
 
+/* com a altura de linha 1,2, os 2,4em de altura mínima valem exatamente duas linhas: o rótulo
+   que quebra não empurra o valor do cartão para baixo dos vizinhos (§21.3) */
 .indicador dt {
   font-family: var(--titulos);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 13px;
+  line-height: 1.2;
   color: var(--discreto);
   min-height: 2.4em;
 }
@@ -572,7 +592,7 @@ textarea {
   margin: 4px 0 0;
   font-family: var(--titulos);
   font-weight: 700;
-  font-size: 18px;
+  font-size: 17px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -599,8 +619,12 @@ textarea {
   margin: 0;
 }
 
+/* os títulos das tabelas seguem a marca, como os das seções (veja o comentário da regra
+   `.secao > .titulo-secao > h2`, acima, e a §21.3); a altura de 35 px do título preso é fixa */
 .tabela-rolagem > .titulo-secao > h2 {
-  font-size: 14px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--verde);
 }
 
@@ -622,9 +646,7 @@ td {
 th {
   font-family: var(--titulos);
   font-weight: 500;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 13px;
   background: var(--cabecalho-fundo);
   color: var(--cabecalho-texto);
 }
@@ -722,7 +744,7 @@ tr.memoria ul {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   white-space: normal;
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 td:first-child .celula-em-edicao .erro {
@@ -761,7 +783,7 @@ td:first-child .celula-em-edicao .erro {
   max-width: 16em;
   white-space: normal;
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* a linha nunca quebra (§17.4): a descrição encolhe até caber, com reticências (inteira no
@@ -826,7 +848,7 @@ tr.linha-nova td {
 
 td.dica {
   color: var(--discreto);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .etiqueta {
@@ -834,7 +856,7 @@ td.dica {
   border-radius: 3px;
   padding: 0 5px;
   font-family: var(--corpo);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
   margin: 1px 0 1px 4px;
   white-space: nowrap;
@@ -975,9 +997,8 @@ td.dica {
 }
 
 .avisos h2 {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 15px;
+  font-weight: 700;
   margin-bottom: 4px;
 }
 
@@ -1015,9 +1036,13 @@ td.dica {
 }
 
 .dialogo > h2 {
-  font-size: 16px;
+  font-size: 17px;
   color: var(--verde);
   margin-bottom: 10px;
+}
+
+.dialogo h3 {
+  font-size: 15px;
 }
 
 .dialogo-acoes {
@@ -1043,6 +1068,12 @@ td.dica {
   border-bottom: 1px solid var(--linha);
 }
 
+/* a data de cada recente no "Abrir": sem esta regra, o <small> teria o tamanho do navegador
+   (cerca de 12,5 px), fora dos cinco da tela (§21.3) */
+.lista-simples small {
+  font-size: 13px;
+}
+
 .periodo {
   border: 1px solid var(--linha);
   border-radius: 6px;
@@ -1052,7 +1083,7 @@ td.dica {
 
 .periodo > h3,
 .titulo-do-periodo > h3 {
-  font-size: 13px;
+  font-size: 15px;
   margin-bottom: 6px;
 }
 
@@ -1062,11 +1093,6 @@ td.dica {
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
-}
-
-.dividir-base > .nota {
-  flex-basis: 100%;
-  margin: 0;
 }
 
 /* ---- Celular: campos lado a lado empilham; o balão da ajuda vira uma faixa no pé da tela ---- */
@@ -1121,7 +1147,6 @@ td.dica {
 
   .marca {
     padding-left: 14px;
-    font-size: 20px;
   }
 
   /* a barra quebra em duas linhas: volta a rolar com a página, e nada é reservado no topo */
@@ -1209,9 +1234,7 @@ td.dica {
 }
 
 .rotulo-estatico {
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 13px;
   color: var(--discreto);
 }
 
@@ -1292,7 +1315,7 @@ td.dica {
 }
 
 .tela-de-erro h1 {
-  font-size: 20px;
+  font-size: 22px;
   margin-bottom: 8px;
 }
 

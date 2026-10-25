@@ -23,7 +23,6 @@ import {
   nomeDoArquivo,
   serializarArquivo,
 } from "./arquivo.ts";
-import { CHAVE_RECENTES, removerChave } from "./armazenamento.ts";
 import { BarraSuperior } from "./BarraSuperior.tsx";
 import { Anuncios } from "./componentes/Anuncios.tsx";
 import { Avisos } from "./componentes/Avisos.tsx";
@@ -38,12 +37,7 @@ import {
 import { faltasDaBase } from "./estado/faltas.ts";
 import { sugerirPagamento, sugerirPrestacao, valorPelaBase } from "./estado/novaLinha.ts";
 import "./estilos.css";
-import {
-  esquecer,
-  gravarPreferencias,
-  lerPreferencias,
-  type Preferencias,
-} from "./preferencias.ts";
+import { gravarPreferencias, lerPreferencias, type Preferencias } from "./preferencias.ts";
 import {
   guardarRecente,
   lerRecentes,
@@ -113,7 +107,7 @@ function Tela({
       id: ambiente.novoId(),
       agora: ambiente.agora(),
       hoje: ambiente.hoje(),
-      cabecalho: p.lembrar ? { defensor: p.defensor, orgao: p.orgao } : {},
+      cabecalho: { defensor: p.defensor, orgao: p.orgao },
       metodologia: p.metodologia,
     });
   // A tabela de índices é congelada quando o app abre (§8.2); "Novo cálculo" congela outra.
@@ -224,34 +218,25 @@ function Tela({
     setAbrirAberto(false);
   };
 
-  // Recentes (§5.5): o cálculo é guardado a cada alteração (nunca o cálculo em branco). Se a
-  // gravação falha (cota cheia, armazenamento bloqueado), o painel "Abrir" avisa (13/10/2026):
-  // a última tentativa fica guardada aqui e é lida quando o painel abre.
+  // Recentes (§5.5, §21.4): o cálculo é sempre guardado a cada alteração (nunca o cálculo em
+  // branco). Se a gravação falha (cota cheia, armazenamento bloqueado), o painel "Abrir" avisa
+  // (13/10/2026): a última tentativa fica guardada aqui e é lida quando o painel abre.
   const ultimaGravacaoFalhou = useRef(false);
   const [naoGuardado, setNaoGuardado] = useState(false);
   useEffect(() => {
-    const guardar = preferencias.guardarRecentes && armazenamento !== null && estado.tocado;
+    const guardar = armazenamento !== null && estado.tocado;
     ultimaGravacaoFalhou.current =
       guardar && !guardarRecente(armazenamento, estado.calculo, resultado).gravado;
-  }, [armazenamento, estado.calculo, estado.tocado, preferencias.guardarRecentes, resultado]);
+  }, [armazenamento, estado.calculo, estado.tocado, resultado]);
 
   const mudarPreferencias = (mudancas: Partial<Preferencias>) => {
     const novas = { ...preferencias, ...mudancas };
     setPreferencias(novas);
     gravarPreferencias(armazenamento, novas);
-    if (mudancas.guardarRecentes === false) removerChave(armazenamento, CHAVE_RECENTES);
   };
   const mudarCabecalho = (campo: keyof typeof estado.calculo.cabecalho, valor: string) => {
     despachar({ tipo: "cabecalho", campo, valor, em: agora() });
-    if ((campo === "defensor" || campo === "orgao") && preferencias.lembrar) {
-      mudarPreferencias({ [campo]: valor });
-    }
-  };
-  const esquecerTudo = () => {
-    esquecer(armazenamento);
-    const novas = { ...preferencias, defensor: "", orgao: "", lembrar: false };
-    setPreferencias(novas);
-    gravarPreferencias(armazenamento, novas);
+    if (campo === "defensor" || campo === "orgao") mudarPreferencias({ [campo]: valor });
   };
 
   const avisosDaTela = [
@@ -316,9 +301,6 @@ function Tela({
           <Processo
             cabecalho={estado.calculo.cabecalho}
             aoMudar={mudarCabecalho}
-            preferencias={preferencias}
-            aoMudarPreferencias={mudarPreferencias}
-            aoEsquecer={esquecerTudo}
             armazenamentoDisponivel={armazenamento !== null}
           />
           <BaseDosAlimentos
@@ -410,7 +392,6 @@ function Tela({
       <Dialogo titulo="Abrir cálculo" aberto={abrirAberto} aoFechar={() => setAbrirAberto(false)}>
         <Abrir
           recentes={recentes}
-          recentesLigados={preferencias.guardarRecentes}
           armazenamentoDisponivel={armazenamento !== null}
           erro={erroDeAbertura}
           naoGuardado={naoGuardado}
