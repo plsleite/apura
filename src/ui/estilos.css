@@ -360,10 +360,16 @@ textarea {
   min-width: 0;
 }
 
-/* exemplos dentro dos campos: mais claros e em itálico, para não parecerem um valor digitado */
+/* o que acontece com o campo vazio ("pela base"): mais claro e em itálico, para não parecer um valor digitado */
 ::placeholder {
   color: var(--discreto);
   opacity: 0.75;
+  font-style: italic;
+}
+
+/* o formato do navegador ("dd/mm/aaaa") fica claro enquanto a data está em branco ou pela metade (§21.1) */
+.campo input[type="date"][data-vazio] {
+  color: var(--discreto);
   font-style: italic;
 }
 

@@ -195,3 +195,11 @@ describe("botão de tema como ícone (§21.7)", () => {
     expect(tema.has("min-width")).toBe(false);
   });
 });
+
+describe("sem exemplos dentro dos campos (§21.1)", () => {
+  it("o campo de data em branco tem a cor discreta e o itálico dos textos dentro dos campos", () => {
+    const vazio = declaracoes(bloco(css, '.campo input[type="date"][data-vazio]'));
+    expect(vazio.get("color")).toBe("var(--discreto)");
+    expect(vazio.get("font-style")).toBe("italic");
+  });
+});

@@ -380,7 +380,7 @@ export function TabelaLancamentos({
                       }
                       aria-invalid={rascunho.erros.valor !== undefined}
                       aria-describedby={rascunho.erros.valor ? `${idDosErros}-valor` : undefined}
-                      placeholder={prestacoes ? "pela base" : "0,00"}
+                      placeholder={prestacoes ? "pela base" : undefined}
                     />
                     {rascunho.erros.valor ? (
                       <span className="erro" id={`${idDosErros}-valor`} role="alert">
@@ -566,7 +566,6 @@ function Linha({
             exibido={formatarData(lancamento.data)}
             textoInicial={formatarDataParaCampo(lancamento.data)}
             inputMode="numeric"
-            placeholder="dd/mm/aaaa"
             mascara={mascaraData}
             aoGravar={(texto) => {
               const data = lerDataTexto(texto);

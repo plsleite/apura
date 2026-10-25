@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "./App.tsx";
@@ -142,5 +142,115 @@ describe("App (fundação da tela)", () => {
   it("abre com a cópia publicada quando nenhum ambiente é injetado (sem rede)", () => {
     render(<App />);
     expect(screen.getByRole("contentinfo").textContent).toContain("Índices oficiais BCB/SGS");
+  });
+});
+
+/** Os textos de exemplo (`placeholder`) dos campos que há dentro de `raiz`, na ordem da tela. */
+const exemplos = (raiz: ParentNode = document) =>
+  [...raiz.querySelectorAll("[placeholder]")].map((c) => c.getAttribute("placeholder"));
+
+describe("sem exemplos dentro dos campos (§21.1)", () => {
+  it("na tela, nenhum campo traz exemplo, em qualquer forma da base e nos dois modos do lote", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    expect(exemplos()).toEqual([]);
+    await user.click(screen.getByLabelText("% do salário mínimo"));
+    expect(exemplos()).toEqual([]);
+    await user.click(screen.getByLabelText("% dos rendimentos"));
+    expect(exemplos()).toEqual([]);
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+    await user.click(prestacoes.getByLabelText("Meses em atraso"));
+    expect(exemplos()).toEqual([]);
+  });
+
+  it("nas tabelas ficam só os textos que dizem o que acontece com o campo vazio", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+    fireEvent.change(prestacoes.getByLabelText("Primeiro vencimento"), {
+      target: { value: "2026-08-05" },
+    });
+    fireEvent.change(prestacoes.getByLabelText("Último vencimento"), {
+      target: { value: "2026-09-05" },
+    });
+    await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
+    await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
+    fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
+      target: { value: "2026-09-05" },
+    });
+    fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
+      target: { value: "2026-09-05" },
+    });
+    await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+
+    // linha nova: o pagamento não traz exemplo; a prestação diz que o vazio é "pela base"
+    await user.click(screen.getByRole("button", { name: "+ Pagamento" }));
+    expect(exemplos()).toEqual([]);
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "+ Prestação" }));
+    expect(exemplos()).toEqual(["pela base"]);
+    await user.keyboard("{Escape}");
+
+    // células editáveis: o vencimento e o valor do pagamento ficam sem texto; o valor da prestação, "pela base"
+    await user.click(
+      screen.getByRole("button", {
+        name: "Editar vencimento da prestação de 05/09/2026 (05/09/2026)",
+      }),
+    );
+    expect(exemplos()).toEqual([]);
+    await user.keyboard("{Escape}");
+    await user.click(
+      screen.getByRole("button", { name: "Editar valor da prestação de 05/09/2026 (R$ 1.000,00)" }),
+    );
+    expect(exemplos()).toEqual(["pela base"]);
+    await user.keyboard("{Escape}");
+    await user.click(
+      screen.getByRole("button", { name: "Editar valor do pagamento de 05/09/2026 (R$ 400,00)" }),
+    );
+    expect(exemplos()).toEqual([]);
+    await user.keyboard("{Escape}");
+  });
+
+  it("no Personalizar, só 'apurado pela base' e 'usa o rendimento padrão'", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
+    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+    fireEvent.change(prestacoes.getByLabelText("Primeiro vencimento"), {
+      target: { value: "2026-08-05" },
+    });
+    fireEvent.change(prestacoes.getByLabelText("Último vencimento"), {
+      target: { value: "2026-09-05" },
+    });
+    await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
+    await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
+    fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
+      target: { value: "2026-09-05" },
+    });
+    fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
+      target: { value: "2026-09-05" },
+    });
+    await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+
+    await user.click(screen.getByRole("button", { name: "Personalizar pagamento de 05/09/2026" }));
+    let painel = screen.getByRole("dialog", { name: "Personalizar pagamento" });
+    expect(exemplos(painel)).toEqual([]);
+    await user.click(within(painel).getByRole("button", { name: "Cancelar" }));
+
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
+    painel = screen.getByRole("dialog", { name: "Personalizar prestação" });
+    expect(exemplos(painel)).toEqual(["apurado pela base"]);
+    await user.click(within(painel).getByRole("button", { name: "Cancelar" }));
+
+    // com a base em % dos rendimentos, o painel traz também o rendimento do mês
+    await user.click(screen.getByLabelText("% dos rendimentos"));
+    await user.type(screen.getByLabelText("Percentual dos rendimentos"), "30");
+    await user.type(screen.getByLabelText("Rendimento mensal padrão (obrigatório)"), "2.000,00");
+    await user.click(screen.getByRole("button", { name: "Personalizar prestação de 05/09/2026" }));
+    painel = screen.getByRole("dialog", { name: "Personalizar prestação" });
+    expect(exemplos(painel)).toEqual(["apurado pela base", "usa o rendimento padrão"]);
   });
 });

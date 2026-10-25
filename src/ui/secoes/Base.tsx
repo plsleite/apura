@@ -332,7 +332,6 @@ function ValorFixo({
           erro={erroDoCampo(valor, "valor", faltas)}
           inputMode="decimal"
           classe="medio"
-          placeholder="ex.: 1.000,00"
         />
         <CampoTexto
           id={`${prefixo}-fixacao`}
@@ -404,7 +403,6 @@ function PercentualSalarioMinimo({
           erro={erroDoCampo(percentual, "percentual", faltas)}
           inputMode="decimal"
           classe="curto"
-          placeholder="ex.: 30"
         />
       </div>
     </>
@@ -446,7 +444,6 @@ function PercentualRendimentos({
           erro={erroDoCampo(percentual, "percentual", faltas)}
           inputMode="decimal"
           classe="curto"
-          placeholder="ex.: 30"
         />
         <CampoTexto
           id={`${prefixo}-rendimento-padrao`}
@@ -458,7 +455,6 @@ function PercentualRendimentos({
           erro={erroDoCampo(rendimento, "rendimentoPadrao", faltas)}
           inputMode="decimal"
           classe="medio"
-          placeholder="ex.: 1.500,00"
         />
       </div>
     </>

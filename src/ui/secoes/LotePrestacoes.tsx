@@ -125,7 +125,6 @@ export function LotePrestacoesSecao({
                 erro={erros.dia}
                 inputMode="numeric"
                 classe="curto"
-                placeholder="ex.: 5"
               />
               <CampoTexto
                 id="lote-meses"
@@ -135,7 +134,6 @@ export function LotePrestacoesSecao({
                 erro={erros.meses}
                 inputMode="numeric"
                 classe="curto"
-                placeholder="ex.: 3"
               />
             </>
           ) : (

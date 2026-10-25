@@ -132,3 +132,16 @@ describe("useCampoValidado + CampoTexto (validação inline, §9.4)", () => {
     expect(screen.getByTestId("estado").textContent).toBe("1");
   });
 });
+
+describe("CampoTexto de data (§21.1)", () => {
+  it("o campo de data em branco fica marcado (data-vazio), para o formato do navegador aparecer mais claro", () => {
+    const { rerender } = render(
+      <CampoTexto id="d" rotulo="Data" tipo="date" valor="" aoMudar={() => {}} />,
+    );
+    expect(screen.getByLabelText("Data").hasAttribute("data-vazio")).toBe(true);
+    rerender(<CampoTexto id="d" rotulo="Data" tipo="date" valor="2026-10-11" aoMudar={() => {}} />);
+    expect(screen.getByLabelText("Data").hasAttribute("data-vazio")).toBe(false);
+    rerender(<CampoTexto id="d" rotulo="Data" valor="" aoMudar={() => {}} />);
+    expect(screen.getByLabelText("Data").hasAttribute("data-vazio")).toBe(false);
+  });
+});

@@ -90,7 +90,6 @@ export function LotePagamentosSecao({
             erro={erros.valor}
             inputMode="decimal"
             classe="medio"
-            placeholder="ex.: 400,00"
           />
           <CampoTexto
             id="pagamento-primeiro"

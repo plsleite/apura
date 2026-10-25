@@ -158,6 +158,7 @@ export function CampoTexto({
         value={valor}
         onChange={mudar}
         onBlur={aoSair}
+        data-vazio={tipo === "date" && valor === "" ? "" : undefined}
         aria-invalid={erro ? true : undefined}
         aria-describedby={descritoPor(id, erro)}
         {...resto}

@@ -60,7 +60,6 @@ export function Processo({
         erro={processo.erro}
         classe="processo"
         inputMode="numeric"
-        placeholder="0000000-00.0000.0.00.0000"
         autoComplete="off"
         ajuda="Padrão do CNJ: digite só os números, e o hífen e os pontos entram sozinhos. Pode ficar em branco se o processo ainda não existe."
       />
