@@ -412,9 +412,7 @@ export function calcular(calculo: Calculo, indices: TabelaIndices): Resultado {
   };
 
   const avisos: string[] = [...validarMetodologia(calculo.metodologia)];
-  if (lancamentos.length === 0) {
-    avisos.push("Nenhum lançamento.");
-  } else if (!haValorDevido && amortizacoes.gt(ZERO)) {
+  if (!haValorDevido && amortizacoes.gt(ZERO)) {
     // só com pagamento lançado: sem ele, o total zerado vem de prestações sem valor, que têm
     // aviso próprio (decisão de 13/10/2026)
     avisos.push(

@@ -111,9 +111,8 @@ describe("Salvar e Abrir (§5.1, §5.5, §9.1)", () => {
       "IPCA de set/2026 mudou",
     );
     await user.click(screen.getByRole("button", { name: "Novo cálculo" }));
-    expect(screen.getByRole("region", { name: "Avisos" }).textContent).not.toContain(
-      "IPCA de set/2026 mudou",
-    );
+    // o cálculo em branco não tem aviso nenhum: a caixa some (§21.2)
+    expect(screen.queryByText(/IPCA de set\/2026 mudou/)).toBeNull();
   });
 
   it("arquivo inválido: o painel fica aberto com a frase do erro e o cálculo atual não muda", async () => {

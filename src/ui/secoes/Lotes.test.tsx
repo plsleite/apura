@@ -47,10 +47,6 @@ describe("4 · Prestações em atraso e 5 · Pagamentos: lotes cumulativos (§6.
     await user.type(prestacoes.getByLabelText("Dia do vencimento"), "5");
     await user.type(prestacoes.getByLabelText("Quantos meses"), "3");
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
-    // o cálculo deixa de estar vazio
-    expect(screen.getByRole("region", { name: "Avisos" }).textContent).not.toContain(
-      "Nenhum lançamento.",
-    );
     expect(prestacoes.queryByRole("region", { name: "Avisos do lote de prestações" })).toBeNull();
     // relançar os mesmos meses: nada novo, com aviso no próprio formulário
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
@@ -83,9 +79,6 @@ describe("4 · Prestações em atraso e 5 · Pagamentos: lotes cumulativos (§6.
       "Informe um número inteiro de 1 a 31.",
       "Informe um número inteiro de 1 a 600.",
     ]);
-    expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(
-      "Nenhum lançamento.",
-    );
     await user.click(prestacoes.getByLabelText("Intervalo de vencimentos"));
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
     expect(erros()).toEqual([
@@ -101,9 +94,6 @@ describe("4 · Prestações em atraso e 5 · Pagamentos: lotes cumulativos (§6.
     fireEvent.change(primeiro, { target: { value: "1970-01-10" } });
     await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
     expect(erros()).toEqual(["No máximo 600 meses por lote."]);
-    expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(
-      "Nenhum lançamento.",
-    );
   });
 
   it("pagamentos: intervalo de pagamentos por datas, como o das prestações; lote cumulativo com aviso; valor e datas validados (decisão de 13/10/2026)", async () => {

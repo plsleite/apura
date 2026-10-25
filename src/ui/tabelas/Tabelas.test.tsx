@@ -109,10 +109,31 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
       moeda(r.totais.totalGeral),
     ]);
     expect(
-      within(screen.getByRole("region", { name: "Amortizações (pagamentos)" })).getByText(
-        /Nenhum pagamento lançado/,
+      within(screen.getByRole("region", { name: "Amortizações (pagamentos)" })).queryAllByRole(
+        "columnheader",
       ),
-    ).toBeDefined();
+    ).toHaveLength(0);
+  });
+
+  it("tabela vazia: só o título, o ⓘ e o botão, sem a linha de títulos e sem frase (§21.2)", async () => {
+    const user = userEvent.setup();
+    render(<App ambiente={ambienteDeTeste()} />);
+    for (const [nome, botao] of [
+      ["Prestações", "+ Prestação"],
+      ["Amortizações (pagamentos)", "+ Pagamento"],
+    ] as const) {
+      const tabela = within(screen.getByRole("region", { name: nome }));
+      expect(tabela.queryAllByRole("columnheader")).toHaveLength(0);
+      expect(tabela.queryByText(/Nenhuma prestação|Nenhum pagamento/)).toBeNull();
+      expect(tabela.getByRole("button", { name: `Ajuda: ${nome}` })).toBeDefined();
+      expect(tabela.getByRole("button", { name: botao })).toBeDefined();
+    }
+    // a linha nova traz a linha de títulos; descartada, ela some de novo
+    const prestacoes = within(screen.getByRole("region", { name: "Prestações" }));
+    await user.click(prestacoes.getByRole("button", { name: "+ Prestação" }));
+    expect(prestacoes.getAllByRole("columnheader")).toHaveLength(8);
+    await user.keyboard("{Escape}");
+    expect(prestacoes.queryAllByRole("columnheader")).toHaveLength(0);
   });
 
   it("o balão ⓘ do título da tabela flutua em posição fixa, para não ficar cortado pela rolagem da coluna (§20.3)", async () => {
@@ -370,7 +391,8 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     );
     await user.click(xisDoPagamento());
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "+ Pagamento" }));
-    expect(amortizacoes.getByText(/Nenhum pagamento lançado/)).toBeDefined();
+    // a tabela esvaziou: só o título, o ⓘ e o botão (§21.2)
+    expect(amortizacoes.queryAllByRole("columnheader")).toHaveLength(0);
     expect(resumo.getAllByRole("definition")[1]?.textContent).toBe("R$ 0,00");
     await user.click(xisDaPrestacao());
     await user.click(xisDaPrestacao());

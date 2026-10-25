@@ -29,9 +29,7 @@ describe("App (fundação da tela)", () => {
     );
     expect(rodape).toMatch(/Apura v\d+\.\d+\.\d+ · Defensoria Pública de Mato Grosso do Sul/);
     // com a tabela em dia, não há aviso do calendário
-    expect(screen.getByRole("region", { name: "Avisos" }).textContent).not.toContain(
-      "ainda não chegou ao Apura",
-    );
+    expect(screen.queryByText(/ainda não chegou ao Apura/)).toBeNull();
   });
 
   it("as cinco seções da esquerda vêm na ordem da §20: processo, base, encargos, prestações, pagamentos (decisão de 15/10/2026)", () => {
@@ -47,17 +45,13 @@ describe("App (fundação da tela)", () => {
       "4 · Prestações em atraso",
       "5 · Pagamentos",
     ]);
-    // a tabela vazia aponta para a seção certa
-    expect(screen.getByText(/Nenhuma prestação lançada/).textContent).toBe(
-      'Nenhuma prestação lançada: use "Lançar em lote" na seção 4 ou "+ Prestação".',
-    );
-    expect(screen.getByText(/Nenhum pagamento lançado/).textContent).toBe(
-      'Nenhum pagamento lançado: use "Lançar em lote" na seção 5 ou "+ Pagamento".',
-    );
+    // a tabela vazia não traz frase (§21.2)
+    expect(screen.queryByText(/Nenhuma prestação lançada|Nenhum pagamento lançado/)).toBeNull();
   });
 
   it("a coluna da direita tem os indicadores no topo e, embaixo, uma área rolável com nome, que recebe foco pelo teclado, com as duas tabelas e os avisos (§20.3)", () => {
-    render(<App ambiente={ambienteDeTeste()} />);
+    // o cálculo em branco não tem aviso nenhum; a defasagem de um índice faz a caixa aparecer
+    render(<App ambiente={ambienteDeTeste({ limites: { "433": "2026-07" } })} />);
     const direita = document.querySelector(".coluna-direita") as HTMLElement;
     const area = within(direita).getByRole("region", { name: "Tabelas e avisos" });
     expect(area.className).toBe("coluna-rolavel");
@@ -80,13 +74,11 @@ describe("App (fundação da tela)", () => {
     );
   });
 
-  it("congela a tabela ao abrir e de novo em 'Novo cálculo'; o cálculo em branco mostra 'Nenhum lançamento.'", async () => {
+  it("congela a tabela ao abrir e de novo em 'Novo cálculo'; o cálculo em branco não mostra 'Nenhum lançamento.' (§21.2)", async () => {
     const ambiente = ambienteDeTeste();
     render(<App ambiente={ambiente} />);
     expect(ambiente.congelamentos()).toBe(1);
-    expect(screen.getByRole("region", { name: "Avisos" }).textContent).toContain(
-      "Nenhum lançamento.",
-    );
+    expect(screen.queryByText("Nenhum lançamento.")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Novo cálculo" }));
     expect(ambiente.congelamentos()).toBe(2);
   });
