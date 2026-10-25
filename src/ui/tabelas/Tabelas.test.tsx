@@ -368,7 +368,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
       .getAllByRole("cell")
       .map((c) => c.textContent);
     const pagamento = r.lancamentos.find((l) => l.tipo === "amortizacao")!;
-    expect(celulas.slice(0, 2)).toEqual(["▸05/09/2026Pagamento parcial", "R$ 400,00"]);
+    expect(celulas.slice(0, 2)).toEqual(["▸05/09/2026", "R$ 400,00"]);
     expect(celulas[6]).toBe(moeda(pagamento.atualizado));
     const resumo = within(screen.getByLabelText("Resumo do cálculo"));
     expect(resumo.getAllByRole("definition").map((d) => d.textContent)).toEqual([
@@ -387,7 +387,7 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     await user.click(xisDoPagamento());
     expect(xisDaPrestacao().getAttribute("aria-label")).toBe("Excluir prestação de 05/09/2026");
     expect(xisDoPagamento().getAttribute("aria-label")).toBe(
-      "Clique de novo para excluir o pagamento de 05/09/2026 (Pagamento parcial)",
+      "Clique de novo para excluir o pagamento de 05/09/2026",
     );
     await user.click(xisDoPagamento());
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "+ Pagamento" }));
@@ -588,10 +588,10 @@ describe("lado direito: indicadores, tabelas e memória (§9.3)", () => {
     await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
     await user.click(
       screen.getByRole("button", {
-        name: "Editar valor do pagamento de 05/09/2026 (Pagamento parcial) (R$ 400,00)",
+        name: "Editar valor do pagamento de 05/09/2026 (R$ 400,00)",
       }),
     );
-    await user.clear(screen.getByLabelText("Valor do pagamento de 05/09/2026 (Pagamento parcial)"));
+    await user.clear(screen.getByLabelText("Valor do pagamento de 05/09/2026"));
     await user.keyboard("{Enter}");
     expect(screen.getByRole("alert").textContent).toBe("Informe um valor maior que zero.");
   });

@@ -161,9 +161,9 @@ export function gerarLotePrestacoes(
 }
 
 /**
- * Gera um pagamento por mês do intervalo, com o valor mensal e o dia do pagamento (§6.2),
- * descrição "Pagamento parcial", pulando os meses que já têm pagamento na lista. Um segundo
- * pagamento no mesmo mês entra como pagamento avulso.
+ * Gera um pagamento por mês do intervalo, com o valor mensal e o dia do pagamento (§6.2), sem
+ * descrição (§21.8), pulando os meses que já têm pagamento na lista. Um segundo pagamento no mesmo
+ * mês entra como pagamento avulso.
  */
 export function gerarLoteAmortizacoes(
   lote: LoteAmortizacoes,
@@ -217,7 +217,6 @@ export function gerarLoteAmortizacoes(
       id: idLivre(`a-${competencia}`, [...existentes, ...lancamentos]),
       tipo: "amortizacao",
       data: dataNoMes(competencia, lote.diaPagamento),
-      descricao: "Pagamento parcial",
       valorInformado: lote.valorMensal,
       origem: "lote",
       editado: false,
