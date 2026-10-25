@@ -52,7 +52,7 @@ Ao fim da fase 7c, a tela do Apura fica mais limpa: os campos vêm vazios (sem "
 
 **Fica de fora (decidido):** o "R$" nas células; os dois indicadores destacados; as observações em outra seção; juros com 6 casas, ordem e numeração das seções e cores; botão ou menu de preferências.
 
-**Textos para você confirmar antes da execução:**
+**Textos confirmados pelo responsável em 25/10/2026, antes da execução:**
 
 1. Balão do "Reajuste anual" com a opção "nenhum" (o proposto no prompt): "Com índice (IPCA, INPC ou IGP-M), o valor é reajustado a cada 12 meses pelo acumulado dos 12 meses anteriores ao mês do reajuste, que por padrão é o da fixação. Com salário mínimo, acompanha a proporção entre o salário mínimo do mês do vencimento e o do mês da fixação."
 2. Aviso da seção 1 quando o navegador não permite guardar nada (hoje cita "Lembrar" e "Guardar cálculos recentes"): "Este navegador não permite guardar nada: os cálculos recentes não ficam guardados, e defensor(a), órgão e tema valem só até recarregar ou fechar a página."
@@ -70,7 +70,7 @@ Ao fim da fase 7c, a tela do Apura fica mais limpa: os campos vêm vazios (sem "
 - **T9 · Ícones do tema:** desenhados no próprio componente (`IconeDoTema`, em `BarraSuperior.tsx`), em 20 × 20 px, na cor do texto da barra (`currentColor`), escondidos do leitor de tela (`aria-hidden`); o nome do botão (`aria-label`) e a dica (`title`) têm o mesmo texto. Cada ícone leva `data-icone` (`sol`, `lua`, `meio`), que os testes leem (Task 4).
 - **T10 · "Pagamento parcial":** só o lote muda; o motor não lê a descrição, então nenhum total muda (Task 2).
 
-**Você faz:** confirmar os dois textos acima e escolher a forma de execução; na Task 12, autorizar o merge, o envio ao GitHub (que publica o site) e a etiqueta `v0.1.3`, um de cada vez.
+**Você faz:** escolher a forma de execução; na Task 12, autorizar o merge, o envio ao GitHub (que publica o site) e a etiqueta `v0.1.3`, um de cada vez.
 
 ---
 
@@ -807,7 +807,7 @@ git commit -m "ui: tipografia da tela em cinco tamanhos, sem maiúsculas miúdas
 
 ## Estado
 
-Plano escrito em 25/10/2026, a partir da `main` do GitHub em `9c4fbb6` (índices de 24/10/2026), com 1022 testes passando e 10 pulados em 61 arquivos. Sem ensaio do código numa cópia fora do repositório (as fases 5b a 7b tiveram um): as decisões vieram fechadas, e o que depende de medida (T4) é medido na Task 10. Execução: a definir com o responsável.
+Plano escrito em 25/10/2026, a partir da `main` do GitHub em `9c4fbb6` (índices de 24/10/2026), com 1022 testes passando e 10 pulados em 61 arquivos. Sem ensaio do código numa cópia fora do repositório (as fases 5b a 7b tiveram um): as decisões vieram fechadas, e o que depende de medida (T4) é medido na Task 10. Os dois textos novos (balão do reajuste "nenhum" e aviso da seção 1 sem armazenamento) foram aprovados como estão pelo responsável em 25/10/2026. Execução: a definir com o responsável.
 
 ## Auto-revisão do plano
 
