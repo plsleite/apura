@@ -61,15 +61,13 @@ describe("1 · Processo: número do processo no padrão do CNJ (decisão de 13/1
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("as explicações ficam nos balões ⓘ, não em texto fixo", async () => {
-    const user = userEvent.setup();
+  it("a seção 1 não tem 'Lembrar', 'Esquecer' nem 'Guardar cálculos recentes', nem os balões 'Processo' e 'cálculos recentes' (§21.4)", () => {
     render(<App ambiente={ambienteDeTeste()} />);
-    expect(screen.queryByText(/não são gravados em servidor algum/)).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Ajuda: Processo" }));
-    expect(screen.getByText(/não são gravados em servidor algum/)).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Ajuda: cálculos recentes" }));
-    expect(screen.getByText(/Em computador compartilhado, desligue/)).toBeDefined();
-    expect(screen.queryByText(/não são gravados em servidor algum/)).toBeNull();
+    expect(screen.queryByLabelText("Lembrar neste navegador")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Esquecer" })).toBeNull();
+    expect(screen.queryByLabelText(/Guardar cálculos recentes/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ajuda: Processo" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ajuda: cálculos recentes" })).toBeNull();
   });
 });
 
@@ -83,8 +81,6 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
     expect(preferenciasGravadas(ambiente.armazenado as Storage)).toEqual({
       defensor: "Defensor(a) de teste",
       orgao: "1ª Defensoria de teste",
-      lembrar: true,
-      guardarRecentes: true,
       tema: "sistema",
       metodologia: "lei14905",
     });
@@ -99,74 +95,46 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
     expect((screen.getByLabelText("Nº do processo") as HTMLInputElement).value).toBe("");
   });
 
-  it("abre com os nomes gravados antes; desligar 'Lembrar' apaga os nomes gravados e para de gravar", async () => {
+  it("abre com os nomes gravados antes, mesmo de quem tinha desligado 'Lembrar', e continua gravando (§21.4)", async () => {
     const user = userEvent.setup();
     const armazenamento = armazenamentoEmMemoria({
       [CHAVE_PREFERENCIAS]: JSON.stringify({
         defensor: "Quem ficou gravado",
         orgao: "Órgão gravado",
-        lembrar: true,
-        guardarRecentes: true,
+        lembrar: false,
+        guardarRecentes: false,
       }),
     });
     render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
     const defensor = screen.getByLabelText("Defensor(a) responsável") as HTMLInputElement;
     expect(defensor.value).toBe("Quem ficou gravado");
-    await user.click(screen.getByLabelText("Lembrar neste navegador"));
-    expect(preferenciasGravadas(armazenamento)).toEqual({
-      defensor: "",
-      orgao: "",
-      lembrar: false,
-      guardarRecentes: true,
-      tema: "sistema",
-      metodologia: "lei14905",
-    });
     await user.type(defensor, " e mais");
     expect(defensor.value).toBe("Quem ficou gravado e mais");
-    expect((preferenciasGravadas(armazenamento) as { defensor: string }).defensor).toBe("");
-  });
-
-  it("'Esquecer' apaga preferências e recentes, desliga 'Lembrar' e mantém o cálculo na tela", async () => {
-    const user = userEvent.setup();
-    const armazenamento = armazenamentoEmMemoria({ [CHAVE_RECENTES]: "[]" });
-    render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
-    const defensor = screen.getByLabelText("Defensor(a) responsável") as HTMLInputElement;
-    await user.type(defensor, "Alguém");
-    await user.click(screen.getByRole("button", { name: "Esquecer" }));
-    expect(armazenamento.getItem(CHAVE_RECENTES)).toBeNull();
     expect(preferenciasGravadas(armazenamento)).toEqual({
-      defensor: "",
-      orgao: "",
-      lembrar: false,
-      guardarRecentes: true,
+      defensor: "Quem ficou gravado e mais",
+      orgao: "Órgão gravado",
       tema: "sistema",
       metodologia: "lei14905",
     });
-    expect((screen.getByLabelText("Lembrar neste navegador") as HTMLInputElement).checked).toBe(
-      false,
-    );
-    expect(defensor.value).toBe("Alguém");
   });
 
-  it("desligar 'Guardar cálculos recentes' apaga os recentes já guardados", async () => {
+  it("os recentes são sempre guardados, mesmo com a opção antiga desligada (§21.4)", async () => {
     const user = userEvent.setup();
-    const armazenamento = armazenamentoEmMemoria({ [CHAVE_RECENTES]: "[]" });
+    const armazenamento = armazenamentoEmMemoria({
+      [CHAVE_PREFERENCIAS]: JSON.stringify({ guardarRecentes: false }),
+    });
     render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
-    await user.click(screen.getByLabelText("Guardar cálculos recentes neste navegador"));
-    expect(armazenamento.getItem(CHAVE_RECENTES)).toBeNull();
-    expect(
-      (preferenciasGravadas(armazenamento) as { guardarRecentes: boolean }).guardarRecentes,
-    ).toBe(false);
+    await user.type(screen.getByLabelText("Nº do processo"), "08000004620268120001");
+    expect(JSON.parse(armazenamento.getItem(CHAVE_RECENTES) ?? "[]")).toHaveLength(1);
   });
 
   it("sem armazenamento (bloqueado ou ausente), a tela funciona e avisa que nada é guardado", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste({ armazenamento: null })} />);
-    expect(screen.getByText(/Este navegador não permite guardar nada/).textContent).toContain(
-      "não permite guardar nada",
+    expect(screen.getByText(/Este navegador não permite guardar nada/).textContent).toBe(
+      "Este navegador não permite guardar nada: os cálculos recentes não ficam guardados, e defensor(a), órgão e tema valem só até recarregar ou fechar a página.",
     );
     await user.type(screen.getByLabelText("Defensor(a) responsável"), "Ninguém");
-    await user.click(screen.getByRole("button", { name: "Esquecer" }));
     // do sistema → claro → escuro
     await user.click(screen.getByRole("button", { name: "Tema do sistema" }));
     await user.click(screen.getByRole("button", { name: "Tema claro" }));
@@ -204,7 +172,7 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
     expect((preferenciasGravadas(armazenamento) as { tema: string }).tema).toBe("sistema");
   });
 
-  it("abre com o tema guardado; Esquecer e desligar Lembrar não apagam o tema", async () => {
+  it("abre com o tema guardado, e digitar o defensor não o apaga", async () => {
     const user = userEvent.setup();
     const armazenamento = armazenamentoEmMemoria({
       [CHAVE_PREFERENCIAS]: JSON.stringify({ tema: "escuro" }),
@@ -212,14 +180,10 @@ describe("1 · Processo: preferências e recentes no navegador (§5.5)", () => {
     render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
     expect(screen.getByRole("button", { name: /^Tema / }).textContent).toBe("Tema escuro");
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-    await user.click(screen.getByRole("button", { name: "Esquecer" }));
-    expect((preferenciasGravadas(armazenamento) as { tema: string }).tema).toBe("escuro");
-    await user.click(screen.getByLabelText("Lembrar neste navegador"));
+    await user.type(screen.getByLabelText("Defensor(a) responsável"), "Alguém");
     expect(preferenciasGravadas(armazenamento)).toEqual({
-      defensor: "",
+      defensor: "Alguém",
       orgao: "",
-      lembrar: true,
-      guardarRecentes: true,
       tema: "escuro",
       metodologia: "lei14905",
     });

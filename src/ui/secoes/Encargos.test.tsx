@@ -122,7 +122,7 @@ describe("5 · Encargos e data do cálculo (§9.2)", () => {
     expect(espiao.mock.lastCall?.[0].observacoes).toBe("ajustar!");
   });
 
-  it("no App: a opção escolhida vale para o cálculo, fica guardada, vem nos cálculos novos, sobrevive a 'Esquecer' e é o que 'Restaurar' restaura", async () => {
+  it("no App: a opção escolhida vale para o cálculo, fica guardada, vem nos cálculos novos e é o que 'Restaurar' restaura", async () => {
     const user = userEvent.setup();
     const armazenamento = armazenamentoEmMemoria();
     render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
@@ -135,8 +135,6 @@ describe("5 · Encargos e data do cálculo (§9.2)", () => {
     expect(guardada()).toBe("igpmJuros1");
     await user.click(screen.getByRole("button", { name: "Novo cálculo" }));
     expect(opcao(semTransicao).checked).toBe(true);
-    await user.click(screen.getByRole("button", { name: "Esquecer" }));
-    expect(guardada()).toBe("igpmJuros1");
     // ajustada no editor, "Restaurar" volta à opção guardada
     await user.click(screen.getByRole("button", { name: "Ajustar" }));
     const painel = within(

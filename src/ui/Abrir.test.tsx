@@ -89,7 +89,7 @@ describe("Salvar e Abrir (§5.1, §5.5, §9.1)", () => {
     render(<App ambiente={ambienteDeTeste()} />);
     await user.click(screen.getByRole("button", { name: "Abrir" }));
     const painel = within(screen.getByRole("dialog", { name: "Abrir cálculo" }));
-    expect(painel.getByText(/Nenhum cálculo recente ainda/)).toBeDefined();
+    expect(painel.getByText("Nenhum cálculo recente ainda.")).toBeDefined();
     await user.upload(
       painel.getByLabelText("Abrir arquivo do Apura (.json)"),
       arquivo(serializarArquivo(arquivoSalvo())),
@@ -231,7 +231,7 @@ describe("Salvar e Abrir (§5.1, §5.5, §9.1)", () => {
     );
     expect(lerRecentes(armazenamento)).toEqual([]);
     expect(
-      within(screen.getByRole("dialog")).getByText(/Nenhum cálculo recente ainda/),
+      within(screen.getByRole("dialog")).getByText("Nenhum cálculo recente ainda."),
     ).toBeDefined();
   });
 
@@ -314,7 +314,7 @@ describe("Salvar e Abrir (§5.1, §5.5, §9.1)", () => {
     expect(within(screen.getByRole("dialog")).getByText(frase)).toBeDefined();
   });
 
-  it("navegador que não permite guardar nada: o painel 'Abrir' diz isso (e não que a opção está desligada)", async () => {
+  it("navegador que não permite guardar nada: o painel 'Abrir' diz isso (e não que os recentes ficam guardados)", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste({ armazenamento: null })} />);
     await user.click(screen.getByRole("button", { name: "Abrir" }));
@@ -324,24 +324,21 @@ describe("Salvar e Abrir (§5.1, §5.5, §9.1)", () => {
         "Este navegador não permite guardar dados (por exemplo, numa janela anônima com bloqueio): os cálculos recentes não ficam guardados aqui. Salve o arquivo para não perder o cálculo.",
       ),
     ).toBeDefined();
-    expect(painel.queryByText(/está desligada/)).toBeNull();
+    expect(painel.queryByText(/Os cinco últimos cálculos ficam guardados/)).toBeNull();
   });
 
-  it("com a guarda de recentes desligada nada é guardado e o painel explica; recente corrompido mostra erro", async () => {
+  it("o painel mostra a frase dos recentes guardados neste navegador; recente corrompido mostra erro", async () => {
     const user = userEvent.setup();
     const armazenamento = armazenamentoEmMemoria();
     render(<App ambiente={ambienteDeTeste({ armazenamento })} />);
-    await user.click(screen.getByLabelText("Guardar cálculos recentes neste navegador"));
     await user.type(screen.getByLabelText("Nº do processo"), "0800004-83.2026.8.12.0001");
-    expect(armazenamento.getItem(CHAVE_RECENTES)).toBeNull();
     await user.click(screen.getByRole("button", { name: "Abrir" }));
     expect(
       within(screen.getByRole("dialog")).getByText(
-        /"Guardar cálculos recentes neste navegador" está desligada/,
+        "Os cinco últimos cálculos ficam guardados só neste navegador (nada vai para servidor algum). Em computador compartilhado, limpe ao terminar.",
       ),
     ).toBeDefined();
     await user.keyboard("{Escape}");
-    await user.click(screen.getByLabelText("Guardar cálculos recentes neste navegador"));
     armazenamento.setItem(
       CHAVE_RECENTES,
       JSON.stringify([
