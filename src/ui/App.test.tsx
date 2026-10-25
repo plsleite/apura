@@ -149,6 +149,28 @@ describe("App (fundação da tela)", () => {
 const exemplos = (raiz: ParentNode = document) =>
   [...raiz.querySelectorAll("[placeholder]")].map((c) => c.getAttribute("placeholder"));
 
+/** Valor fixado de R$ 1.000,00, prestações de 05/08/2026 a 05/09/2026 e um pagamento de R$ 400,00 em 05/09/2026. */
+async function lancarPrestacoesEPagamento(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
+  const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
+  fireEvent.change(prestacoes.getByLabelText("Primeiro vencimento"), {
+    target: { value: "2026-08-05" },
+  });
+  fireEvent.change(prestacoes.getByLabelText("Último vencimento"), {
+    target: { value: "2026-09-05" },
+  });
+  await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
+  const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
+  await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
+  fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
+    target: { value: "2026-09-05" },
+  });
+  fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
+    target: { value: "2026-09-05" },
+  });
+  await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+}
+
 describe("sem exemplos dentro dos campos (§21.1)", () => {
   it("na tela, nenhum campo traz exemplo, em qualquer forma da base e nos dois modos do lote", async () => {
     const user = userEvent.setup();
@@ -166,30 +188,15 @@ describe("sem exemplos dentro dos campos (§21.1)", () => {
   it("nas tabelas ficam só os textos que dizem o que acontece com o campo vazio", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);
-    await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
-    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
-    fireEvent.change(prestacoes.getByLabelText("Primeiro vencimento"), {
-      target: { value: "2026-08-05" },
-    });
-    fireEvent.change(prestacoes.getByLabelText("Último vencimento"), {
-      target: { value: "2026-09-05" },
-    });
-    await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
-    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
-    await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
-    fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
-      target: { value: "2026-09-05" },
-    });
-    fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
-      target: { value: "2026-09-05" },
-    });
-    await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+    await lancarPrestacoesEPagamento(user);
 
     // linha nova: o pagamento não traz exemplo; a prestação diz que o vazio é "pela base"
     await user.click(screen.getByRole("button", { name: "+ Pagamento" }));
+    expect(screen.getByLabelText("Valor do novo pagamento")).toBeDefined();
     expect(exemplos()).toEqual([]);
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "+ Prestação" }));
+    expect(screen.getByLabelText("Valor da nova prestação")).toBeDefined();
     expect(exemplos()).toEqual(["pela base"]);
     await user.keyboard("{Escape}");
 
@@ -199,16 +206,19 @@ describe("sem exemplos dentro dos campos (§21.1)", () => {
         name: "Editar vencimento da prestação de 05/09/2026 (05/09/2026)",
       }),
     );
+    expect(screen.getByLabelText("Vencimento da prestação de 05/09/2026")).toBeDefined();
     expect(exemplos()).toEqual([]);
     await user.keyboard("{Escape}");
     await user.click(
       screen.getByRole("button", { name: "Editar valor da prestação de 05/09/2026 (R$ 1.000,00)" }),
     );
+    expect(screen.getByLabelText("Valor da prestação de 05/09/2026")).toBeDefined();
     expect(exemplos()).toEqual(["pela base"]);
     await user.keyboard("{Escape}");
     await user.click(
       screen.getByRole("button", { name: "Editar valor do pagamento de 05/09/2026 (R$ 400,00)" }),
     );
+    expect(screen.getByLabelText("Valor do pagamento de 05/09/2026")).toBeDefined();
     expect(exemplos()).toEqual([]);
     await user.keyboard("{Escape}");
   });
@@ -216,24 +226,7 @@ describe("sem exemplos dentro dos campos (§21.1)", () => {
   it("no Personalizar, só 'apurado pela base' e 'usa o rendimento padrão'", async () => {
     const user = userEvent.setup();
     render(<App ambiente={ambienteDeTeste()} />);
-    await user.type(screen.getByLabelText("Valor fixado"), "1.000,00");
-    const prestacoes = within(screen.getByRole("region", { name: /4 · Prestações em atraso/ }));
-    fireEvent.change(prestacoes.getByLabelText("Primeiro vencimento"), {
-      target: { value: "2026-08-05" },
-    });
-    fireEvent.change(prestacoes.getByLabelText("Último vencimento"), {
-      target: { value: "2026-09-05" },
-    });
-    await user.click(prestacoes.getByRole("button", { name: "Lançar em lote" }));
-    const pagamentos = within(screen.getByRole("region", { name: /5 · Pagamentos/ }));
-    await user.type(pagamentos.getByLabelText("Valor por mês"), "400");
-    fireEvent.change(pagamentos.getByLabelText("Primeiro pagamento"), {
-      target: { value: "2026-09-05" },
-    });
-    fireEvent.change(pagamentos.getByLabelText("Último pagamento"), {
-      target: { value: "2026-09-05" },
-    });
-    await user.click(pagamentos.getByRole("button", { name: "Lançar em lote" }));
+    await lancarPrestacoesEPagamento(user);
 
     await user.click(screen.getByRole("button", { name: "Personalizar pagamento de 05/09/2026" }));
     let painel = screen.getByRole("dialog", { name: "Personalizar pagamento" });
