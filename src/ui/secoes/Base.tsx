@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatarData } from "../../compartilhado/formatacao.ts";
 import { decompor } from "../../compartilhado/datas.ts";
 import type {
@@ -22,15 +22,17 @@ import { dividirBase, removerDivisaoDaBase, tituloDoPeriodo, trocarForma } from 
 import type { CampoDaBase, FaltaDaBase } from "../estado/faltas.ts";
 
 /**
- * Seção "2 · Base dos alimentos" (§9.2, §6.3, §17.2): a base é uma lista de períodos seguidos.
- * Com um período só, a seção é a de antes (três formas, e só os campos da forma escolhida
- * aparecem), mais "Dividir em" no pé; com dois ou mais, um bloco por período, com o título ("Até
- * 31/12/2024", "Desde 01/01/2025"), a forma e os campos dele e, menos no primeiro, "Remover
- * divisão". O mês do reajuste some quando o reajuste é pelo salário mínimo ou "nenhum"; em "% dos
- * rendimentos" o rendimento padrão é exigido. Cada período guarda um rascunho por forma, para que
- * trocar de forma e voltar não perca o que foi digitado. Explicações nos balões ⓘ dos campos. Com
- * prestação lançada pela base, o campo que falta fica em vermelho no bloco do período
- * ("Informe o percentual."; decisões de 13/10/2026).
+ * Seção "2 · Base dos alimentos" (§9.2, §6.3, §17.2, §21.5): a base é uma lista de períodos
+ * seguidos. Com um período só, a seção é a de antes (três formas, e só os campos da forma
+ * escolhida aparecem); com dois ou mais, um bloco por período, com o título ("Até 31/12/2024",
+ * "Desde 01/01/2025"), a forma e os campos dele e, menos no primeiro, "Remover divisão". No pé, a
+ * divisão fica recolhida num botão discreto, "Dividir a base em períodos", que abre "Dividir em"
+ * com o foco na data; dividida a base, o campo recolhe e o foco volta ao botão, e com erro o campo
+ * continua aberto (quem usa o teclado não se perde). O mês do reajuste some quando o reajuste é
+ * pelo salário mínimo ou "nenhum"; em "% dos rendimentos" o rendimento padrão é exigido. Cada
+ * período guarda um rascunho por forma, para que trocar de forma e voltar não perca o que foi
+ * digitado. Explicações nos balões ⓘ dos campos. Com prestação lançada pela base, o campo que
+ * falta fica em vermelho no bloco do período ("Informe o percentual."; decisões de 13/10/2026).
  */
 
 /** Erro do campo: o da leitura (texto inválido) ou, com o campo em branco, o de campo que falta. */
@@ -111,8 +113,19 @@ export function BaseDosAlimentos({
 }) {
   const periodos = periodosDaBaseOrdenados(base);
   const varios = periodos.length > 1;
+  const [dividindo, setDividindo] = useState(false);
   const [dataDaDivisao, setDataDaDivisao] = useState("");
   const [avisoDaDivisao, setAvisoDaDivisao] = useState<string | null>(null);
+  // depois de dividir, o campo recolhe e o foco volta ao botão que o abre (como o "+ Incluir" da
+  // tabela); o botão só existe com o campo recolhido, por isso o foco espera o efeito
+  const botaoDividir = useRef<HTMLButtonElement>(null);
+  const focarBotaoDividir = useRef(false);
+  useEffect(() => {
+    if (!dividindo && focarBotaoDividir.current) {
+      focarBotaoDividir.current = false;
+      botaoDividir.current?.focus();
+    }
+  }, [dividindo]);
   const dividir = () => {
     const leitura = lerData(dataDaDivisao);
     if (!leitura.ok) {
@@ -123,6 +136,8 @@ export function BaseDosAlimentos({
     setAvisoDaDivisao(aviso ?? null);
     if (aviso === undefined) {
       setDataDaDivisao("");
+      focarBotaoDividir.current = true;
+      setDividindo(false);
       aoMudar(nova);
     }
   };
@@ -167,24 +182,37 @@ export function BaseDosAlimentos({
         </div>
       ))}
       <div className="linha dividir-base">
-        {varios ? null : <p className="nota">A base mudou ao longo do tempo?</p>}
-        <CampoTexto
-          id="base-dividir-em"
-          rotulo="Dividir em"
-          ajuda="A data informada passa a iniciar um período novo da base, com as mesmas regras do anterior; depois ajuste a forma e os valores de cada um. Ex.: valor fixo até 2024 e % do salário mínimo desde 2025."
-          tipo="date"
-          valor={dataDaDivisao}
-          aoMudar={(v) => {
-            setDataDaDivisao(v);
-            setAvisoDaDivisao(null);
-          }}
-          erro={avisoDaDivisao}
-          min={DATA_MINIMA}
-          max={DATA_MAXIMA}
-        />
-        <button type="button" className="botao secundario" onClick={dividir}>
-          Dividir
-        </button>
+        {dividindo ? (
+          <>
+            <CampoTexto
+              id="base-dividir-em"
+              rotulo="Dividir em"
+              ajuda="A data informada passa a iniciar um período novo da base, com as mesmas regras do anterior; depois ajuste a forma e os valores de cada um. Ex.: valor fixo até 2024 e % do salário mínimo desde 2025."
+              tipo="date"
+              valor={dataDaDivisao}
+              aoMudar={(v) => {
+                setDataDaDivisao(v);
+                setAvisoDaDivisao(null);
+              }}
+              erro={avisoDaDivisao}
+              min={DATA_MINIMA}
+              max={DATA_MAXIMA}
+              autoFocus
+            />
+            <button type="button" className="botao secundario" onClick={dividir}>
+              Dividir
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="botao discreto"
+            ref={botaoDividir}
+            onClick={() => setDividindo(true)}
+          >
+            Dividir a base em períodos
+          </button>
+        )}
       </div>
     </section>
   );

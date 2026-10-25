@@ -137,6 +137,8 @@ export function CampoTexto({
   autoComplete?: string;
   placeholder?: string;
   disabled?: boolean;
+  /** o React põe o foco no campo quando ele aparece (campos que abrem a pedido da pessoa) */
+  autoFocus?: boolean;
   /**
    * máscara de números (ex.: nº do processo): recebe o texto digitado e devolve o formatado. O
    * cursor fica depois do mesmo dígito em que estava, e apagar um separador (hífen, ponto) com
@@ -173,7 +175,14 @@ export function CampoArea({
   erro,
   classe,
   linhas = 3,
-}: PropriedadesComuns & { valor: string; aoMudar: (texto: string) => void; linhas?: number }) {
+  autoFocus,
+}: PropriedadesComuns & {
+  valor: string;
+  aoMudar: (texto: string) => void;
+  linhas?: number;
+  /** o React põe o foco na caixa quando ela aparece (caixas que abrem a pedido da pessoa) */
+  autoFocus?: boolean;
+}) {
   const idGerado = useId();
   const id = idDado ?? idGerado;
   return (
@@ -182,6 +191,7 @@ export function CampoArea({
         id={id}
         value={valor}
         rows={linhas}
+        autoFocus={autoFocus}
         onChange={(e) => aoMudar(e.target.value)}
         aria-describedby={descritoPor(id, erro)}
       />

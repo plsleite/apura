@@ -152,16 +152,38 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     expect((screen.getByLabelText("Valor fixado") as HTMLInputElement).value).toBe("500,00");
   });
 
-  it('com um período, a seção é a de antes, mais "Dividir em" no pé (§17.2)', async () => {
+  it('a divisão fica recolhida num botão discreto, que abre "Dividir em" com o foco na data (§21.5)', async () => {
     const user = userEvent.setup();
     render(<Harness inicial={fixa} espiao={vi.fn()} />);
     expect(screen.queryByRole("group", { name: /^(Até|Desde|De) / })).toBeNull();
-    expect(screen.getByText("A base mudou ao longo do tempo?")).toBeDefined();
-    expect(screen.getByLabelText("Dividir em")).toBeDefined();
+    expect(screen.queryByText("A base mudou ao longo do tempo?")).toBeNull();
+    expect(screen.queryByLabelText("Dividir em")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Dividir a base em períodos" }));
+    expect(document.activeElement).toBe(screen.getByLabelText("Dividir em"));
+    expect(screen.getByRole("button", { name: "Dividir" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Dividir a base em períodos" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Ajuda: Dividir em" }));
     expect(
       screen.getByText(/A data informada passa a iniciar um período novo da base/),
     ).toBeDefined();
+  });
+
+  it("depois de dividir, o campo recolhe e o foco volta ao botão; com erro, o campo fica aberto (§21.5)", async () => {
+    const user = userEvent.setup();
+    render(<Harness inicial={{ ...fixa, valor: "500.00" }} espiao={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Dividir a base em períodos" }));
+    fireEvent.change(screen.getByLabelText("Dividir em"), { target: { value: "2025-01-01" } });
+    await user.click(screen.getByRole("button", { name: "Dividir" }));
+    expect(screen.queryByLabelText("Dividir em")).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Dividir a base em períodos" }),
+    );
+    // a mesma data de novo: o aviso embaixo do campo, que continua aberto
+    await user.click(screen.getByRole("button", { name: "Dividir a base em períodos" }));
+    fireEvent.change(screen.getByLabelText("Dividir em"), { target: { value: "2025-01-01" } });
+    await user.click(screen.getByRole("button", { name: "Dividir" }));
+    expect(screen.getByRole("alert").textContent).toBe("Já existe uma divisão em 01/01/2025.");
+    expect(screen.getByLabelText("Dividir em")).toBeDefined();
   });
 
   it("dividir: um bloco por período, com título; o novo nasce como cópia; trocar a forma de um não mexe no outro", async () => {
@@ -173,13 +195,13 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
         espiao={espiao}
       />,
     );
+    await user.click(screen.getByRole("button", { name: "Dividir a base em períodos" }));
     fireEvent.change(screen.getByLabelText("Dividir em"), { target: { value: "2025-01-01" } });
     await user.click(screen.getByRole("button", { name: "Dividir" }));
     const primeiro = within(screen.getByRole("group", { name: "Até 31/12/2024" }));
     const segundo = within(screen.getByRole("group", { name: "Desde 01/01/2025" }));
     expect((primeiro.getByLabelText("Valor fixado") as HTMLInputElement).value).toBe("500,00");
     expect((segundo.getByLabelText("Valor fixado") as HTMLInputElement).value).toBe("500,00");
-    expect(screen.queryByText("A base mudou ao longo do tempo?")).toBeNull();
     expect(primeiro.queryByRole("button", { name: /Remover/ })).toBeNull();
     await user.click(segundo.getByLabelText("% do salário mínimo"));
     await user.type(segundo.getByLabelText("Percentual do salário mínimo"), "30");
@@ -199,6 +221,7 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     });
     expect((primeiro.getByLabelText("Valor fixo em reais") as HTMLInputElement).checked).toBe(true);
     // a mesma data de novo não divide
+    await user.click(screen.getByRole("button", { name: "Dividir a base em períodos" }));
     fireEvent.change(screen.getByLabelText("Dividir em"), { target: { value: "2025-01-01" } });
     await user.click(screen.getByRole("button", { name: "Dividir" }));
     expect(screen.getByRole("alert").textContent).toBe("Já existe uma divisão em 01/01/2025.");
@@ -291,6 +314,7 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
     await user.type(screen.getByLabelText("Valor fixado"), "500");
     await user.click(screen.getByLabelText("% do salário mínimo"));
     await user.type(screen.getByLabelText("Percentual do salário mínimo"), "30");
+    await user.click(screen.getByRole("button", { name: "Dividir a base em períodos" }));
     fireEvent.change(screen.getByLabelText("Dividir em"), { target: { value: "2025-01-01" } });
     await user.click(screen.getByRole("button", { name: "Dividir" }));
     const primeiro = within(screen.getByRole("group", { name: "Até 31/12/2024" }));
@@ -365,6 +389,7 @@ describe("2 · Base dos alimentos (§6.3, §9.2)", () => {
         .slice(1, 5)
         .map((r) => within(r).getAllByRole("cell")[1]?.textContent);
     expect(valores()).toEqual(["R$ 500,00", "R$ 500,00", "R$ 500,00", "R$ 500,00"]);
+    await user.click(screen.getByRole("button", { name: "Dividir a base em períodos" }));
     fireEvent.change(screen.getByLabelText("Dividir em"), { target: { value: "2025-01-01" } });
     await user.click(screen.getByRole("button", { name: "Dividir" }));
     const segundo = within(screen.getByRole("group", { name: "Desde 01/01/2025" }));

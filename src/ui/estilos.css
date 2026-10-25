@@ -1069,11 +1069,6 @@ td.dica {
   gap: 8px;
 }
 
-.dividir-base > .nota {
-  flex-basis: 100%;
-  margin: 0;
-}
-
 /* ---- Celular: campos lado a lado empilham; o balão da ajuda vira uma faixa no pé da tela ---- */
 
 @media (max-width: 599px) {
