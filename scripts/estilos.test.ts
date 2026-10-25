@@ -243,4 +243,35 @@ describe("tipografia da tela (§21.3)", () => {
       "8px 12px 2px",
     );
   });
+
+  it("subtítulos e o título dos avisos em 15 px (este em negrito); título do diálogo e valores dos indicadores em 17 px", () => {
+    expect(declaracoes(bloco(css, ".dialogo h3")).get("font-size")).toBe("15px");
+    expect(declaracoes(bloco(css, ".periodo > h3, .titulo-do-periodo > h3")).get("font-size")).toBe(
+      "15px",
+    );
+    const avisos = declaracoes(bloco(css, ".avisos h2"));
+    expect(avisos.get("font-size")).toBe("15px");
+    expect(avisos.get("font-weight")).toBe("700");
+    expect(declaracoes(bloco(css, ".dialogo > h2")).get("font-size")).toBe("17px");
+    expect(declaracoes(bloco(css, ".indicador dd")).get("font-size")).toBe("17px");
+  });
+
+  it("dicas, erros das células e rodapé em 13 px; etiquetas e subtítulo da marca em 12 px", () => {
+    for (const seletor of [
+      "td.dica",
+      ".celula-em-edicao .erro",
+      ".campo-linha-nova .erro",
+      ".rodape",
+    ]) {
+      expect(declaracoes(bloco(css, seletor)).get("font-size"), seletor).toBe("13px");
+    }
+    expect(declaracoes(bloco(css, ".etiqueta")).get("font-size")).toBe("12px");
+    expect(declaracoes(bloco(css, ".marca small")).get("font-size")).toBe("12px");
+  });
+
+  it("a marca e o título da tela de erro em 22 px; em telas estreitas a marca não tem tamanho próprio (fica em 22 px)", () => {
+    expect(declaracoes(bloco(css, ".marca")).get("font-size")).toBe("22px");
+    expect(declaracoes(bloco(estreita, ".marca")).has("font-size")).toBe(false);
+    expect(declaracoes(bloco(css, ".tela-de-erro h1")).get("font-size")).toBe("22px");
+  });
 });
