@@ -12,7 +12,9 @@ Limpeza da tela (§21 do design). Os números não mudam.
   o que acontece com o campo em branco, como "pela base". A data em branco aparece mais clara, em
   itálico.
 - As tabelas vazias mostram só o título, o ⓘ e o botão ("+ Prestação", "+ Pagamento"), sem frase
-  e sem a linha de títulos das colunas; o cálculo em branco não mostra mais a caixa de avisos.
+  e sem a linha de títulos das colunas. O cálculo em branco não traz mais o aviso "Nenhum
+  lançamento.", e a caixa de avisos só aparece quando há o que avisar (por exemplo, um índice que
+  ainda não chegou ao Apura).
 - Letras maiores e sem maiúsculas miúdas: rótulos, títulos das seções, cabeçalhos das tabelas e
   nomes dos indicadores em letra normal, com menos tamanhos diferentes na tela. O relatório e a
   impressão não mudam.

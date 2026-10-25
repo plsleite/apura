@@ -127,7 +127,7 @@ e "+ Observações para o relatório" abrem o campo com o foco nele (`autoFocus`
 `claro` e `escuro`); o lote de pagamentos não põe mais a descrição "Pagamento parcial" (o caso de
 referência dos lotes perdeu a dos pagamentos de lote; nenhum número mudou); a tela principal em
 valor fixo tem 8 balões ⓘ (eram 16), com os textos novos conferidos inteiros
-(`testes/texto-do-balao.ts`). Versão 0.1.3 (1046 testes passando e 10 pulados). Próxima: a definir com os
+(`testes/texto-do-balao.ts`). Versão 0.1.3 (1048 testes passando e 10 pulados). Próxima: a definir com os
 testadores (ver a §6 da visão do produto). A tabela de fases do roteiro é a referência; atualize-a e esta seção ao
 concluir cada fase.
 
