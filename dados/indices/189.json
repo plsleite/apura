@@ -3,7 +3,7 @@
   "codigo": "189",
   "nome": "IGP-M (FGV), variação % mensal",
   "origem": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.189/dados?formato=json",
-  "obtidoEm": "2026-10-11T23:11:54.933Z",
+  "obtidoEm": "2026-10-29T16:17:12-03:00",
   "valores": [
     {
       "competencia": "1989-06",
@@ -1796,6 +1796,10 @@
     {
       "competencia": "2026-09",
       "valor": "1.57"
+    },
+    {
+      "competencia": "2026-10",
+      "valor": "1.47"
     }
   ]
 }
