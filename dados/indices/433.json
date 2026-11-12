@@ -3,7 +3,7 @@
   "codigo": "433",
   "nome": "IPCA (IBGE), variação % mensal",
   "origem": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json",
-  "obtidoEm": "2026-10-11T23:11:55.032Z",
+  "obtidoEm": "2026-11-12T18:09:02-03:00",
   "valores": [
     {
       "competencia": "1980-01",
@@ -2248,6 +2248,10 @@
     {
       "competencia": "2026-09",
       "valor": "0.82"
+    },
+    {
+      "competencia": "2026-10",
+      "valor": "0.14"
     }
   ]
 }
